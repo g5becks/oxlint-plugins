@@ -1,0 +1,164 @@
+# Client project tasks
+# This config is part of the AgentX monorepo
+# Run tasks with: mise //client:taskname
+
+# =============================================================================
+# DEVELOPMENT
+# =============================================================================
+
+[tasks.dev]
+description = "Start client in development mode"
+depends = [
+  "//core:build",
+  "//:gen:client"
+]
+
+env.NODE_ENV = "development"
+
+run = "mise exec -- bun x vite"
+
+[tasks."dev:mock"]
+description = "Start client in development mode with mock data (no server required)"
+depends = [
+  "//core:build",
+  "//:gen:client"
+]
+
+env.NODE_ENV = "development"
+env.VITE_ENABLE_MOCKS = "true"
+
+run = "mise exec -- bun x vite"
+
+[tasks.preview]
+description = "Preview production build"
+depends = [ ":build" ]
+run = "mise exec -- bun x vite preview"
+
+# =============================================================================
+# BUILD
+# =============================================================================
+
+[tasks.build]
+description = "Build client for production"
+depends = [
+  ":lint",
+  ":typecheck",
+  "//core:build",
+  "//:gen:client"
+]
+
+env.NODE_ENV = "production"
+
+sources = [
+  "src/**/*",
+  "public/**/*",
+  "index.html",
+  "package.json",
+  "vite.config.ts"
+]
+outputs = [ "../dist/client/**/*" ]
+run = "mise exec -- bun x vite build"
+
+# =============================================================================
+# TESTING
+# =============================================================================
+
+[tasks.test]
+description = "Run all client tests"
+alias = "test:unit"
+run = "mise exec -- bun x vitest"
+
+[tasks."test:unit"]
+description = "Run client unit tests"
+run = "mise exec -- bun x vitest"
+
+[tasks."test:ui"]
+description = "Run client tests with UI"
+run = "mise exec -- bun x vitest --ui"
+
+[tasks."test:browser"]
+description = "Run client browser tests"
+run = "mise exec -- bun x vitest --browser.enabled --browser.name=chromium"
+
+[tasks."test:browser-ui"]
+description = "Run client browser tests with UI"
+run = "mise exec -- bun x vitest --browser.enabled --browser.name=chromium --ui"
+
+[tasks."test:watch"]
+description = "Run tests in watch mode"
+run = "mise exec -- bun x vitest --watch"
+
+# =============================================================================
+# LINTING
+# =============================================================================
+
+[tasks.lint]
+description = "Lint client package"
+sources = [
+  "src/**/*.ts",
+  "src/**/*.tsx",
+  "src/**/*.vue",
+  "tsconfig.json"
+]
+run = 'mise exec -- eslint "**/*.{js,jsx,ts,tsx,vue}" --cache --fix --no-warn-ignored --concurrency auto'
+
+[tasks."lint:check"]
+description = "Check linting without fixing"
+sources = [
+  "src/**/*.ts",
+  "src/**/*.tsx",
+  "src/**/*.vue",
+  "tsconfig.json"
+]
+run = 'mise exec -- eslint "**/*.{js,jsx,ts,tsx,vue}" --cache --no-warn-ignored --concurrency auto'
+
+# =============================================================================
+# TYPE CHECKING
+# =============================================================================
+
+[tasks.typecheck]
+description = "Type check client package (uses ts-macro for vue-jsx-vapor support)"
+sources = [
+  "src/**/*.ts",
+  "src/**/*.tsx",
+  "src/**/*.vue",
+  "tsconfig.json"
+]
+run = "mise exec -- tsmc --noEmit"
+
+[tasks."typecheck:file"]
+description = "Type check client and filter to specific file"
+usage = '''
+arg "<file>" help="Source file path (e.g., src/components/Foo.tsx)" env="FILE"
+'''
+run = 'mise exec -- tsmc --noEmit 2>&1 | grep "${usage_file?}" || echo "No errors in ${usage_file}"'
+
+# =============================================================================
+# PACKAGE MANAGEMENT
+# =============================================================================
+
+[tasks."pkg:add"]
+description = "Add dependency to client workspace"
+usage = '''
+arg "<pkg>" help="Package name to install" env="PKG"
+'''
+run = 'mise exec -- bun add "${usage_pkg?}"'
+
+[tasks."pkg:add:dev"]
+description = "Add dev dependency to client workspace"
+usage = '''
+arg "<pkg>" help="Package name to install" env="PKG"
+'''
+run = 'mise exec -- bun add --dev "${usage_pkg?}"'
+
+# =============================================================================
+# CLEANUP
+# =============================================================================
+
+[tasks.clean]
+description = "Clean client build artifacts"
+run = [
+  "rm -rf dist",
+  "rm -rf node_modules",
+  "echo '✅ Client artifacts cleaned'"
+]

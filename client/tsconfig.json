@@ -1,0 +1,90 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "#router": [
+        "./src/Router.tsx"
+      ],
+      "#components/*": [
+        "./src/components/*"
+      ],
+      "#stores/*": [
+        "./src/stores/*"
+      ],
+      "#utils/*": [
+        "./src/utils/*"
+      ],
+      "#api/*": [
+        "./src/api/*"
+      ],
+      "#auth": [
+        "./src/auth/index.ts"
+      ],
+      "#alerts/*": [
+        "./src/alerts/*"
+      ],
+      "#history/*": [
+        "./src/history/*"
+      ],
+      "#strategies/*": [
+        "./src/strategies/*"
+      ],
+      "#watchlist/*": [
+        "./src/watchlist/*"
+      ],
+      "#chat/*": [
+        "./src/chat/*"
+      ],
+      "#news/*": [
+        "./src/news/*"
+      ],
+      "#settings/*": [
+        "./src/settings/*"
+      ],
+      "#analytics/*": [
+        "./src/analytics/*"
+      ],
+      "#offline/*": [
+        "./src/offline/*"
+      ],
+      "#App.module.css": [
+        "./src/App.module.css"
+      ],
+      "#sounds/*": [
+        "./public/sounds/*"
+      ],
+      "#/*": [
+        "./src/*"
+      ]
+    },
+    "resolveJsonModule": true,
+    "types": [
+      "vite/client",
+      "node"
+    ],
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "skipLibCheck": true
+  },
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": []
+}

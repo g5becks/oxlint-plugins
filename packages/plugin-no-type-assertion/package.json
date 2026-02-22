@@ -1,0 +1,32 @@
+{
+  "name": "oxlint-plugin-ts-no-assert",
+  "version": "0.1.2",
+  "type": "module",
+  "description": "Disallow TypeScript type assertions (as, angle-bracket, non-null !) — ported from eslint-plugin-no-type-assertion to Oxlint's JS plugin API. Also compatible with ESLint flat config.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "oxlint",
+    "eslint",
+    "typescript",
+    "type-assertion",
+    "non-null-assertion",
+    "lint"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/takinprofit/biome-plugins"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

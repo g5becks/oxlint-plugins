@@ -1,0 +1,31 @@
+{
+  "name": "oxlint-plugin-errorset",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Oxlint plugin that enforces correct usage of @takinprofit/errorset. Catches throws, catch-block misuse, and unguarded data access.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "oxlint",
+    "eslint",
+    "errorset",
+    "error-handling",
+    "lint"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/takinprofit/biome-plugins"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

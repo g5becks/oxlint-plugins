@@ -1,0 +1,32 @@
+{
+  "name": "oxlint-plugin-immutable",
+  "version": "0.1.1",
+  "type": "module",
+  "description": "Immutability lint rules ported from eslint-plugin-functional to Oxlint's JS plugin API. Also compatible with ESLint flat config.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "oxlint",
+    "eslint",
+    "functional",
+    "immutability",
+    "readonly",
+    "lint"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/takinprofit/biome-plugins"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,217 @@
+@import "tailwindcss";
+@config "../tailwind.config.cjs";
+
+@layer base {
+  :root {
+    /* Typography */
+    --font-sans: "Plus Jakarta Sans Variable", system-ui, -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono Variable", ui-monospace, "Cascadia Code", monospace;
+
+    /* Animation Durations */
+    --duration-fast: 100ms;
+    --duration-normal: 200ms;
+    --duration-slow: 350ms;
+
+    /* Animation Easings */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    --background: 0 0% 100%;
+    --foreground: 220 9% 12%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 9% 12%;
+
+    --border: 220 13% 90%;
+    --input: 220 13% 90%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 9% 12%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 9% 12%;
+
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 9% 12%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --info: 204 94% 94%;
+    --info-foreground: 199 89% 48%;
+
+    --success: 149 80% 90%;
+    --success-foreground: 160 84% 39%;
+
+    --warning: 48 96% 89%;
+    --warning-foreground: 25 95% 53%;
+
+    --error: 0 93% 94%;
+    --error-foreground: 0 84% 60%;
+
+    /* Trading semantic aliases */
+    --profit: 160 84% 39%;
+    --profit-foreground: 160 84% 15%;
+    --loss: 0 72% 51%;
+    --loss-foreground: 0 72% 20%;
+    --neutral: 220 9% 46%;
+    --neutral-foreground: 220 9% 20%;
+
+    --ring: 221 83% 53%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar — light mode cool-gray */
+    --sidebar-background: 220 14% 96%;
+    --sidebar-foreground: 220 9% 30%;
+    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 92%;
+    --sidebar-accent-foreground: 220 9% 20%;
+    --sidebar-border: 220 13% 90%;
+    --sidebar-ring: 221 83% 53%;
+  }
+
+  .dark,
+  [data-kb-theme="dark"] {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 96%;
+
+    --muted: 222 30% 15%;
+    --muted-foreground: 220 9% 65%;
+
+    --accent: 222 30% 15%;
+    --accent-foreground: 210 40% 96%;
+
+    --popover: 222 35% 12%;
+    --popover-foreground: 210 40% 96%;
+
+    --border: 222 25% 18%;
+    --input: 222 25% 18%;
+
+    --card: 222 40% 9%;
+    --card-foreground: 210 40% 96%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 30% 15%;
+    --secondary-foreground: 210 40% 96%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --info: 204 94% 94%;
+    --info-foreground: 199 89% 48%;
+
+    --success: 149 80% 90%;
+    --success-foreground: 160 84% 39%;
+
+    --warning: 48 96% 89%;
+    --warning-foreground: 25 95% 53%;
+
+    --error: 0 93% 94%;
+    --error-foreground: 0 84% 60%;
+
+    /* Trading semantic aliases */
+    --profit: 160 84% 45%;
+    --profit-foreground: 160 84% 85%;
+    --loss: 0 72% 58%;
+    --loss-foreground: 0 72% 85%;
+    --neutral: 220 9% 55%;
+    --neutral-foreground: 220 9% 80%;
+
+    --ring: 217 91% 60%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 215 28% 17%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .step {
+    counter-increment: step;
+  }
+
+  .step:before {
+    @apply absolute w-9 h-9 bg-muted rounded-full font-mono font-medium text-center text-base inline-flex items-center justify-center -indent-px border-4 border-background;
+    @apply ml-[-50px] mt-[-4px];
+    content: counter(step);
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* Page transition animation */
+  .animate-fade-in {
+    animation: fade-in var(--duration-fast) var(--ease-out);
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    @apply px-4;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+  @apply bg-muted-foreground/20;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/40;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-corner {
+  display: none;
+}

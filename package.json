@@ -1,0 +1,43 @@
+{
+  "name": "oxlint-plugins",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun run build:router && bun run build:query && bun run build:functional && bun run build:solid && bun run build:no-type-assertion && bun run build:errorset",
+    "build:router": "bun build packages/plugin-router/src/index.ts --outdir packages/plugin-router/dist --target node --format esm",
+    "build:query": "bun build packages/plugin-query/src/index.ts --outdir packages/plugin-query/dist --target node --format esm",
+    "build:functional": "bun build packages/plugin-functional/src/index.ts --outdir packages/plugin-functional/dist --target node --format esm",
+    "build:solid": "bun build packages/plugin-solid/src/index.ts --outdir packages/plugin-solid/dist --target node --format esm",
+    "build:no-type-assertion": "bun build packages/plugin-no-type-assertion/src/index.ts --outdir packages/plugin-no-type-assertion/dist --target node --format esm",
+    "build:errorset": "bun build packages/plugin-errorset/src/index.ts --outdir packages/plugin-errorset/dist --target node --format esm",
+    "test": "bun run test:router && bun run test:query && bun run test:functional && bun run test:solid && bun run test:no-type-assertion && bun run test:errorset && bun test ./tests/integration/*.test.ts ./tests/eslint-compat/*.test.ts && bun run test:cli",
+    "test:router": "bun test ./packages/plugin-router/tests/*.test.ts",
+    "test:query": "bun test ./packages/plugin-query/tests/*.test.ts",
+    "test:functional": "bun test ./packages/plugin-functional/tests/*.test.ts",
+    "test:solid": "bun test ./packages/plugin-solid/tests/*.test.ts",
+    "test:no-type-assertion": "bun test ./packages/plugin-no-type-assertion/tests/*.test.ts",
+    "test:errorset": "bun test ./packages/plugin-errorset/tests/*.test.ts",
+    "test:cli": "bun test ./tests/cli/*.cli.test.ts",
+    "test:bench": "bun test ./tests/bench/*.test.ts",
+    "check": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@oxlint/plugins": "latest"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@typescript-eslint/parser": "^8.48.0",
+    "@typescript-eslint/utils": "^8.48.0",
+    "eslint": "^9.36.0",
+    "estraverse": "^5.3.0",
+    "is-html": "^2.0.0",
+    "kebab-case": "^1.0.2",
+    "known-css-properties": "^0.30.0",
+    "oxlint-tsgolint": "^0.14.0",
+    "style-to-object": "^1.0.8",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://oxc.rs/schemas/oxlint.json",
+  "ignorePatterns": [
+    "src/api/v1.d.ts",
+    "src/components/ui/drawer.tsx",
+    "src/components/ui/charts.tsx"
+  ],
+  "jsPlugins": [
+    "../packages/plugin-router/dist/index.js",
+    "../packages/plugin-query/dist/index.js",
+    "../packages/plugin-functional/dist/index.js",
+    "../packages/plugin-solid/dist/index.js",
+    "../packages/plugin-no-type-assertion/dist/index.js"
+  ],
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "typescript/no-unsafe-argument": "error",
+    "typescript/no-unsafe-assignment": "error",
+    "typescript/no-unsafe-call": "error",
+    "typescript/no-unsafe-member-access": "error",
+    "typescript/no-unsafe-return": "error",
+    "typescript/no-deprecated": "error",
+    "oxlint-plugin-ts-no-assert/no-type-assertion": "error",
+
+    "oxlint-plugin-router/create-route-property-order": "error",
+    "oxlint-plugin-router/route-param-names": "error",
+
+    "oxlint-plugin-query/exhaustive-deps": "error",
+    "oxlint-plugin-query/no-rest-destructuring": "warn",
+    "oxlint-plugin-query/stable-query-client": "error",
+    "oxlint-plugin-query/no-unstable-deps": "error",
+    "oxlint-plugin-query/infinite-query-property-order": "error",
+    "oxlint-plugin-query/mutation-property-order": "error",
+
+    "oxlint-plugin-immutable/prefer-immutable-types": "off",
+    "oxlint-plugin-immutable/no-let": "off",
+    "oxlint-plugin-immutable/no-throw-statements": "off",
+    "oxlint-plugin-immutable/prefer-property-signatures": "off",
+    "oxlint-plugin-immutable/type-declaration-immutability": "error",
+
+    "oxlint-plugin-solidjs/jsx-no-duplicate-props": "error",
+    "oxlint-plugin-solidjs/jsx-no-undef": "error",
+    "oxlint-plugin-solidjs/jsx-uses-vars": "off",
+    "oxlint-plugin-solidjs/no-unknown-namespaces": "error",
+    "oxlint-plugin-solidjs/no-innerhtml": "error",
+    "oxlint-plugin-solidjs/jsx-no-script-url": "error",
+    "oxlint-plugin-solidjs/components-return-once": "warn",
+    "oxlint-plugin-solidjs/no-destructure": "error",
+    "oxlint-plugin-solidjs/prefer-for": "error",
+    "oxlint-plugin-solidjs/reactivity": "warn",
+    "oxlint-plugin-solidjs/event-handlers": "warn",
+    "oxlint-plugin-solidjs/imports": "warn",
+    "oxlint-plugin-solidjs/style-prop": "warn",
+    "oxlint-plugin-solidjs/no-react-deps": "warn",
+    "oxlint-plugin-solidjs/no-react-specific-props": "warn",
+    "oxlint-plugin-solidjs/self-closing-comp": "warn"
+  }
+}
