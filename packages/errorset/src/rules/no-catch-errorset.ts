@@ -107,7 +107,7 @@ export default {
         const guardNames = tracker.guardNames();
         if (guardNames.size === 0) return;
 
-        if (isGuardCall(node, guardNames)) {
+        if (isGuardCall(node, guardNames, tracker.mergedGuardNames())) {
           const callee = node.callee;
           const name = callee?.type === "Identifier" ? callee.name : (callee?.object?.name ?? "ErrorSet");
           context.report({ node, messageId: "guardInCatch", data: { name } });

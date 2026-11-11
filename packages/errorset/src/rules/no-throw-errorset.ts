@@ -8,14 +8,15 @@
  */
 import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
 import { readErrorsetSettings } from "../utils/settings.ts";
-import { getErrorsetTag, getMemberObjectName, CAPTURE_METHODS } from "../utils/pattern-helpers.ts";
+import { getErrorsetTag, getMemberObjectName, unwrapWith, CAPTURE_METHODS } from "../utils/pattern-helpers.ts";
 
 /**
  * Returns true when the ThrowStatement's argument is an errorset creation expression
  * (either a tagged template or a call wrapping a tagged template).
  */
 function getCreationObjectName(node: any, guardNames: Set<string>): string | null {
-  let candidate = node.argument;
+  // Pattern C (errorset >= 0.4): throw SomeError.kind`...`.with({ cause })
+  let candidate = unwrapWith(node.argument);
   if (!candidate) return null;
 
   // Pattern A: throw SomeError.kind`...`(data) — CallExpression wrapping TTE
@@ -36,16 +37,25 @@ function getCreationObjectName(node: any, guardNames: Set<string>): string | nul
  * Returns true when the node is inside the first argument (the target function)
  * of a .capture() or .captureAsync() call — those throw intentionally.
  */
-function isInsideCaptureTarget(node: any, guardNames: Set<string>): boolean {
+function isInsideCaptureTarget(
+  node: any,
+  guardNames: Set<string>,
+  isCaptureHelper: (name: string) => boolean = () => false,
+): boolean {
   let current = node?.parent;
   while (current) {
-    if (
+    const isMemberCapture =
       current.type === "CallExpression" &&
       current.callee?.type === "MemberExpression" &&
       CAPTURE_METHODS.has(current.callee.property?.name) &&
       current.callee.object?.type === "Identifier" &&
-      guardNames.has(current.callee.object.name)
-    ) {
+      guardNames.has(current.callee.object.name);
+    // errorset >= 0.4 top-level helpers: captureSync(fn, map) / captureAsync(fn, map)
+    const isHelperCapture =
+      current.type === "CallExpression" &&
+      current.callee?.type === "Identifier" &&
+      isCaptureHelper(current.callee.name);
+    if (isMemberCapture || isHelperCapture) {
       // We're inside a .capture() call — check if we're in the first arg (target fn)
       const firstArg = current.arguments?.[0];
       if (firstArg && (firstArg.type === "ArrowFunctionExpression" || firstArg.type === "FunctionExpression")) {
@@ -126,14 +136,16 @@ export default {
         if (guardNames.size === 0) return;
 
         // Don't report inside .capture() target function args
-        if (isInsideCaptureTarget(node, guardNames)) return;
+        const isCaptureHelper = (name: string) =>
+          tracker.isErrorsetExport(name, "captureSync") || tracker.isErrorsetExport(name, "captureAsync");
+        if (isInsideCaptureTarget(node, guardNames, isCaptureHelper)) return;
 
         const objName = getCreationObjectName(node, guardNames);
         if (!objName) return;
 
         // Extract kind name for the message
         let kindName = "kind";
-        let argument = node.argument;
+        let argument = unwrapWith(node.argument);
         if (argument?.type === "CallExpression" && argument.callee?.type === "TaggedTemplateExpression") {
           argument = argument.callee;
         }

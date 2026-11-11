@@ -7,7 +7,25 @@
  * i.e. it's an Array with a .raw property.
  * Used to detect tagged template literals at the AST level.
  */
+/**
+ * Unwraps `X.kind\`msg\`.with({ cause })` (errorset >= 0.4 no-context errors with a cause)
+ * to the tagged template it is called on; other nodes are returned unchanged.
+ */
+export function unwrapWith(node: any): any {
+  if (
+    node?.type === "CallExpression" &&
+    node.callee?.type === "MemberExpression" &&
+    node.callee.property?.type === "Identifier" &&
+    node.callee.property.name === "with" &&
+    node.callee.object?.type === "TaggedTemplateExpression"
+  ) {
+    return node.callee.object;
+  }
+  return node;
+}
+
 export function isTaggedTemplateCreation(node: any): boolean {
+  node = unwrapWith(node);
   // TaggedTemplateExpression: SomeError.kind`...` (no args)
   if (node?.type === "TaggedTemplateExpression") return true;
   // CallExpression: SomeError.kind`...`(data) — the callee is a TaggedTemplateExpression
@@ -22,6 +40,7 @@ export function isTaggedTemplateCreation(node: any): boolean {
  * returns the tag MemberExpression if it looks like `ErrorSet.kind`.
  */
 export function getErrorsetTag(node: any): any | null {
+  node = unwrapWith(node);
   let tag: any = null;
   if (node?.type === "TaggedTemplateExpression") {
     tag = node.tag;
@@ -49,16 +68,20 @@ export function getMemberObjectName(memberExpr: any): string | null {
  *   UserError.kind(value)     — kind-level guard
  * where `guardNames` identifies the known errorset guards.
  */
-export function isGuardCall(node: any, guardNames: Set<string>): boolean {
+export function isGuardCall(node: any, guardNames: Set<string>, mergedGuards?: Set<string>): boolean {
   if (node?.type !== "CallExpression") return false;
   const callee = node.callee;
-  // Set-level: UserError(value)
+  // Set-level: UserError(value), also merged guards: ServiceError(value)
   if (callee?.type === "Identifier" && guardNames.has(callee.name)) return true;
-  // Kind-level: UserError.kind(value)
+  // Kind-level: UserError.kind(value). Set members (recover, inspect, merge, capture,
+  // captureAsync, from, kinds) are not kind guards, and merged guards have no kind guards.
   if (
     callee?.type === "MemberExpression" &&
     callee.object?.type === "Identifier" &&
-    guardNames.has(callee.object.name)
+    guardNames.has(callee.object.name) &&
+    !mergedGuards?.has(callee.object.name) &&
+    callee.property?.type === "Identifier" &&
+    !SET_MEMBERS.has(callee.property.name)
   ) {
     return true;
   }
@@ -178,3 +201,6 @@ export const ERRORSET_PROPERTIES = new Set(["data", "kind", "message", "cause"])
  * Returns the capture-related method names on an errorset.
  */
 export const CAPTURE_METHODS = new Set(["capture", "captureAsync"]);
+
+/** Members of an error set (or merged guard) that are not kind guards (errorset RESERVED_KINDS). */
+export const SET_MEMBERS = new Set(["recover", "inspect", "merge", "capture", "captureAsync", "kinds", "Type", "from"]);

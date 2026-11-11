@@ -17,9 +17,27 @@ export type ErrorsetImportTracker = {
   isErrorsetGuard(name: string): boolean;
   /** True if "isErr" is imported from errorset (local name may differ) */
   isIsErrImport(name: string): boolean;
-  /** All known guard names in the current file */
+  /** All known guard names in the current file (error sets and merged guards) */
   guardNames(): Set<string>;
+  /** Guards built with `merge(A, B)` / `A.merge(B)`: set-level only, no kind guards */
+  mergedGuardNames(): Set<string>;
+  /** True if the identifier is an import of the given errorset export (e.g. "toError", "captureSync") */
+  isErrorsetExport(localName: string, exportName: string): boolean;
+  /** Local guard name for an error set name used in `err.set === "Name"` checks, if known */
+  guardForSetName(setName: string): string | null;
 };
+
+/** Errorset exports a configured re-export module may provide (besides guards). */
+const ERRORSET_EXPORTS = new Set([
+  "errorSet",
+  "isErr",
+  "merge",
+  "toError",
+  "captureSync",
+  "captureAsync",
+  "recover",
+  "inspect",
+]);
 
 export function createErrorsetImportTracker(): ErrorsetImportTracker {
   let importedFromErrorset = false;
@@ -27,6 +45,9 @@ export function createErrorsetImportTracker(): ErrorsetImportTracker {
   const importedNames = new Map<string, string>();
   // Local variable names that hold errorset guards (const X = errorSet(...).init<T>())
   const guardNames_ = new Set<string>();
+  const mergedGuards = new Set<string>();
+  // Error set name ("UserError" in errorSet("UserError", ...)) -> local guard name
+  const guardBySetName = new Map<string, string>();
   let settings: ErrorsetSettings = parseErrorsetSettings(undefined);
 
   return {
@@ -34,6 +55,8 @@ export function createErrorsetImportTracker(): ErrorsetImportTracker {
       importedFromErrorset = false;
       importedNames.clear();
       guardNames_.clear();
+      mergedGuards.clear();
+      guardBySetName.clear();
       if (next) settings = next;
     },
 
@@ -61,11 +84,13 @@ export function createErrorsetImportTracker(): ErrorsetImportTracker {
           continue;
         }
         // Configured re-export module: errorset exports and guard-named sets.
-        if (importedName === "errorSet" || importedName === "isErr") {
+        if (ERRORSET_EXPORTS.has(importedName)) {
           importedNames.set(localName, importedName);
           importedFromErrorset = true;
         } else if (settings.guardPattern.test(importedName)) {
           guardNames_.add(localName);
+          // Convention: an exported set's name is its export name.
+          if (!guardBySetName.has(importedName)) guardBySetName.set(importedName, localName);
           importedFromErrorset = true;
         }
       }
@@ -84,8 +109,14 @@ export function createErrorsetImportTracker(): ErrorsetImportTracker {
         const init = decl.init;
         if (!init) continue;
 
-        if (isErrorsetInitChain(init, importedNames)) {
+        const setName = errorsetInitChainName(init, importedNames);
+        if (setName !== null) {
           guardNames_.add(decl.id.name);
+          if (setName && !guardBySetName.has(setName)) guardBySetName.set(setName, decl.id.name);
+        } else if (isMergeCall(init, importedNames, guardNames_)) {
+          // const S = merge(A, B) or const S = A.merge(B): a set-level guard
+          guardNames_.add(decl.id.name);
+          mergedGuards.add(decl.id.name);
         }
       }
     },
@@ -109,32 +140,53 @@ export function createErrorsetImportTracker(): ErrorsetImportTracker {
     guardNames() {
       return guardNames_;
     },
+
+    mergedGuardNames() {
+      return mergedGuards;
+    },
+
+    isErrorsetExport(localName: string, exportName: string) {
+      return importedNames.get(localName) === exportName;
+    },
+
+    guardForSetName(setName: string) {
+      return guardBySetName.get(setName) ?? null;
+    },
   };
 }
 
 /**
- * Returns true when the AST node represents the chain:
- *   errorSet("Name", [...]).init<T>()
- * or:
- *   errorSet("Name", [...]).init()
+ * For `errorSet("Name", kinds).init<T>(...)` (array- or object-form kinds) returns the set
+ * name ("" when the first argument isn't a string literal); null for anything else.
  */
-function isErrorsetInitChain(node: any, importedNames: Map<string, string>): boolean {
-  // Must be a CallExpression (the .init<T>() call)
-  if (node?.type !== "CallExpression") return false;
+function errorsetInitChainName(node: any, importedNames: Map<string, string>): string | null {
+  if (node?.type !== "CallExpression") return null;
   const callee = node.callee;
-  // callee must be MemberExpression with property "init"
   if (
     callee?.type !== "MemberExpression" ||
     callee.property?.type !== "Identifier" ||
     callee.property.name !== "init"
   ) {
-    return false;
+    return null;
   }
-  // object of MemberExpression must be the errorSet("...", [...]) call
   const obj = callee.object;
-  if (obj?.type !== "CallExpression") return false;
+  if (obj?.type !== "CallExpression") return null;
   const innerCallee = obj.callee;
-  // innerCallee must be an Identifier whose local name maps to "errorSet"
-  if (innerCallee?.type !== "Identifier") return false;
-  return importedNames.get(innerCallee.name) === "errorSet";
+  if (innerCallee?.type !== "Identifier" || importedNames.get(innerCallee.name) !== "errorSet") return null;
+  const first = obj.arguments?.[0];
+  return first?.type === "Literal" && typeof first.value === "string" ? first.value : "";
+}
+
+/** `merge(A, B, ...)` (imported merge) or `A.merge(B, ...)` where A is a known guard. */
+function isMergeCall(node: any, importedNames: Map<string, string>, guardNames: Set<string>): boolean {
+  if (node?.type !== "CallExpression") return false;
+  const callee = node.callee;
+  if (callee?.type === "Identifier") return importedNames.get(callee.name) === "merge";
+  return (
+    callee?.type === "MemberExpression" &&
+    callee.property?.type === "Identifier" &&
+    callee.property.name === "merge" &&
+    callee.object?.type === "Identifier" &&
+    guardNames.has(callee.object.name)
+  );
 }

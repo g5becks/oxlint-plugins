@@ -8,6 +8,8 @@
  *   G(r) ? <here> : ...                  !G(r) ? ... : <here>
  *   G(r) && <here>                       !G(r) || <here>
  *   if (!G(r)) return | throw | continue | break;  <here, later in the block>
+ * plus set checks (errorset >= 0.4 errors carry `set`): `r.set === "UserError"` narrows to that
+ * set (`!==` is the negation). Merged guards (`merge(A, B)`, `A.merge(B)`) are set-level guards.
  */
 import type { ErrorsetImportTracker } from "./detect-errorset-imports.ts";
 import { isGuardCall, isIsErrCall } from "./pattern-helpers.ts";
@@ -36,16 +38,40 @@ function statementList(node: any): any[] | undefined {
   return undefined;
 }
 
-/** The error set a guard call narrows to: `UserError` for `UserError(r)` / `UserError.kind(r)`, null for isErr. */
-export function guardSetName(call: any, guardNames: Set<string>): string | null {
-  const callee = call?.callee;
-  if (callee?.type === "Identifier" && guardNames.has(callee.name)) return callee.name;
+/** `r.set === "Name"` (either side): returns { object, setName } or null. */
+export function getSetEquality(node: any): { object: any; setName: string; negated: boolean } | null {
+  if (node?.type !== "BinaryExpression" || !["===", "==", "!==", "!="].includes(node.operator)) return null;
+  const isSet = (n: any) =>
+    n?.type === "MemberExpression" && !n.computed && n.property?.type === "Identifier" && n.property.name === "set";
+  const isStr = (n: any) => n?.type === "Literal" && typeof n.value === "string";
+  let member: any;
+  let literal: any;
+  if (isSet(node.left) && isStr(node.right)) [member, literal] = [node.left, node.right];
+  else if (isSet(node.right) && isStr(node.left)) [member, literal] = [node.right, node.left];
+  else return null;
+  return { object: member.object, setName: literal.value, negated: node.operator.startsWith("!") };
+}
+
+/**
+ * The guard (local name) of the error set a narrowing node narrows to: `UserError` for
+ * `UserError(r)` / `UserError.kind(r)` / `r.set === "UserError"`; null when the set is unknown
+ * (isErr, merged guards, a set name without a known guard).
+ */
+export function guardSetName(node: any, tracker: ErrorsetImportTracker): string | null {
+  const guardNames = tracker.guardNames();
+  const merged = tracker.mergedGuardNames();
+  const setCheck = getSetEquality(node);
+  if (setCheck) return tracker.guardForSetName(setCheck.setName);
+  const callee = node?.callee;
+  if (callee?.type === "Identifier" && guardNames.has(callee.name)) {
+    return merged.has(callee.name) ? null : callee.name;
+  }
   if (
     callee?.type === "MemberExpression" &&
     callee.object?.type === "Identifier" &&
     guardNames.has(callee.object.name)
   ) {
-    return callee.object.name;
+    return merged.has(callee.object.name) ? null : callee.object.name;
   }
   return null;
 }
@@ -74,7 +100,8 @@ export function createNarrowing(context: any, tracker: ErrorsetImportTracker): N
   const resolve = (id: any): VariableKey => resolveVariable(context, id);
 
   const isGuardLike = (call: any): boolean =>
-    isGuardCall(call, tracker.guardNames()) || isIsErrCall(call, (name: string) => tracker.isIsErrImport(name));
+    isGuardCall(call, tracker.guardNames(), tracker.mergedGuardNames()) ||
+    isIsErrCall(call, (name: string) => tracker.isIsErrImport(name));
 
   const guardCallOn = (node: any, key: VariableKey): any | null => {
     const n = unwrap(node);
@@ -84,14 +111,25 @@ export function createNarrowing(context: any, tracker: ErrorsetImportTracker): N
     return isGuardLike(n) && resolve(arg0) === key ? n : null;
   };
 
-  /** `test` true implies the variable is an error-set value; returns the guard call. */
+  /** `r.set === "Name"` on the variable (negated: `!==`). */
+  const setCheckOn = (node: any, key: VariableKey, negated: boolean): any | null => {
+    const eq = getSetEquality(node);
+    if (!eq || eq.negated !== negated || eq.object?.type !== "Identifier") return null;
+    return resolve(eq.object) === key ? node : null;
+  };
+
+  /**
+   * `test` true implies the variable is an error-set value; returns the narrowing node (a guard
+   * call or a set check). In `A && B`, B is checked first: it is evaluated later, so it is the
+   * more specific narrowing (`ServiceError(r) && r.set === "DbError"`).
+   */
   const positive = (test: any, key: VariableKey): any | null => {
     const t = unwrap(test);
     if (!t) return null;
-    const call = guardCallOn(t, key);
+    const call = guardCallOn(t, key) ?? setCheckOn(t, key, false);
     if (call) return call;
     if (t.type === "LogicalExpression" && t.operator === "&&") {
-      return positive(t.left, key) ?? positive(t.right, key);
+      return positive(t.right, key) ?? positive(t.left, key);
     }
     return null;
   };
@@ -101,6 +139,8 @@ export function createNarrowing(context: any, tracker: ErrorsetImportTracker): N
     const t = unwrap(test);
     if (!t) return null;
     if (t.type === "UnaryExpression" && t.operator === "!") return positive(t.argument, key);
+    const setCheck = setCheckOn(t, key, true);
+    if (setCheck) return setCheck;
     if (t.type === "LogicalExpression" && t.operator === "||") {
       const left = negative(t.left, key);
       return left && negative(t.right, key) ? left : null;

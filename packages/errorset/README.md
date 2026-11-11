@@ -23,6 +23,7 @@ This plugin catches all of the above automatically.
 
 - Oxlint `>= 1.0.0` (requires `jsPlugins` support)
 - Node.js `>= 18`
+- `@takinprofit/errorset` 0.3, 0.4 or 0.5 (see [Supported errorset versions and patterns](#supported-errorset-versions-and-patterns))
 
 ## Installation
 
@@ -117,6 +118,25 @@ Notes:
 - The `recommended` config only lists rules; add `settings.errorset` yourself when your sets
   are re-exported.
 
+## Supported errorset versions and patterns
+
+The rules recognize the APIs of `@takinprofit/errorset` **0.3, 0.4 and 0.5**. The 0.4 and 0.5
+patterns are tested against fixtures that type-check with errorset 0.5.0.
+
+| Pattern | Since | How the rules treat it |
+|---|---|---|
+| `const X = errorSet("X", ["a", "b"]).init<T>()` | 0.3 | `X` is a set guard; `X.a(v)` is a kind guard; `X.a\`msg\`(data)` / `X.a\`msg\`` create errors |
+| `X.a\`msg\`({ cause })` (callable no-context error) | 0.3 | an error creation (still recognized) |
+| `X.a\`msg\`.with({ cause })` | 0.4 | an error creation: `throw` is reported by `no-throw-errorset` |
+| `errorSet("X", { a: ["id"], b: [] }).init<T>()` (object form) | 0.5 | same as the array form |
+| `merge(A, B)` / `A.merge(B)` | 0.4 / 0.5 | a **set-level** guard: narrows and is checked in `catch`, but has no kind guards, so `prefer-guard-over-manual-kind-check` gives no suggestion |
+| `err.set === "X"` (and `!==`) | 0.4 | narrows to set `X` (`no-unguarded-data-access`), and lets `prefer-guard-over-manual-kind-check` suggest `X.<kind>(err)` (the set name is mapped to the variable from `errorSet("X", ...)`, or to an import of that name) |
+| `isErr(v)` | 0.3 | a guard on any set: narrows, is checked in `catch`, no kind suggestion |
+| `X.recover`, `X.inspect`, `X.capture`, `X.captureAsync`, `X.from`, `X.kinds` | 0.3–0.5 | set members, never kind guards (`X.from(body)` doesn't mark `body` as an error) |
+| `captureSync(fn, map)` / `captureAsync(fn, map)` | 0.4 | like `X.capture`: throwing inside `fn` is not reported |
+| `throw toError(err)` | 0.5 | not reported: `toError` is the sanctioned adapter for APIs that need a thrown `Error` |
+| `return new Error(...)` in a function that creates errorset errors | — | reported by `no-new-error-in-errorset-fn`, like `throw new Error(...)` |
+
 ---
 
 ## Rules
@@ -200,7 +220,7 @@ if (UserError(result)) { ... }
 
 When a function already uses errorset to model its failure cases, throwing a raw `new Error(...)` is inconsistent — callers have no way to introspect it via guards. Return an errorset kind value instead.
 
-The rule detects functions that contain at least one errorset creation expression and flags any `throw new BuiltInError(...)` inside them.
+The rule detects functions that contain at least one errorset creation expression and flags any `throw new BuiltInError(...)` or `return new BuiltInError(...)` inside them. Throwing inside the target function of `X.capture` / `X.captureAsync` / `captureSync` / `captureAsync` is exempt.
 
 **Options**
 
@@ -326,7 +346,7 @@ const label = UserError(result) ? result.data.id : "ok"  // ✅
 |---|---|---|---|
 | `no-throw-errorset` | error | 💡 suggestion | `throw` with an errorset value → `return` (suggested only where safe) |
 | `no-catch-errorset` | error | — | Errorset guards inside `catch` blocks |
-| `no-new-error-in-errorset-fn` | warn | — | `throw new Error()` in errorset functions |
+| `no-new-error-in-errorset-fn` | warn | — | `throw new Error()` / `return new Error()` in errorset functions |
 | `prefer-guard-over-manual-kind-check` | warn | 💡 suggestion | `.kind ===` string check inside guard block |
 | `no-unguarded-data-access` | warn | — | `.data/.kind/.message/.cause` outside a guard |
 

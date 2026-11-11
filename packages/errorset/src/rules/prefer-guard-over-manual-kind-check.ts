@@ -57,12 +57,13 @@ export default {
         if (object?.type !== "Identifier") return;
 
         // Only report when a guard already narrowed the variable to an error (conservative).
-        // The suggestion uses that guard's set (audit R4); isErr() doesn't identify a set.
+        // The suggestion uses that guard's set (audit R4), or the set of an `r.set === "Name"`
+        // check; isErr() and merged guards don't identify a set, so no suggestion then.
         const narrowing = createNarrowing(context, tracker);
         const call = narrowing.narrowingCall(node, narrowing.resolve(object));
         if (!call) return;
 
-        const guardName = guardSetName(call, tracker.guardNames());
+        const guardName = guardSetName(call, tracker);
         const varName = object.name;
         if (guardName) {
           const sourceCode = context.sourceCode;

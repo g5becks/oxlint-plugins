@@ -8,6 +8,7 @@
         "@biomejs/biome": "2.6.6",
         "@changesets/cli": "3.0.3",
         "@oxlint/plugins": "1.93.0",
+        "@takinprofit/errorset": "0.5.0",
         "@types/bun": "1.4.4",
         "@typescript-eslint/parser": "8.72.2",
         "@typescript-eslint/utils": "8.72.2",
@@ -179,6 +180,8 @@
     "@oxlint/plugins": ["@oxlint/plugins@1.93.0", "", {}, "sha512-bKWQI1g9jn8bWUZsvhbOLfgva576Fbp1KwoTNSUCMdT9tlTAvQS2JkifX1UrhPPdyN4GHvM20HhvIMqqU1yotQ=="],
 
     "@pnpm/deps.graph-sequencer": ["@pnpm/deps.graph-sequencer@1100.0.1", "", {}, "sha512-pOr5+q1fLYKwFN3LAJuGZEnfXDcQ73zqgDHMtGy+K+uIoUqyY+6MeDCWFwfu+4EFuq76I5EPFofoNAI+Bmmq4A=="],
+
+    "@takinprofit/errorset": ["@takinprofit/errorset@0.5.0", "", {}, "sha512-LYkb2sclZnmUG8jRlgmyDIe/FaDWPx5Gru4GjXnZLHyTiUZLXyUKaMwSlvUnH6Dl+NCi5r+Xqvp5ZwsynblrNg=="],
 
     "@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 

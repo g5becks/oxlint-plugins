@@ -34,7 +34,7 @@ export default {
     type: "suggestion" as const,
     docs: {
       description:
-        "Warn when `throw new Error(...)` is used inside a function that already uses errorset. Use an errorset kind instead.",
+        "Warn when `throw new Error(...)` or `return new Error(...)` is used inside a function that already uses errorset. Use an errorset kind instead.",
       recommended: "warn",
     },
     fixable: undefined,
@@ -55,6 +55,8 @@ export default {
     messages: {
       noNewError:
         "Avoid `throw new {{name}}(...)` inside a function that uses errorset. Return an errorset kind value instead.",
+      noReturnNewError:
+        "Avoid `return new {{name}}(...)` from a function that uses errorset. Return an errorset kind value instead.",
     },
   },
   defaultOptions: [{}] as Options,
@@ -67,12 +69,46 @@ export default {
     // Collect pending throw violations. We defer until Program:exit
     // because top-down traversal may visit ThrowStatement BEFORE the
     // TaggedTemplateExpression that proves the function uses errorset.
-    const pendingViolations: Array<{ node: any; enclosingFn: any; name: string }> = [];
+    const pendingViolations: Array<{ node: any; enclosingFn: any; name: string; returned: boolean }> = [];
 
     const getAllowedBuiltins = (): Set<string> => {
       const opts = context.options?.[0] as Options[0];
       const list = opts?.allowedBuiltins ?? [];
       return new Set(list);
+    };
+
+    const checkNewError = (node: any) => {
+      if (!tracker.hasErrorsetImport()) return;
+      // Only care about `throw new SomeError(...)` / `return new SomeError(...)`
+      const arg = node.argument;
+      if (arg?.type !== "NewExpression") return;
+      const callee = arg.callee;
+      if (callee?.type !== "Identifier") return;
+      if (!BUILT_IN_ERRORS.has(callee.name)) return;
+
+      // Check allowedBuiltins option
+      const allowed = getAllowedBuiltins();
+      if (allowed.has(callee.name)) return;
+
+      const fn = getEnclosingFunction(node);
+      if (!fn) return;
+
+      // Inside the target function of X.capture() / X.captureAsync(), or of the errorset >= 0.4
+      // helpers captureSync() / captureAsync()? Throwing there is the point: exempt.
+      const parentCall = fn.parent;
+      if (parentCall?.type === "CallExpression" && parentCall.arguments?.[0] === fn) {
+        const c = parentCall.callee;
+        if (c?.type === "MemberExpression" && CAPTURE_METHODS.has(c.property?.name)) return;
+        if (
+          c?.type === "Identifier" &&
+          (tracker.isErrorsetExport(c.name, "captureSync") || tracker.isErrorsetExport(c.name, "captureAsync"))
+        ) {
+          return;
+        }
+      }
+
+      // Defer reporting until Program:exit
+      pendingViolations.push({ node, enclosingFn: fn, name: callee.name, returned: node.type === "ReturnStatement" });
     };
 
     return {
@@ -110,43 +146,20 @@ export default {
       },
 
       ThrowStatement(node: any) {
-        if (!tracker.hasErrorsetImport()) return;
-        // Only care about `throw new SomeError(...)`
-        const arg = node.argument;
-        if (arg?.type !== "NewExpression") return;
-        const callee = arg.callee;
-        if (callee?.type !== "Identifier") return;
-        if (!BUILT_IN_ERRORS.has(callee.name)) return;
-
-        // Check allowedBuiltins option
-        const allowed = getAllowedBuiltins();
-        if (allowed.has(callee.name)) return;
-
-        const fn = getEnclosingFunction(node);
-        if (!fn) return;
-
-        // Is this inside a .capture() target function argument? If so, exempt.
-        const parentCall = fn.parent;
-        if (
-          parentCall?.type === "CallExpression" &&
-          parentCall.callee?.type === "MemberExpression" &&
-          CAPTURE_METHODS.has(parentCall.callee.property?.name)
-        ) {
-          // This function is the first arg of .capture() — exempt
-          if (parentCall.arguments?.[0] === fn) return;
-        }
-
-        // Defer reporting until Program:exit
-        pendingViolations.push({ node, enclosingFn: fn, name: callee.name });
+        checkNewError(node);
+      },
+      // `return new Error(...)` from a function that returns errorset values (audit R6).
+      ReturnStatement(node: any) {
+        checkNewError(node);
       },
 
       // Report deferred violations — only if enclosing fn has errorset creation
       "Program:exit"() {
-        for (const { node, enclosingFn, name } of pendingViolations) {
+        for (const { node, enclosingFn, name, returned } of pendingViolations) {
           if (errorsetFunctions.has(enclosingFn)) {
             context.report({
               node,
-              messageId: "noNewError",
+              messageId: returned ? "noReturnNewError" : "noNewError",
               data: { name },
             });
           }
