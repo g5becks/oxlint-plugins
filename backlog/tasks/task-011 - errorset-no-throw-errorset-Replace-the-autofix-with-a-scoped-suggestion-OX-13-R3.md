@@ -3,11 +3,11 @@ id: TASK-011
 title: >-
   errorset/no-throw-errorset: Replace the autofix with a scoped suggestion
   (OX-13, R3)
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T20:10:00Z'
+updated_date: '2026-11-11T20:14:00Z'
 labels:
   - errorset
   - bug
@@ -40,7 +40,7 @@ Audit R3 (Critical, latent). `no-throw-errorset` has `meta.fixable: "code"`; pla
 - [x] #2 meta.fixable is gone and hasSuggestions is true; the suggestion appears only for throws directly in the enclosing function body (tests for callback, try/finally, loop, switch and direct cases)
 - [x] #3 A CLI test shows oxlint --fix never modifies a throw
 - [x] #4 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -69,4 +69,12 @@ Audit R3 (Critical, latent). `no-throw-errorset` has `meta.fixable: "code"`; pla
 - `bun run gate` exit 0: lint (+ state check), unit 136/0, compat 34/0, repo 18/0, CLI 124/0, bench 4/0. Remaining test.failing marker: TASK-012 only.
 
 Consumer-visible change: yes (breaking: autofix removed, suggestion instead).
+
+Verified with scripts/ci-local.sh (bd273e5, PASS); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+no-throw-errorset no longer autofixes; it offers a return suggestion only for throws directly in a non-callback function body (unit tests for callback, try/finally, catch, loops, switch, direct). The R3 CLI probe passes: oxlint --fix never changes a throw. Breaking changeset (errorset minor). Verified with scripts/ci-local.sh (bd273e5, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
