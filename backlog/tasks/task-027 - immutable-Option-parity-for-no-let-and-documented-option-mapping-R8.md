@@ -1,11 +1,11 @@
 ---
 id: TASK-027
 title: 'immutable: Option parity for no-let and documented option mapping (R8)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T23:24:00Z'
+updated_date: '2026-11-11T23:29:00Z'
 labels:
   - immutable
 milestone: m-2
@@ -33,7 +33,7 @@ Add both options to `no-let` (schema, docs, tests, defaults matching upstream). 
 - [x] #1 no-let supports allowInFunctions and ignoreIdentifierPattern with schema and tests
 - [x] #2 The README maps the immutable rules' options to eslint-plugin-functional's
 - [x] #3 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -64,4 +64,6 @@ Add both options to `no-let` (schema, docs, tests, defaults matching upstream). 
 ## Decisions / follow-ups
 - Option semantics copied from upstream 10.0.1 source (isInFunctionBody via enclosing function bodies; shouldIgnorePattern every-match over declarator names).
 - Found: type-declaration-immutability `identifiers` is an ignore pattern under a misleading name (undocumented, untested). Documented as is; follow-up TASK-040 (m-4) to add ignoreIdentifierPattern / deprecate.
+
+Verified with scripts/ci-local.sh (dd26164, PASS); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
