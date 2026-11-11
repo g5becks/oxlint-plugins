@@ -483,3 +483,32 @@ describe("jsx-no-undef state isolation", () => {
     }
   });
 });
+
+// ── reactivity: per-file state (audit R10) ───────────
+describe("reactivity state isolation", () => {
+  // A imports Solid's createSignal; B declares its own createSignal. B's result must not
+  // depend on A having been linted first by the same worker.
+  const A = {
+    name: "a.tsx",
+    code: 'import { createSignal } from "solid-js";\nexport function A() {\n  const [n] = createSignal(0);\n  return <div>{n()}</div>;\n}\n',
+  };
+  const B = {
+    name: "b.tsx",
+    code: "function createSignal<T>(v: T): [() => T] {\n  return [() => v];\n}\nexport function B() {\n  const [count] = createSignal(0);\n  console.log(count());\n  return <div />;\n}\n",
+  };
+  const messages = (r: Awaited<ReturnType<typeof lintSequence>>, f: string) =>
+    (r.byFile.get(f) ?? []).map((d) => `${d.labels[0]?.span.line}: ${d.message}`);
+
+  test("linting B after A equals linting B alone", async () => {
+    const cfg = await writeOxlintConfig({ plugins: ["solidjs"], rules: { "solidjs/reactivity": "error" } });
+    try {
+      const alone = await lintSequence(cfg, [B]);
+      const afterA = await lintSequence(cfg, [A, B]);
+      expect(messages(alone, "b.tsx")).toEqual([]);
+      expect(messages(afterA, "b.tsx")).toEqual(messages(alone, "b.tsx"));
+      expect(messages(afterA, "a.tsx")).toEqual([]);
+    } finally {
+      await cleanupConfig(cfg);
+    }
+  });
+});

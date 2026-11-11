@@ -300,9 +300,15 @@ export default {
       });
     const warnShouldAssign = (node: any) => context.report({ node, messageId: "shouldAssign" });
 
-    const scopeStack = new ScopeStack();
-    const { currentScope, parentScope } = scopeStack;
-    const { matchImport, handleImportDeclaration } = trackImports();
+    // createOnce runs once per worker: the scope stack (including syncCallbacks and the
+    // signal/props lists) and the import tracker are recreated/cleared for every file in
+    // before() (audit R10). Upstream eslint-plugin-solid creates them per file in create().
+    let scopeStack = new ScopeStack();
+    let currentScope = scopeStack.currentScope;
+    let parentScope = scopeStack.parentScope;
+    const imports = trackImports();
+    const matchImport = imports.matchImport;
+    const handleImportDeclaration = imports.handleImportDeclaration;
 
     const markPropsOnCondition = (node: any, cb: (props: any) => boolean) => {
       if (
@@ -859,6 +865,12 @@ export default {
 
     // ---- Visitors ----
     return {
+      before() {
+        scopeStack = new ScopeStack();
+        currentScope = scopeStack.currentScope;
+        parentScope = scopeStack.parentScope;
+        imports.clear();
+      },
       ImportDeclaration: handleImportDeclaration,
       JSXExpressionContainer(node: any) {
         checkForTrackedScopes(node);

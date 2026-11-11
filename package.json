@@ -14,7 +14,7 @@
     "test:cli": "bun test ./tests/cli/*.cli.test.ts",
     "test:bench": "bun test ./tests/bench/*.test.ts",
     "check": "node node_modules/typescript-7/bin/tsc -b --pretty false",
-    "lint": "oxlint --deny-warnings packages scripts tests",
+    "lint": "oxlint --deny-warnings packages scripts tests && bun scripts/check-createonce-state.ts",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "test:repo": "bun test ./tests/repo/*.test.ts",
@@ -26,7 +26,8 @@
     "test:unit:ts-no-assert": "node --test \"packages/ts-no-assert/tests/*.test.ts\"",
     "test:unit:query": "node --test \"packages/query/tests/*.test.ts\"",
     "test:unit:router": "node --test \"packages/router/tests/*.test.ts\"",
-    "test:unit:solidjs": "node --test \"packages/solidjs/tests/*.test.ts\""
+    "test:unit:solidjs": "node --test \"packages/solidjs/tests/*.test.ts\"",
+    "lint:state": "bun scripts/check-createonce-state.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",

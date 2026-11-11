@@ -131,4 +131,29 @@ describe("ESLint 9 flat config + typescript-eslint parser", () => {
     );
     expect(clean).toHaveLength(0);
   });
+
+  // Audit R10: reactivity's import tracker lived in the createOnce closure, so a Solid
+  // import in one file made a same-named local function in a later file count as Solid's.
+  test("solidjs/reactivity: a file's result does not depend on a previously linted file", () => {
+    const linter = new Linter({ configType: "flat" });
+    const config = [
+      {
+        files: ["**/*.tsx"],
+        plugins: { solidjs: plugins.solidjs as never },
+        languageOptions: { parser: tsParser, parserOptions: { ecmaFeatures: { jsx: true } } },
+        rules: { "solidjs/reactivity": "error" as const },
+      },
+    ];
+    const b =
+      "function createSignal<T>(v: T): [() => T] { return [() => v]; }\nexport function B() { const [count] = createSignal(0); console.log(count()); return <div />; }";
+    const alone = linter.verify(b, config, "b.tsx");
+    linter.verify(
+      'import { createSignal } from "solid-js";\nexport function A() { const [n] = createSignal(0); return <div>{n()}</div>; }',
+      config,
+      "a.tsx",
+    );
+    const afterA = linter.verify(b, config, "b.tsx");
+    expect(alone).toHaveLength(0);
+    expect(afterA).toEqual(alone);
+  });
 });

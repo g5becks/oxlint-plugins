@@ -164,6 +164,11 @@ export default {
     };
 
     return {
+      // Balanced push/pop per file; reset anyway so a file that aborts mid-traversal
+      // can't leave entries for the next file (createOnce runs once per worker).
+      before() {
+        functionStack.length = 0;
+      },
       FunctionDeclaration: onFunctionEnter,
       FunctionExpression: onFunctionEnter,
       ArrowFunctionExpression: onFunctionEnter,

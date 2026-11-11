@@ -23,7 +23,7 @@ version), TypeScript 5.9.3 for typescript-eslint plus TypeScript 7 (`typescript-
 |---|---|
 | `bun run build` | Bundle each plugin to `packages/<name>/dist/index.js` (`bun scripts/build.ts [name...]`) |
 | `bun run check` | `tsc -b` on TypeScript 7 (all packages, tests and scripts) |
-| `bun run lint` / `bun run format` / `bun run format:check` | oxlint repo lint; Biome formatting |
+| `bun run lint` / `bun run format` / `bun run format:check` | oxlint repo lint plus `scripts/check-createonce-state.ts` (closure state in `createOnce` must be reset in `before()`); Biome formatting |
 | `bun run test:unit` | Unit tests per rule (`packages/*/tests`) in oxlint's `RuleTester` under `node --test`; `bun run test:unit:<name>` for one package |
 | `bun run test:compat` | ESLint compatibility and integration tests (`tests/integration`, `tests/eslint-compat`) |
 | `bun run test:cli` | Real-oxlint suite: bundles each plugin into a temp dir and lints fixtures (`tests/cli`) |
