@@ -11,7 +11,7 @@ export default {
   defaultOptions: [],
   createOnce(context: any) {
     const markUsed = (name: string, node: any) => {
-      context.sourceCode?.markVariableAsUsed?.(name, node);
+      context.sourceCode.markVariableAsUsed(name, node);
     };
 
     return {

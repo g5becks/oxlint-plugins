@@ -175,7 +175,7 @@ function isValidReactComponentOrHookName(identifier: any): boolean {
 }
 
 function getFunctionAncestor(sourceCode: any, node: any): any | undefined {
-  for (const ancestor of sourceCode.getAncestors?.(node) ?? []) {
+  for (const ancestor of sourceCode.getAncestors(node)) {
     if (["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(ancestor.type)) {
       return ancestor;
     }
@@ -195,8 +195,8 @@ function isDeclaredInNode(params: { functionNode: any; reference: any; scopeMana
 
 function getReferencedExpressionByIdentifier(params: { node: any; context: any }): any | null {
   const { node, context } = params;
-  const sourceCode = context.sourceCode ?? context.getSourceCode();
-  const scope = sourceCode.getScope?.(node) ?? context.getScope?.();
+  const sourceCode = context.sourceCode;
+  const scope = sourceCode.getScope(node);
 
   const resolvedNode = scope?.references?.find((ref: any) => ref.identifier === node)?.resolved?.defs?.[0]?.node;
 

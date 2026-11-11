@@ -44,7 +44,7 @@ function findInScope(node: any, scope: any, predicate: (n: any) => boolean): any
 }
 
 function findVariable(context: any, node: any): any {
-  const scope = context.sourceCode?.getScope?.(node);
+  const scope = context.sourceCode.getScope(node);
   if (!scope) return null;
   // Walk up scopes to find variable
   let s = scope;

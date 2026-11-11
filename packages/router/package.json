@@ -34,7 +34,16 @@
     "tanstack-router",
     "lint"
   ],
+  "peerDependencies": {
+    "oxlint": ">=1.70.0 <2",
+    "eslint": ">=9"
+  },
+  "peerDependenciesMeta": {
+    "eslint": {
+      "optional": true
+    }
+  },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

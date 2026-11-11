@@ -150,7 +150,7 @@ export default {
           node.value?.type === "JSXExpressionContainer" &&
           node.value.expression.type !== "JSXEmptyExpression" &&
           node.value.expression.type !== "ArrayExpression" &&
-          (staticValue = getStaticValue(node.value.expression, context.sourceCode?.getScope?.(node))) !== null &&
+          (staticValue = getStaticValue(node.value.expression, context.sourceCode.getScope(node))) !== null &&
           (typeof staticValue.value === "string" || typeof staticValue.value === "number")
         ) {
           context.report({

@@ -28,26 +28,68 @@
     "packages/errorset": {
       "name": "oxlint-plugin-errorset",
       "version": "0.1.1",
+      "peerDependencies": {
+        "eslint": ">=9",
+        "oxlint": ">=1.70.0 <2",
+      },
+      "optionalPeers": [
+        "eslint",
+      ],
     },
     "packages/immutable": {
       "name": "oxlint-plugin-immutable",
       "version": "0.1.1",
+      "peerDependencies": {
+        "eslint": ">=9",
+        "oxlint": ">=1.70.0 <2",
+      },
+      "optionalPeers": [
+        "eslint",
+      ],
     },
     "packages/query": {
       "name": "oxlint-plugin-query",
       "version": "0.1.1",
+      "peerDependencies": {
+        "eslint": ">=9",
+        "oxlint": ">=1.70.0 <2",
+      },
+      "optionalPeers": [
+        "eslint",
+      ],
     },
     "packages/router": {
       "name": "oxlint-plugin-router",
       "version": "0.1.1",
+      "peerDependencies": {
+        "eslint": ">=9",
+        "oxlint": ">=1.70.0 <2",
+      },
+      "optionalPeers": [
+        "eslint",
+      ],
     },
     "packages/solidjs": {
       "name": "oxlint-plugin-solidjs",
       "version": "0.1.1",
+      "peerDependencies": {
+        "eslint": ">=9",
+        "oxlint": ">=1.70.0 <2",
+      },
+      "optionalPeers": [
+        "eslint",
+      ],
     },
     "packages/ts-no-assert": {
       "name": "oxlint-plugin-ts-no-assert",
       "version": "0.1.2",
+      "peerDependencies": {
+        "eslint": ">=9",
+        "oxlint": ">=1.70.0 <2",
+      },
+      "optionalPeers": [
+        "eslint",
+      ],
     },
   },
   "packages": {

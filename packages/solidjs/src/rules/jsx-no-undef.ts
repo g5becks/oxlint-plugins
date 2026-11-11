@@ -97,7 +97,7 @@ export default {
     const missingComponentsSet = new Set<string>();
 
     function checkIdentifierInJSX(node: any, opts: { isComponent?: boolean; isCustomDirective?: boolean } = {}) {
-      let scope = context.sourceCode?.getScope?.(node);
+      let scope = context.sourceCode.getScope(node);
       if (!scope) return;
       const sourceCode = context.sourceCode;
       const sourceType = sourceCode.ast.sourceType;

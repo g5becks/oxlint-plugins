@@ -529,7 +529,7 @@ export default {
         } else if (style.type === "ObjectExpression") {
           const properties = style.properties.filter((p: any) => p.type === "Property");
           for (const prop of properties) {
-            const scope = context.sourceCode?.getScope?.(prop);
+            const scope = context.sourceCode.getScope(prop);
             const name: string | null = getPropertyName(prop, scope);
             if (name && !name.startsWith("--") && !CSS_PROPERTIES.has(name)) {
               const kebabName: string = toKebabCase(name);

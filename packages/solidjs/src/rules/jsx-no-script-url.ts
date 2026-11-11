@@ -38,7 +38,7 @@ export default {
       JSXAttribute(node: any) {
         if (node.name?.type === "JSXIdentifier" && node.value) {
           const valueNode = node.value.type === "JSXExpressionContainer" ? node.value.expression : node.value;
-          const scope = context.sourceCode?.getScope?.(node);
+          const scope = context.sourceCode.getScope(node);
           const link = getStaticStringValue(valueNode, scope);
           if (typeof link === "string" && isJavaScriptProtocol.test(link)) {
             context.report({

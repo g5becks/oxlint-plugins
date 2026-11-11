@@ -136,7 +136,7 @@ export default {
           return;
         }
 
-        const scopeManager = context.sourceCode?.scopeManager;
+        const scopeManager = context.sourceCode.scopeManager;
         const queryKey = ASTUtils.findPropertyWithIdentifierKey(node.parent.properties, QUERY_KEY);
         const queryFn = ASTUtils.findPropertyWithIdentifierKey(node.parent.properties, QUERY_FN);
 

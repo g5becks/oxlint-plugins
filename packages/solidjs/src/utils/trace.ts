@@ -5,8 +5,8 @@ export function trace(node: any, context: any): any {
   while (current?.type === "Identifier" && !visited.has(current)) {
     visited.add(current);
 
-    const sourceCode = context.sourceCode ?? context.getSourceCode?.();
-    const scope = sourceCode?.getScope?.(current) ?? context.getScope?.();
+    const sourceCode = context.sourceCode;
+    const scope = sourceCode.getScope(current);
 
     const variable = scope?.set?.get?.(current.name);
     const definition = variable?.defs?.[0];

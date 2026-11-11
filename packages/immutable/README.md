@@ -6,8 +6,30 @@ Immutability and functional-style lint rules ported from [eslint-plugin-function
 
 ## Requirements
 
-- Oxlint `>= 1.0.0` (requires `jsPlugins` support)
-- Node.js `>= 18`
+- Oxlint `>= 1.70.0 < 2` (tested with 1.70.0 and the pinned version, 1.93.0). Oxlint JS plugins are
+  alpha and outside oxlint's semver, so other versions may break; earlier versions use a different
+  rule-name scheme (see below).
+- Node.js `^20.19.0 || >= 22.12.0` (oxlint's own requirement)
+- ESLint `>= 9` (optional, only for the ESLint flat-config path)
+
+## Rule names and suppression comments
+
+On oxlint >= 1.70 the plugin's rules are named `immutable/<rule>` (oxlint strips the
+`oxlint-plugin-` prefix). Use that short form everywhere:
+
+```jsonc
+// .oxlintrc.json
+{ "rules": { "immutable/<rule>": "error" } }
+```
+
+```ts
+// oxlint-disable-next-line immutable/<rule>
+```
+
+The long form `oxlint-plugin-immutable/<rule>` still works as a config key, but **disable comments
+with the long form are ignored** on oxlint >= 1.70, and the short form doesn't exist before 1.70.
+When upgrading from oxlint <= 1.69, rename suppressions, config keys and the oxlint version
+together. Diagnostics are printed as `immutable(<rule>)`.
 
 ## Installation
 
