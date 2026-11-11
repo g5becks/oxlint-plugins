@@ -1,11 +1,11 @@
 ---
 id: TASK-015
 title: 'errorset/no-catch-errorset: Report only guards on the caught value (OX-17, R5)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T20:38:00Z'
+updated_date: '2026-11-11T20:42:00Z'
 labels:
   - errorset
   - bug
@@ -34,7 +34,7 @@ Report only when the guard's argument resolves (by scope) to the catch parameter
 - [x] #1 The audit Appendix A probe for this finding is committed first as a failing oxlint RuleTester (or CLI) test, then passes; both runs are recorded in the notes
 - [x] #2 A guard on a returned value inside catch is not reported; guards on the catch parameter and on a variable assigned from it are reported (tests)
 - [x] #3 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -65,4 +65,12 @@ packages/errorset/tests/no-catch-errorset-scope.test.ts (5 valid, 8 invalid): Ap
 - Changeset .changeset/errorset-no-catch-caught-value.md (errorset patch).
 
 Consumer-visible change: yes.
+
+Verified with scripts/ci-local.sh (d943d09, PASS); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+no-catch-errorset reports guards, instanceof and .kind only on the caught value (catch param, destructured bindings, direct assignments; scope-resolved); the Appendix A fallback-in-catch probe is no longer reported. Changeset: errorset patch. Verified with scripts/ci-local.sh (d943d09, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
