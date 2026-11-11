@@ -59,16 +59,19 @@ export interface Narrowing {
   narrowingCall(node: any, key: VariableKey): any | null;
 }
 
+/** The scope Variable an identifier refers to (or a name key for unresolved globals). */
+export function resolveVariable(context: any, id: any): VariableKey {
+  let scope = context.sourceCode.getScope(id);
+  while (scope) {
+    const variable = scope.set?.get(id.name);
+    if (variable) return variable;
+    scope = scope.upper;
+  }
+  return `global:${id.name}`;
+}
+
 export function createNarrowing(context: any, tracker: ErrorsetImportTracker): Narrowing {
-  const resolve = (id: any): VariableKey => {
-    let scope = context.sourceCode.getScope(id);
-    while (scope) {
-      const variable = scope.set?.get(id.name);
-      if (variable) return variable;
-      scope = scope.upper;
-    }
-    return `global:${id.name}`;
-  };
+  const resolve = (id: any): VariableKey => resolveVariable(context, id);
 
   const isGuardLike = (call: any): boolean =>
     isGuardCall(call, tracker.guardNames()) || isIsErrCall(call, (name: string) => tracker.isIsErrImport(name));

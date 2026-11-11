@@ -159,11 +159,16 @@ const getUser = (id: string) => UserError.invalid`Bad input`
 
 **Severity:** `error`
 
-Errorset values are returned by functions — they are never thrown, so they can never arrive in a `catch` clause. Using errorset guards (`isErr`, a set-level guard, or `instanceof`) inside `catch` will silently never match.
+Errorset values are returned by functions — they are never thrown, so they can never arrive in a `catch` clause. Applying an errorset guard (`isErr`, a set-level or kind-level guard, or `instanceof`) to the **caught value** will silently never match.
 
-Also flags `.kind` access on the catch parameter, since `e.kind` implies the thrown error is an errorset — which is impossible.
+The rule only checks the caught value, resolved through scope analysis: the catch parameter, identifiers bound by a destructured catch parameter (`catch ({ cause })`), and variables assigned directly from them (`const err = e`). Guards on other values in a catch block, such as the result of a fallback call, are fine. It also flags `.kind` access on the caught value, since `e.kind` implies the thrown error is an errorset — which is impossible.
 
-> **Note:** Errorset guards used inside a nested function _within_ a catch block are exempted (they likely refer to a different value, not the catch parameter).
+```ts
+try { run() } catch {
+  const r = fallback()
+  if (UserError(r)) return r   // ✅ — r is a returned value, not the caught one
+}
+```
 
 **❌ Incorrect**
 
