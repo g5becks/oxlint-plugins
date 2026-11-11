@@ -1,11 +1,11 @@
 ---
 id: TASK-020
 title: 'Release prep: 0.2.0 of all six packages (maintainer publishes)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T21:21:00Z'
+updated_date: '2026-11-11T21:27:00Z'
 labels:
   - release
 milestone: m-1
@@ -34,10 +34,10 @@ Release prep for 0.2.0 of all six packages, together (audit section 6). Breaking
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 All other Phase 0 and Phase 1 tasks are Done; no test.failing marker remains
-- [ ] #2 All six packages are at 0.2.0 with changelog entries; the release commit passes ci-local on the commit and the branch
-- [ ] #3 Six tarballs with SHA512SUMS and RELEASE_NOTES.md exist under /Users/takinprofit/Dev/oxlint-plugins-release/0.2.0/, each verified by the pack job on oxlint 1.70.0 and the pinned version
-- [ ] #4 The release PR is merged without squashing; publish commands, SHA-512 values and tag details are in the notes
+- [x] #1 All other Phase 0 and Phase 1 tasks are Done; no test.failing marker remains
+- [x] #2 All six packages are at 0.2.0 with changelog entries; the release commit passes ci-local on the commit and the branch
+- [x] #3 Six tarballs with SHA512SUMS and RELEASE_NOTES.md exist under /Users/takinprofit/Dev/oxlint-plugins-release/0.2.0/, each verified by the pack job on oxlint 1.70.0 and the pinned version
+- [x] #4 The release PR is merged without squashing; publish commands, SHA-512 values and tag details are in the notes
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -76,4 +76,51 @@ Release prep for 0.2.0 of all six packages, together (audit section 6). Breaking
 - .../oxlint-plugin-solidjs-0.2.0.tgz 30192 B 449aa3f0df329d9a203ce934e00a909a33acefb3d8a86d914ae5f918543b537bd23aa7d781e1a7f7b9d46005367bc580cd9dff01963e6470964e9fa69832408e
 - .../oxlint-plugin-ts-no-assert-0.2.0.tgz 6014 B ede27e9b1ed1312bdb1ad5088070615e3478c64953440d68d49d8ec7f1f863b85bb2eec90c9e261deae16b6fa16fa288a8c68bf27c5819894e7d7cf718ad3df9
 - RELEASE_NOTES.md links https://github.com/g5becks/oxlint-plugins/blob/oxlint-plugin-errorset%400.2.0/docs/migration-0.2.md; each NOTES-<tag>.md links the guide at its own tag.
+
+## Merge (2026-11-11)
+- ci-local on the branch head f59c0f5 (release/0.2.0): RESULT: PASS (13 legs).
+- `git push --no-follow-tags -u origin release/0.2.0` (no tags on the remote afterwards: `git ls-remote --tags origin` -> 0).
+- PR: https://github.com/g5becks/oxlint-plugins/pull/1 "release: 0.2.0" (body: changelog sections + TASK-001..020); ci-local tables for de302ff and f59c0f5 posted as https://github.com/g5becks/oxlint-plugins/pull/1#issuecomment-6807411193 . GitHub mergeStateStatus UNSTABLE = the billing-locked Actions checks (ignored per hand-off).
+- `gh pr merge 1 --merge` -> merge commit 578b2aa4500cedb33d1b7a2b0919234e2639a479 (2026-11-11T21:26:38Z). `git switch main && git pull --ff-only`; every local tag is an ancestor of main (merge-base --is-ancestor for all 13).
+
+## Local tags (NOT pushed)
+  - oxlint-plugin-errorset@0.1.0: tag object 65736f53f667462fc675641438e48d270fc855ce, commit d4bcb7adaddb6b8f3c1a43b61405479a7006999f
+  - oxlint-plugin-errorset@0.1.1: tag object ff43b8103dfe902c4085eca1a6a7131309b4262a, commit f1287addb0493ac5d976ce52c11d28fb1015b7ba
+  - oxlint-plugin-errorset@0.2.0: tag object 9c4345a65ce2e11a56041d35b639b912e4c4c5c2, commit de302ffef948ac38ba85be79ceb1bf3e656ee17a
+  - oxlint-plugin-immutable@0.1.1: tag object 3bede24f46b46be0ec60230123d3000207846c3c, commit d4bcb7adaddb6b8f3c1a43b61405479a7006999f
+  - oxlint-plugin-immutable@0.2.0: tag object d791a69cb559bc00380f3bd795a3ef7eb16b2b54, commit de302ffef948ac38ba85be79ceb1bf3e656ee17a
+  - oxlint-plugin-query@0.1.1: tag object 3148957409f627c8cef79868b743bc5c9d8d5e06, commit d4bcb7adaddb6b8f3c1a43b61405479a7006999f
+  - oxlint-plugin-query@0.2.0: tag object 56c884f9f0b97e9f23479079167771d0778def99, commit de302ffef948ac38ba85be79ceb1bf3e656ee17a
+  - oxlint-plugin-router@0.1.1: tag object 18877f5d5d5fa3ec9689293d3b30383d80ff21f7, commit d4bcb7adaddb6b8f3c1a43b61405479a7006999f
+  - oxlint-plugin-router@0.2.0: tag object 940c0f2db24b8a4327d8c76bdcb2d6263e8781a2, commit de302ffef948ac38ba85be79ceb1bf3e656ee17a
+  - oxlint-plugin-solidjs@0.1.1: tag object ade546cbb48c31f7afffdca487e22540f9f12105, commit d4bcb7adaddb6b8f3c1a43b61405479a7006999f
+  - oxlint-plugin-solidjs@0.2.0: tag object 33db905ae2279307bda0a4f8d62289e71f1871d7, commit de302ffef948ac38ba85be79ceb1bf3e656ee17a
+  - oxlint-plugin-ts-no-assert@0.1.2: tag object a7fddc94e1ec3f2d3c45e2a3b7b33146c5fb87d7, commit d4bcb7adaddb6b8f3c1a43b61405479a7006999f
+  - oxlint-plugin-ts-no-assert@0.2.0: tag object 846bae5a33cafdb0c5efab9e627efe3dba0669d5, commit de302ffef948ac38ba85be79ceb1bf3e656ee17a
+
+## Maintainer commands (run only when publishing)
+```bash
+cd /Users/takinprofit/Dev/oxlint-plugins && git push origin oxlint-plugin-errorset@0.1.0 oxlint-plugin-errorset@0.1.1 oxlint-plugin-immutable@0.1.1 oxlint-plugin-ts-no-assert@0.1.2 oxlint-plugin-query@0.1.1 oxlint-plugin-router@0.1.1 oxlint-plugin-solidjs@0.1.1 oxlint-plugin-errorset@0.2.0 oxlint-plugin-immutable@0.2.0 oxlint-plugin-ts-no-assert@0.2.0 oxlint-plugin-query@0.2.0 oxlint-plugin-router@0.2.0 oxlint-plugin-solidjs@0.2.0
+cd /Users/takinprofit/Dev/oxlint-plugins-release/0.2.0
+shasum -a 512 -c SHA512SUMS
+npm publish ./oxlint-plugin-errorset-0.2.0.tgz --access public
+npm publish ./oxlint-plugin-immutable-0.2.0.tgz --access public
+npm publish ./oxlint-plugin-ts-no-assert-0.2.0.tgz --access public
+npm publish ./oxlint-plugin-query-0.2.0.tgz --access public
+npm publish ./oxlint-plugin-router-0.2.0.tgz --access public
+npm publish ./oxlint-plugin-solidjs-0.2.0.tgz --access public
+gh release create oxlint-plugin-errorset@0.2.0 --verify-tag --title oxlint-plugin-errorset@0.2.0 --notes-file NOTES-oxlint-plugin-errorset@0.2.0.md
+gh release create oxlint-plugin-immutable@0.2.0 --verify-tag --title oxlint-plugin-immutable@0.2.0 --notes-file NOTES-oxlint-plugin-immutable@0.2.0.md
+gh release create oxlint-plugin-ts-no-assert@0.2.0 --verify-tag --title oxlint-plugin-ts-no-assert@0.2.0 --notes-file NOTES-oxlint-plugin-ts-no-assert@0.2.0.md
+gh release create oxlint-plugin-query@0.2.0 --verify-tag --title oxlint-plugin-query@0.2.0 --notes-file NOTES-oxlint-plugin-query@0.2.0.md
+gh release create oxlint-plugin-router@0.2.0 --verify-tag --title oxlint-plugin-router@0.2.0 --notes-file NOTES-oxlint-plugin-router@0.2.0.md
+gh release create oxlint-plugin-solidjs@0.2.0 --verify-tag --title oxlint-plugin-solidjs@0.2.0 --notes-file NOTES-oxlint-plugin-solidjs@0.2.0.md
+```
+Note: once Actions works, pushing a tag triggers release.yml (trusted publishing), which skips versions already on npm; pushing the 0.1.x tags is therefore harmless.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+0.2.0 of all six packages prepared and merged (PR #1, merge 578b2aa): release commit de302ff with local tags, ci-local PASS on the release commit and the branch, six tarballs + SHA512SUMS + RELEASE_NOTES.md in oxlint-plugins-release/0.2.0 verified on oxlint 1.70.0 and 1.93.0 (incl. presets). Tags not pushed; nothing published; maintainer commands in notes.
+<!-- SECTION:FINAL_SUMMARY:END -->
