@@ -63,12 +63,16 @@ describe("known bugs (audit probes)", () => {
     expect(reportedLines(diags)).toEqual(await markedLines(file));
   });
 
-  // Audit R3: the no-throw-errorset autofix rewrites `throw` to `return` inside
-  // callbacks and try/finally, which changes runtime behavior.
-  test.failing("TASK-011: --fix never rewrites throw statements", async () => {
-    const file = ruleFixture(PLUGIN, "unsafe-fix");
-    const original = await Bun.file(file).text();
-    const result = await runOxlintWithFix({ configPath, files: [file] });
-    expect(result.fixedFiles["unsafe-fix.ts"]).toBe(original);
-  });
+  // Audit R3: no-throw-errorset used to autofix `throw` -> `return`, which changes runtime
+  // behavior inside callbacks and try/finally. It now only offers a suggestion, so
+  // `oxlint --fix` must leave every throw untouched (callbacks, try/finally and direct throws).
+  for (const name of ["unsafe-fix", "no-throw-errorset"]) {
+    test(`--fix never rewrites throw statements: ${name}.ts (audit R3)`, async () => {
+      const file = ruleFixture(PLUGIN, name);
+      const original = await Bun.file(file).text();
+      const result = await runOxlintWithFix({ configPath, files: [file] });
+      expect(result.diagnostics.some((d) => d.code === ruleCode(PLUGIN, "no-throw-errorset"))).toBe(true);
+      expect(result.fixedFiles[`${name}.ts`]).toBe(original);
+    });
+  }
 });

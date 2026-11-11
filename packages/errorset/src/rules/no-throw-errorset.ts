@@ -7,12 +7,7 @@
  * ✅ return UserError.not_found`User ${"id"} not found`({ id })
  */
 import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
-import {
-  getEnclosingFunction,
-  getErrorsetTag,
-  getMemberObjectName,
-  CAPTURE_METHODS,
-} from "../utils/pattern-helpers.ts";
+import { getErrorsetTag, getMemberObjectName, CAPTURE_METHODS } from "../utils/pattern-helpers.ts";
 
 /**
  * Returns true when the ThrowStatement's argument is an errorset creation expression
@@ -66,6 +61,31 @@ function isInsideCaptureTarget(node: any, guardNames: Set<string>): boolean {
   return false;
 }
 
+const FUNCTION_TYPES = new Set(["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"]);
+/** Statements a throw may sit in while still being "directly" in the function body. */
+const TRANSPARENT = new Set(["BlockStatement", "IfStatement"]);
+
+/**
+ * Whether rewriting `throw` to `return` keeps the function's control flow (audit R3):
+ * the throw must be directly in the body of its enclosing function (only blocks and
+ * `if`/`else` in between: no loop, `switch`, `try`/`catch`/`finally` or label), and that
+ * function must not be a callback passed to a call (where `return` would hand the error
+ * value to the caller, e.g. into the array built by `.map`).
+ */
+function isDirectThrow(node: any): boolean {
+  let current = node.parent;
+  while (current && !FUNCTION_TYPES.has(current.type)) {
+    if (!TRANSPARENT.has(current.type)) return false;
+    current = current.parent;
+  }
+  if (!current) return false;
+  const parent = current.parent;
+  if ((parent?.type === "CallExpression" || parent?.type === "NewExpression") && parent.callee !== current) {
+    return false;
+  }
+  return true;
+}
+
 export default {
   meta: {
     type: "problem" as const,
@@ -74,11 +94,12 @@ export default {
         "Disallow throwing errorset values. Errorset values are return values, not exceptions. Use `return` instead of `throw`.",
       recommended: "error",
     },
-    fixable: "code" as const,
+    hasSuggestions: true,
     schema: [],
     messages: {
       noThrow: "Do not throw errorset values. Return them instead: return {{name}}.{{kind}}(...)",
       noThrowGeneric: "Do not throw errorset values. Errorset values are returned, not thrown.",
+      suggestReturn: "Return the errorset value instead of throwing it.",
     },
   },
   defaultOptions: [],
@@ -123,25 +144,26 @@ export default {
           kindName = argument.tag.property.name;
         }
 
-        const enclosingFn = getEnclosingFunction(node);
-        const canAutoFix = enclosingFn !== null;
-
+        // Never an autofix: `oxlint --fix` must not change control flow. A suggestion is
+        // offered only where `return` is equivalent for the caller (audit R3).
         context.report({
           node,
           messageId: "noThrow",
           data: { name: objName, kind: kindName },
-          fix: canAutoFix
-            ? (fixer: any) => {
-                const sourceCode = context.sourceCode;
-                const argText = sourceCode.getText(node.argument);
-                // Preserve the trailing semicolon if present in the source.
-                // The ThrowStatement node range may not include the semicolon
-                // (depends on the parser), so we check the character after the node.
-                const nodeText = sourceCode.getText(node);
-                const trailingSemi = nodeText.endsWith(";") ? ";" : "";
-                return fixer.replaceText(node, `return ${argText}${trailingSemi}`);
-              }
-            : undefined,
+          suggest: isDirectThrow(node)
+            ? [
+                {
+                  messageId: "suggestReturn",
+                  fix: (fixer: any) => {
+                    const sourceCode = context.sourceCode;
+                    const argText = sourceCode.getText(node.argument);
+                    // Preserve the trailing semicolon if the ThrowStatement range includes one.
+                    const trailingSemi = sourceCode.getText(node).endsWith(";") ? ";" : "";
+                    return fixer.replaceText(node, `return ${argText}${trailingSemi}`);
+                  },
+                },
+              ]
+            : [],
         });
       },
     };

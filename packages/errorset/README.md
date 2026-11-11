@@ -82,13 +82,13 @@ export default [
 
 ## Rules
 
-### `no-throw-errorset` 🔧
+### `no-throw-errorset` 💡
 
 **Severity:** `error`
 
 Errorset values are **returned**, not thrown. Using `throw` with an errorset creation expression is always a bug — the value is discarded instead of being propagated to the caller.
 
-This rule auto-fixes `throw` → `return`.
+This rule offers a **suggestion** (not an auto-fix) to replace `throw` with `return`, and only where that keeps control flow intact: the `throw` must sit directly in the body of a function that isn't a callback (only blocks and `if`/`else` in between). Inside a callback such as `.map(...)`, a loop, a `switch` or `try`/`catch`/`finally`, `return` would change behavior (for example, put the error value into the mapped array), so no suggestion is offered there and the code must be restructured by hand. `oxlint --fix` never changes a `throw`.
 
 **❌ Incorrect**
 
@@ -262,7 +262,7 @@ if (UserError.not_found(result)) {
 
 | Rule | Default | Fixable | Description |
 |---|---|---|---|
-| `no-throw-errorset` | error | 🔧 auto-fix | `throw` with an errorset value → `return` |
+| `no-throw-errorset` | error | 💡 suggestion | `throw` with an errorset value → `return` (suggested only where safe) |
 | `no-catch-errorset` | error | — | Errorset guards inside `catch` blocks |
 | `no-new-error-in-errorset-fn` | warn | — | `throw new Error()` in errorset functions |
 | `prefer-guard-over-manual-kind-check` | warn | 💡 suggestion | `.kind ===` string check inside guard block |
