@@ -1,11 +1,11 @@
 ---
 id: TASK-006
 title: 'CI: Workflow with an oxlint version matrix plus scripts/ci-local.sh (OX-05)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T17:45:00Z'
+updated_date: '2026-11-11T17:48:00Z'
 labels:
   - ci
 milestone: m-0
@@ -40,9 +40,9 @@ Audit T6 and U4. There is no CI. JS plugins are explicitly outside oxlint's semv
 <!-- AC:BEGIN -->
 - [x] #1 ci.yml has check, unit, cli (oxlint 1.70.0, pinned, latest), eslint-compat and pack jobs plus a weekly schedule; actions are SHA-pinned; actionlint passes
 - [x] #2 The latest-oxlint leg is advisory on push and PR and blocking on the schedule
-- [ ] #3 scripts/ci-local.sh mirrors every job, exits non-zero on failure, writes logs, and prints RESULT: PASS for HEAD
-- [ ] #4 Linux legs run on Node plus Bun (versions recorded in the log)
-- [ ] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #3 scripts/ci-local.sh mirrors every job, exits non-zero on failure, writes logs, and prints RESULT: PASS for HEAD
+- [x] #4 Linux legs run on Node plus Bun (versions recorded in the log)
+- [x] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -87,4 +87,20 @@ After the maintainer enlarges the VM: `bash scripts/ci-local.sh HEAD` (expect PA
 - Root cause: oxlint's JS-plugin allocator pool (oxc_allocator FixedSizeAllocatorPool) reserves a large block of address space per thread (one 4 GiB allocation aligned on 4 GiB). Linux heuristic overcommit (vm.overcommit_memory=0) refuses it on a 6 GiB VM without swap, so oxlint aborts at fixed_size.rs:112 (exit 134). It is an address-space reservation, not real memory use: the maintainer measured ~84 MB peak RSS for the same run on the macOS host.
 - Fix (maintainer, 2026-11-11): `vm.overcommit_memory=1` in the Colima VM, applied live (`colima ssh -- sudo sysctl -w vm.overcommit_memory=1`) and persisted via a `provision` step in ~/.config/colima/default/colima.yaml. Colima not restarted; size unchanged (4 CPUs, 6 GiB). Re-verified: /proc/sys/vm/overcommit_memory = 1 in our CI image and the no-op-plugin repro exits 0 on oxlint 1.93.0.
 - scripts/ci-local.sh now has a preflight: after building the image it runs a one-rule no-op JS plugin through the pinned oxlint in the CI image (log: preflight.log, which also records vm.overcommit_memory); on failure it prints the fix (sysctl command + colima.yaml provision step) and exits with RESULT: FAIL instead of failing every leg. The requirement is documented in the header comment of ci-local.sh (CONTRIBUTING.md is written in TASK-007).
+
+## Verification (06c686a)
+Verified with scripts/ci-local.sh (06c686a, PASS); GitHub Actions unavailable (billing lock).
+- preflight: vm.overcommit_memory=1; no-op plugin on oxlint 1.93.0 -> "Found 0 warnings and 0 errors".
+- check (actionlint 1.7.12) pass; check (linux) pass (lint, format, typecheck, build, repo tests 14/0); unit (linux) 129/0; unit (macos) 129/0; cli (linux, floor 1.70.0) CLI 120/0 + bench 4/0; cli (linux, pinned 1.93.0) 120/0 + 4/0; cli (macos, pinned) 120/0 + 4/0; cli (linux, latest=1.93.0) [advisory] 120/0 + 4/0; eslint-compat (linux) 19/0; pack (linux, 1.70.0 + 1.93.0) pack-smoke PASS.
+- AC #3: exits non-zero on failure (6982cdb run: RESULT: FAIL, exit=1), writes logs to oxlint-plugins-release/ci-local/<sha>/logs, prints RESULT: PASS for HEAD.
+- AC #4: every log starts with versions: linux `node v24.22.2 / bun 1.4.4 / Linux aarch64`, macOS `node v26.13.0 / bun 1.4.4 / Darwin arm64`.
+- Not exercised: the preflight failure branch (the VM is fixed now); its message is static text in the script.
+
+Consumer-visible change: none.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+CI workflow (check, unit, cli on oxlint 1.70.0/pinned/latest, eslint-compat, pack; weekly schedule; SHA-pinned; actionlint clean) and a local mirror scripts/ci-local.sh with a JS-plugin preflight. Verified with scripts/ci-local.sh (06c686a, PASS) after the maintainer set vm.overcommit_memory=1 in the Colima VM.
+<!-- SECTION:FINAL_SUMMARY:END -->
