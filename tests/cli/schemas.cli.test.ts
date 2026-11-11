@@ -27,8 +27,19 @@ const CASES: Record<string, { valid: Options[]; invalid: Options[] }> = {
     invalid: [{ properties: "data" }, { props: ["data"] }],
   },
   "immutable/no-let": {
-    valid: [{}, { allowInForLoopInit: true }],
-    invalid: [{ allowInForLoopInit: "yes" }, { allowInFunctions: true }],
+    valid: [
+      {},
+      { allowInForLoopInit: true },
+      { allowInFunctions: true, ignoreIdentifierPattern: "^mutable" },
+      { ignoreIdentifierPattern: ["^a", "^b"] },
+    ],
+    invalid: [
+      { allowInForLoopInit: "yes" },
+      { allowInFunctions: "yes" },
+      { ignoreIdentifierPattern: 1 },
+      { ignoreIdentifierPattern: [1] },
+      { ignoreCodePattern: "x" },
+    ],
   },
   "immutable/no-throw-statements": {
     valid: [{}, { allowInAsyncFunctions: true }],

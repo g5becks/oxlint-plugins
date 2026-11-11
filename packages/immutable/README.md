@@ -86,6 +86,24 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 | `immutable-data` | Disallow mutating methods on arrays/objects (`push`, `splice`, etc.) | — |
 | `readonly-type` | Enforce `readonly` on TypeScript type members | — |
 
+### Options compared with eslint-plugin-functional
+
+Option names follow [eslint-plugin-functional](https://github.com/eslint-functional/eslint-plugin-functional)
+10.0.1 where the behavior is the same. Options that need type information, or that this port
+doesn't implement, are rejected by the schema (oxlint stops with "Options validation failed")
+rather than silently ignored.
+
+| Rule | This plugin | eslint-plugin-functional 10.0.1 |
+|---|---|---|
+| `no-let` | `allowInForLoopInit`, `allowInFunctions`, `ignoreIdentifierPattern` (defaults `false`, `false`, none) | same names and behavior (measured identical on the rule's test cases) |
+| `no-throw-statements` | `allowInAsyncFunctions`: allow `throw` anywhere in an `async` function | `allowToRejectPromises` (a later rename with narrower behavior): allows `throw` in an `async` function only outside a `try` with a `catch` in that function, and in promise handler callbacks. Not accepted here |
+| `prefer-property-signatures` | `ignoreIfReadonlyWrapped` | same |
+| `prefer-immutable-types` | `parameters`, `returnTypes`, `variables`, each `{ enforcement, ignoreNamePattern }`; `enforcement` is `"ReadonlyShallow"`, or `"None"` / `false` to turn the category off | same category keys; `enforcement` levels `"Immutable"` / `"ReadonlyDeep"`, `ignoreClasses`, `ignoreInferredTypes`, `ignoreTypePattern`, `fixer`, `suggestions` and `overrides` need type information and aren't accepted |
+| `type-declaration-immutability` | `identifiers`: type names matching the pattern(s) are **skipped**; `ignoreInterfaces` | `ignoreIdentifierPattern` is the equivalent of `identifiers` (despite the name, not upstream's `rules[].identifiers`); `ignoreInterfaces` same; `rules` and `ignoreTypePattern` aren't accepted |
+| `immutable-data` | `ignoreClasses`, `ignoreMapsAndSets`, `ignoreImmediateMutation`, `ignoreNonConstDeclarations`, `ignoreIdentifierPattern` | same; `ignoreAccessorPattern` and `overrides` aren't accepted |
+| `no-promise-reject` | none | none |
+| `readonly-type` | none (always the `readonly` keyword) | `"generic"` / `"keyword"`; only `"keyword"` is implemented |
+
 ### `type-declaration-immutability` without type information
 
 The rule checks the declared type **syntactically** for `ReadonlyShallow` (the property itself
