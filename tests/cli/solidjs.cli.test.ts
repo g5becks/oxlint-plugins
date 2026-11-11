@@ -1,4 +1,7 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   buildPlugin,
   writeOxlintConfig,
@@ -437,7 +440,7 @@ describe("jsx-no-undef state isolation", () => {
     code: `import { Show } from "solid-js";\n\nexport const B${i} = () => <Show when={true}>b${i}</Show>;\n`,
   });
 
-  test.failing("TASK-009: only the file missing the import is reported", async () => {
+  test("only the file missing the import is reported (audit R9)", async () => {
     const leakConfig = await writeOxlintConfig({
       plugins: ["solidjs"],
       rules: { "solidjs/jsx-no-undef": "error" },
@@ -450,6 +453,33 @@ describe("jsx-no-undef state isolation", () => {
       expect(reportedFiles(result)).toEqual(["a.tsx"]);
     } finally {
       await cleanupConfig(leakConfig);
+    }
+  });
+
+  test("--fix over one invalid and five valid files changes only the invalid file", async () => {
+    const fixConfig = await writeOxlintConfig({
+      plugins: ["solidjs"],
+      rules: { "solidjs/jsx-no-undef": "error" },
+    });
+    const dir = await mkdtemp(join(tmpdir(), "jsx-no-undef-fix-"));
+    try {
+      const files = [
+        { name: "a.tsx", code: "export const A = () => <Show when={true}>x</Show>;\n" },
+        ...[1, 2, 3, 4, 5].map(clean),
+      ];
+      const paths: string[] = [];
+      for (const f of files) {
+        const p = join(dir, f.name);
+        await Bun.write(p, f.code);
+        paths.push(p);
+      }
+      const result = await runOxlintWithFix({ configPath: fixConfig, files: paths, extraArgs: ["--threads", "1"] });
+      const changed = files.filter((f) => result.fixedFiles[f.name] !== f.code).map((f) => f.name);
+      expect(changed).toEqual(["a.tsx"]);
+      expect(result.fixedFiles["a.tsx"]).toStartWith('import { Show } from "solid-js";');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+      await cleanupConfig(fixConfig);
     }
   });
 });

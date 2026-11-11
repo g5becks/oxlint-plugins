@@ -145,6 +145,10 @@ export default {
     }
 
     return {
+      // createOnce runs once per worker; per-file state must be reset for every file (audit R9).
+      before() {
+        missingComponentsSet.clear();
+      },
       JSXOpeningElement(node: any) {
         let n: any;
         switch (node.name.type) {

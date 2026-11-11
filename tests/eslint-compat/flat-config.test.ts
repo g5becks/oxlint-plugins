@@ -108,4 +108,27 @@ describe("ESLint 9 flat config + typescript-eslint parser", () => {
     expect(annotation && "type" in annotation ? String(annotation.type) : undefined).toBe("TSTypeReference");
     expect(lint("ts-no-assert", "no-type-assertion", "const a = { b: 1 } as const;")).toHaveLength(0);
   });
+
+  // Audit R9: jsx-no-undef kept per-file state in the createOnce closure, which the
+  // ESLint compat wrapper reuses across files: a clean file linted after one with a
+  // missing import was reported too.
+  test("solidjs/jsx-no-undef: a clean file after an invalid one is not reported", () => {
+    const linter = new Linter({ configType: "flat" });
+    const config = [
+      {
+        files: ["**/*.tsx"],
+        plugins: { solidjs: plugins.solidjs as never },
+        languageOptions: { parser: tsParser, parserOptions: { ecmaFeatures: { jsx: true } } },
+        rules: { "solidjs/jsx-no-undef": "error" as const },
+      },
+    ];
+    const invalid = linter.verify("export const A = () => <Show when={true}>x</Show>;", config, "a.tsx");
+    expect(invalid).toHaveLength(1);
+    const clean = linter.verify(
+      'import { Show } from "solid-js";\nexport const B = () => <Show when={true}>b</Show>;',
+      config,
+      "b.tsx",
+    );
+    expect(clean).toHaveLength(0);
+  });
 });
