@@ -1,0 +1,24 @@
+import { createPropertyOrderRule } from "../utils/create-property-order-rule.ts";
+import { mutationFunctions, mutationSortRules } from "../utils/constants.ts";
+
+export default createPropertyOrderRule(
+  {
+    name: "mutation-property-order",
+    meta: {
+      type: "problem" as const,
+      docs: {
+        description: "Ensure correct order of inference-sensitive properties in useMutation()",
+        recommended: "error",
+      },
+      messages: {
+        invalidOrder: "Invalid order of properties for `{{function}}`.",
+      },
+      schema: [],
+      hasSuggestions: true,
+      fixable: "code" as const,
+    },
+    defaultOptions: [],
+  },
+  mutationFunctions,
+  mutationSortRules,
+);

@@ -1,0 +1,50 @@
+{
+  "name": "oxlint-plugin-query",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "TanStack Query lint rules ported to Oxlint's JS plugin API. Also compatible with ESLint flat config.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/g5becks/oxlint-plugins.git",
+    "directory": "packages/query"
+  },
+  "homepage": "https://github.com/g5becks/oxlint-plugins/tree/main/packages/query#readme",
+  "bugs": {
+    "url": "https://github.com/g5becks/oxlint-plugins/issues"
+  },
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "oxlint",
+    "eslint",
+    "tanstack",
+    "query",
+    "tanstack-query",
+    "react-query",
+    "lint"
+  ],
+  "peerDependencies": {
+    "oxlint": ">=1.70.0 <2",
+    "eslint": ">=9"
+  },
+  "peerDependenciesMeta": {
+    "eslint": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  }
+}

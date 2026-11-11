@@ -1,3 +1,5 @@
+**Project guide: see AGENTS.md and CONTRIBUTING.md first.** The notes below are general Bun defaults.
+
 
 Default to using Bun instead of Node.js.
 

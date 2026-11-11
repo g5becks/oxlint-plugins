@@ -7,10 +7,11 @@ import {
   cleanupConfig,
   fixture,
   ruleFixture,
+  ruleCode,
 } from "./helpers/cli-runner";
 
-const PLUGIN = "router";
-const CODE = (rule: string) => `oxlint-plugin-${PLUGIN}(${rule})`;
+const PLUGIN = "router" as const;
+const CODE = (rule: string) => ruleCode(PLUGIN, rule);
 
 let configPath: string;
 
@@ -19,8 +20,8 @@ beforeAll(async () => {
   configPath = await writeOxlintConfig({
     plugins: ["router"],
     rules: {
-      "oxlint-plugin-router/route-param-names": "error",
-      "oxlint-plugin-router/create-route-property-order": "error",
+      "router/route-param-names": "error",
+      "router/create-route-property-order": "error",
     },
   });
 });
@@ -30,7 +31,7 @@ afterAll(async () => {
 });
 
 // ── Legacy smoke tests (old fixtures) ─────────────────
-describe("plugin-router CLI (legacy)", () => {
+describe("router CLI (legacy)", () => {
   test("valid fixture produces zero diagnostics", async () => {
     const result = await runOxlint({
       configPath,
@@ -60,7 +61,7 @@ describe("route-param-names", () => {
       files: [ruleFixture(PLUGIN, RULE)],
     });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([20, 25, 31]);
   });
 
@@ -70,6 +71,7 @@ describe("route-param-names", () => {
       files: [ruleFixture(PLUGIN, RULE)],
     });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -93,7 +95,7 @@ describe("create-route-property-order", () => {
       files: [ruleFixture(PLUGIN, RULE)],
     });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([15, 23]);
   });
 
@@ -103,6 +105,7 @@ describe("create-route-property-order", () => {
       files: [ruleFixture(PLUGIN, RULE)],
     });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 
@@ -111,12 +114,11 @@ describe("create-route-property-order", () => {
       configPath,
       files: [ruleFixture(PLUGIN, RULE)],
     });
-    const fixedContent = result.fixedFiles["create-route-property-order.ts"];
-    expect(fixedContent).toBeDefined();
+    const fixedContent = result.fixedFiles["create-route-property-order.ts"] ?? "";
+    expect(result.fixedFiles["create-route-property-order.ts"]).toBeDefined();
     // After fix, re-running should produce fewer or no diagnostics for this rule
     // The fix reorders properties, so "loaderDeps" should come before "loader"
     const loaderDepsIdx = fixedContent.indexOf("loaderDeps");
-    const loaderIdx = fixedContent.indexOf("loader:");
     // In at least one of the fixed cases, loaderDeps should precede loader
     expect(loaderDepsIdx).toBeGreaterThan(-1);
   });

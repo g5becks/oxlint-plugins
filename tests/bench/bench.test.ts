@@ -13,19 +13,23 @@ let configPath: string;
 beforeAll(async () => {
   await buildAllPlugins();
   configPath = await writeOxlintConfig({
-    plugins: ["router", "query", "functional", "solid"],
+    plugins: ["router", "query", "immutable", "solidjs", "ts-no-assert", "errorset"],
     rules: {
-      "oxlint-plugin-router/route-param-names": "error",
-      "oxlint-plugin-router/create-route-property-order": "error",
-      "oxlint-plugin-query/stable-query-client": "error",
-      "oxlint-plugin-query/no-rest-destructuring": "error",
-      "oxlint-plugin-functional/no-let": "error",
-      "oxlint-plugin-functional/no-throw-statements": "error",
-      "oxlint-plugin-functional/no-promise-reject": "error",
-      "oxlint-plugin-solid/jsx-no-script-url": "error",
-      "oxlint-plugin-solid/no-react-specific-props": "error",
-      "oxlint-plugin-solid/no-innerhtml": "error",
-      "oxlint-plugin-solid/no-destructure": "error",
+      "router/route-param-names": "error",
+      "router/create-route-property-order": "error",
+      "query/stable-query-client": "error",
+      "query/no-rest-destructuring": "error",
+      "immutable/no-let": "error",
+      "immutable/no-throw-statements": "error",
+      "immutable/no-promise-reject": "error",
+      "solidjs/jsx-no-script-url": "error",
+      "solidjs/no-react-specific-props": "error",
+      "solidjs/no-innerhtml": "error",
+      "solidjs/no-destructure": "error",
+      "solidjs/reactivity": "error",
+      "ts-no-assert/no-type-assertion": "error",
+      "errorset/no-throw-errorset": "error",
+      "errorset/no-unguarded-data-access": "error",
     },
   });
 });
@@ -37,13 +41,14 @@ afterAll(async () => {
 function median(values: number[]): number {
   const sorted = values.slice().sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  const at = (i: number): number => sorted[i] ?? Number.NaN;
+  return sorted.length % 2 ? at(mid) : (at(mid - 1) + at(mid)) / 2;
 }
 
 function p95(values: number[]): number {
   const sorted = values.slice().sort((a, b) => a - b);
   const index = Math.ceil(sorted.length * 0.95) - 1;
-  return sorted[Math.min(index, sorted.length - 1)];
+  return sorted[Math.min(index, sorted.length - 1)] ?? Number.NaN;
 }
 
 describe("benchmarks", () => {
@@ -53,6 +58,7 @@ describe("benchmarks", () => {
       files: [benchFixture("large-mixed.ts")],
     });
     expect(result.exitCode).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
     console.log(`  Cold start: ${result.durationMs.toFixed(0)}ms (${result.numberOfRules} rules)`);
   });
 
@@ -65,6 +71,7 @@ describe("benchmarks", () => {
         files: [benchFixture("large-mixed.ts")],
       });
       expect(result.exitCode).toBe(0);
+      expect(result.diagnostics).toHaveLength(0);
       durations.push(result.durationMs);
     }
 
@@ -81,11 +88,13 @@ describe("benchmarks", () => {
         benchFixture("large-solid.tsx"),
         fixture("router-valid.ts"),
         fixture("query-valid.ts"),
-        fixture("functional-valid.ts"),
-        fixture("solid-valid.tsx"),
+        fixture("immutable-valid.ts"),
+        fixture("solidjs-valid.tsx"),
       ],
     });
-    expect(result.numberOfFiles).toBeGreaterThanOrEqual(6);
+    expect(result.exitCode).toBe(0);
+    expect(result.numberOfFiles).toBe(6);
+    expect(result.diagnostics).toHaveLength(0);
     console.log(
       `  Multi-file: ${result.durationMs.toFixed(0)}ms, ${result.numberOfFiles} files, ${result.diagnostics.length} diagnostics`,
     );
@@ -93,15 +102,16 @@ describe("benchmarks", () => {
 
   test("large solid fixture with all solid rules", async () => {
     const solidConfig = await writeOxlintConfig({
-      plugins: ["solid"],
+      plugins: ["solidjs"],
       rules: {
-        "oxlint-plugin-solid/jsx-no-duplicate-props": "error",
-        "oxlint-plugin-solid/jsx-no-script-url": "error",
-        "oxlint-plugin-solid/no-react-specific-props": "error",
-        "oxlint-plugin-solid/no-innerhtml": "error",
-        "oxlint-plugin-solid/no-destructure": "error",
-        "oxlint-plugin-solid/self-closing-comp": "warn",
-        "oxlint-plugin-solid/prefer-for": "warn",
+        "solidjs/jsx-no-duplicate-props": "error",
+        "solidjs/jsx-no-script-url": "error",
+        "solidjs/no-react-specific-props": "error",
+        "solidjs/no-innerhtml": "error",
+        "solidjs/no-destructure": "error",
+        "solidjs/self-closing-comp": "warn",
+        "solidjs/prefer-for": "warn",
+        "solidjs/reactivity": "warn",
       },
     });
 
@@ -109,8 +119,11 @@ describe("benchmarks", () => {
       configPath: solidConfig,
       files: [benchFixture("large-solid.tsx")],
     });
+    expect(result.exitCode).toBe(0);
+    expect(result.numberOfFiles).toBe(1);
+    expect(result.diagnostics).toHaveLength(0);
     console.log(
-      `  Solid (7 rules, ~200 lines): ${result.durationMs.toFixed(0)}ms, ${result.diagnostics.length} diagnostics`,
+      `  Solid (8 rules incl. reactivity, ~200 lines): ${result.durationMs.toFixed(0)}ms, ${result.diagnostics.length} diagnostics`,
     );
     await cleanupConfig(solidConfig);
   });

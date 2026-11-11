@@ -1,0 +1,95 @@
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
+import plugin from "../src/index.ts";
+
+const rule = ruleOf(plugin, "prefer-guard-over-manual-kind-check");
+
+const tester = ruleTester("tsx");
+
+const IMPORT = `import { errorSet, isErr } from "@takinprofit/errorset";
+const UserError = errorSet("UserError", ["not_found", "suspended"]).init();`;
+
+tester.run("prefer-guard-over-manual-kind-check", rule, {
+  valid: [
+    // No errorset import
+    {
+      code: `if (result.kind === "not_found") {}`,
+    },
+    // .kind check but NOT inside a prior guard block — conservative, not reported
+    {
+      code: `${IMPORT}
+const result = getUser();
+if (result.kind === "not_found") {}`,
+    },
+    // Already using the kind-level guard (no .kind === inside a guard block)
+    {
+      code: `${IMPORT}
+const result = getUser();
+if (isErr(result)) { if (UserError.not_found(result)) { console.log("ok"); } }`,
+    },
+    // Kind check on an unrelated variable (never passed to a guard)
+    {
+      code: `${IMPORT}
+const x = someValue;
+if (x.kind === "foo") {}`,
+    },
+  ],
+  invalid: [
+    // .kind === after isErr() guard in parent if: isErr doesn't say which set owns the
+    // kind, so it's reported without a suggestion (audit R4: guessing the first set in
+    // the file produced broken code).
+    {
+      code: `${IMPORT}
+const result = getUser();
+if (isErr(result)) {
+  if (result.kind === "not_found") {}
+}`,
+      errors: [{ messageId: "preferGuardUnknown", suggestions: [] }],
+    },
+    // .kind === after UserError() guard
+    {
+      code: `${IMPORT}
+const result = getUser();
+if (UserError(result)) {
+  if (result.kind === "suspended") {}
+}`,
+      errors: [
+        {
+          messageId: "preferGuard",
+          suggestions: [
+            {
+              messageId: "preferGuard",
+              output: `${IMPORT}
+const result = getUser();
+if (UserError(result)) {
+  if (UserError.suspended(result)) {}
+}`,
+            },
+          ],
+        },
+      ],
+    },
+    // `"literal" === result.kind` (reversed); narrowed by UserError so the set is known
+    {
+      code: `${IMPORT}
+const result = getUser();
+if (UserError(result)) {
+  if ("not_found" === result.kind) {}
+}`,
+      errors: [
+        {
+          messageId: "preferGuard",
+          suggestions: [
+            {
+              messageId: "preferGuard",
+              output: `${IMPORT}
+const result = getUser();
+if (UserError(result)) {
+  if (UserError.not_found(result)) {}
+}`,
+            },
+          ],
+        },
+      ],
+    },
+  ],
+});

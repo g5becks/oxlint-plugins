@@ -1,0 +1,135 @@
+name: CI
+
+# Mirrored by scripts/ci-local.sh. Any change here must be made there in the same commit.
+
+on:
+  push:
+    branches: [main, "release/**"]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Weekly run against oxlint@latest: JS plugins are outside oxlint's semver.
+    - cron: "17 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUN_VERSION: "1.4.4"
+  NODE_VERSION: "24"
+  OXLINT_FLOOR: "1.70.0"
+  ACTIONLINT_VERSION: "1.7.12"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: bun install --frozen-lockfile
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" -w /repo "rhysd/actionlint:${ACTIONLINT_VERSION}" -color
+      - run: bun run lint
+      - run: bun run format:check
+      - run: bun run check
+      - run: bun run build
+      - run: bun run test:repo
+
+  unit:
+    # Unit tests run on Node (oxlint's RuleTester refuses Bun) with the RuleTester of the
+    # oxlint floor and of the pinned oxlint.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, node: "22", oxlint: floor }
+          - { os: ubuntu-latest, node: "22", oxlint: pinned }
+          - { os: ubuntu-latest, node: "24", oxlint: floor }
+          - { os: ubuntu-latest, node: "24", oxlint: pinned }
+          - { os: macos-latest, node: "24", oxlint: pinned }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+      - run: bun install --frozen-lockfile
+      - name: RuleTester from the oxlint floor
+        if: matrix.oxlint == 'floor'
+        run: |
+          npm install --no-audit --no-fund --prefix "$RUNNER_TEMP/oxlint" "oxlint@$OXLINT_FLOOR"
+          echo "OXLINT_RULE_TESTER=$RUNNER_TEMP/oxlint/node_modules/oxlint/dist/plugins-dev.js" >> "$GITHUB_ENV"
+      - run: node --version
+      - run: bun run test:unit
+
+  cli:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, oxlint: floor }
+          - { os: ubuntu-latest, oxlint: pinned }
+          - { os: macos-latest, oxlint: pinned }
+          - { os: ubuntu-latest, oxlint: latest }
+    runs-on: ${{ matrix.os }}
+    # latest is advisory on push/PR and blocking on the weekly schedule.
+    continue-on-error: ${{ matrix.oxlint == 'latest' && github.event_name != 'schedule' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: bun install --frozen-lockfile
+      - name: Install oxlint (${{ matrix.oxlint }})
+        if: matrix.oxlint != 'pinned'
+        env:
+          LEG: ${{ matrix.oxlint }}
+        run: |
+          version="$OXLINT_FLOOR"
+          if [ "$LEG" = latest ]; then version=latest; fi
+          npm install --no-audit --no-fund --prefix "$RUNNER_TEMP/oxlint" "oxlint@$version"
+          echo "OXLINT_BIN=$RUNNER_TEMP/oxlint/node_modules/.bin/oxlint" >> "$GITHUB_ENV"
+      - name: oxlint version
+        run: '"${OXLINT_BIN:-node_modules/.bin/oxlint}" --version'
+      - run: bun run test:cli
+      - run: bun run test:bench
+
+  eslint-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile
+      - run: bun run test:compat
+
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: Pack, install and lint with oxlint floor and pinned
+        run: bun scripts/pack-smoke.ts --oxlint "$OXLINT_FLOOR,$(node -p 'require("./package.json").devDependencies.oxlint')"

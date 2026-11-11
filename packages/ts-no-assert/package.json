@@ -1,0 +1,49 @@
+{
+  "name": "oxlint-plugin-ts-no-assert",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Disallow TypeScript type assertions (as, angle-bracket, non-null !) — ported from eslint-plugin-no-type-assertion to Oxlint's JS plugin API. Also compatible with ESLint flat config.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/g5becks/oxlint-plugins.git",
+    "directory": "packages/ts-no-assert"
+  },
+  "homepage": "https://github.com/g5becks/oxlint-plugins/tree/main/packages/ts-no-assert#readme",
+  "bugs": {
+    "url": "https://github.com/g5becks/oxlint-plugins/issues"
+  },
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "oxlint",
+    "eslint",
+    "typescript",
+    "type-assertion",
+    "non-null-assertion",
+    "lint"
+  ],
+  "peerDependencies": {
+    "oxlint": ">=1.70.0 <2",
+    "eslint": ">=9"
+  },
+  "peerDependenciesMeta": {
+    "eslint": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  }
+}
