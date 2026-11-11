@@ -14,5 +14,5 @@ export const { Linter, RuleTester } = mod;
 // miss Bun's test globals and run cases inline. Register every case as its own bun:test test.
 RuleTester.describe = describe;
 RuleTester.it = it;
-RuleTester.itOnly = it.only;
+// No itOnly: Bun refuses even a reference to `it.only` when CI=true.
 export const ESLINT_VERSION: string = (mod as { Linter: { version: string } }).Linter.version;

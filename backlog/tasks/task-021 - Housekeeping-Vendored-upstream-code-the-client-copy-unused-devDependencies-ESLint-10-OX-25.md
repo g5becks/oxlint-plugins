@@ -7,7 +7,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T21:33:00Z'
+updated_date: '2026-11-11T22:21:00Z'
 labels:
   - toolchain
   - testing
@@ -70,4 +70,7 @@ Audit H9, H10 and H12. `client/` is an 80-file copy of the agentx client that no
 - `bun run gate` exit 0: unit 225/0, compat 40/0, repo 52/0, CLI 163/0, bench 4/0; frozen install OK.
 
 Consumer-visible change: none.
+
+## ci-local on 71f0769: FAIL (fixed forward)
+Both eslint-compat legs failed: "error: .only is disabled in CI environments" (ci-local sets CI=true; Bun rejects even a reference to `it.only`, which tests/helpers/eslint.ts assigned to RuleTester.itOnly). Fix: drop the itOnly assignment. Locally with CI=true: test:compat 40/0, test:compat:eslint10 40/0.
 <!-- SECTION:NOTES:END -->
