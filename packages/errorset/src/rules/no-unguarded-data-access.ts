@@ -25,32 +25,11 @@
  */
 import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
 import { readErrorsetSettings } from "../utils/settings.ts";
-import { isGuardCall, isIsErrCall, ERRORSET_PROPERTIES } from "../utils/pattern-helpers.ts";
+import { createNarrowing } from "../utils/narrowing.ts";
+import { ERRORSET_PROPERTIES } from "../utils/pattern-helpers.ts";
 
 type Options = [{ properties?: string[] }?];
 
-type VariableKey = object | string;
-
-function unwrap(node: any): any {
-  let n = node;
-  while (n && (n.type === "ParenthesizedExpression" || n.type === "ChainExpression")) n = n.expression;
-  return n;
-}
-
-/** Whether a statement always leaves the enclosing block (return/throw/continue/break). */
-function exits(stmt: any): boolean {
-  if (!stmt) return false;
-  if (["ReturnStatement", "ThrowStatement", "ContinueStatement", "BreakStatement"].includes(stmt.type)) return true;
-  if (stmt.type === "BlockStatement") return exits(stmt.body?.[stmt.body.length - 1]);
-  return false;
-}
-
-/** Statement lists of block-like nodes (for guard clauses before the access). */
-function statementList(node: any): any[] | undefined {
-  if (node.type === "BlockStatement" || node.type === "Program" || node.type === "StaticBlock") return node.body;
-  if (node.type === "SwitchCase") return node.consequent;
-  return undefined;
-}
 export default {
   meta: {
     type: "suggestion" as const,
@@ -93,88 +72,6 @@ export default {
       return ERRORSET_PROPERTIES;
     };
 
-    /** The scope Variable an identifier refers to (or a name key for unresolved globals). */
-    const resolve = (id: any): VariableKey => {
-      let scope = context.sourceCode.getScope(id);
-      while (scope) {
-        const variable = scope.set?.get(id.name);
-        if (variable) return variable;
-        scope = scope.upper;
-      }
-      return `global:${id.name}`;
-    };
-
-    const isGuardCallOn = (node: any, key: VariableKey): boolean => {
-      const n = unwrap(node);
-      if (n?.type !== "CallExpression") return false;
-      const arg0 = n.arguments?.[0];
-      if (arg0?.type !== "Identifier") return false;
-      const isGuard =
-        isGuardCall(n, tracker.guardNames()) || isIsErrCall(n, (name: string) => tracker.isIsErrImport(name));
-      return isGuard && resolve(arg0) === key;
-    };
-
-    /** `test` true implies the variable is an error-set value. */
-    const positive = (test: any, key: VariableKey): boolean => {
-      const t = unwrap(test);
-      if (!t) return false;
-      if (isGuardCallOn(t, key)) return true;
-      if (t.type === "LogicalExpression" && t.operator === "&&") {
-        return positive(t.left, key) || positive(t.right, key);
-      }
-      return false;
-    };
-
-    /** `test` true implies the variable is NOT an error-set value (so false implies it is). */
-    const negative = (test: any, key: VariableKey): boolean => {
-      const t = unwrap(test);
-      if (!t) return false;
-      if (t.type === "UnaryExpression" && t.operator === "!") return positive(t.argument, key);
-      if (t.type === "LogicalExpression" && t.operator === "||") {
-        return negative(t.left, key) && negative(t.right, key);
-      }
-      return false;
-    };
-
-    const isNarrowed = (access: any, key: VariableKey): boolean => {
-      let child = access;
-      let current = access.parent;
-      while (current) {
-        switch (current.type) {
-          case "IfStatement":
-          case "ConditionalExpression":
-            if (child === current.consequent && positive(current.test, key)) return true;
-            if (child === current.alternate && negative(current.test, key)) return true;
-            break;
-          case "LogicalExpression":
-            if (child === current.right) {
-              if (current.operator === "&&" && positive(current.left, key)) return true;
-              if (current.operator === "||" && negative(current.left, key)) return true;
-            }
-            break;
-          default: {
-            const list = statementList(current);
-            if (list) {
-              for (const stmt of list) {
-                if (stmt === child) break;
-                if (
-                  stmt.type === "IfStatement" &&
-                  !stmt.alternate &&
-                  negative(stmt.test, key) &&
-                  exits(stmt.consequent)
-                ) {
-                  return true;
-                }
-              }
-            }
-          }
-        }
-        child = current;
-        current = current.parent;
-      }
-      return false;
-    };
-
     return {
       before() {
         tracker.reset(readErrorsetSettings(context));
@@ -201,21 +98,20 @@ export default {
       },
       "Program:exit"() {
         if (!tracker.hasErrorsetImport()) return;
-        const guardNames = tracker.guardNames();
-        const isIsErrName = (name: string) => tracker.isIsErrImport(name);
+        const narrowing = createNarrowing(context, tracker);
 
         // Variables that are the subject of any guard call in this file (any position).
-        const guarded = new Set<VariableKey>();
+        const guarded = new Set<object | string>();
         for (const call of calls) {
-          if (isGuardCall(call, guardNames) || isIsErrCall(call, isIsErrName)) guarded.add(resolve(call.arguments[0]));
+          if (narrowing.isGuardLike(call)) guarded.add(narrowing.resolve(call.arguments[0]));
         }
         if (guarded.size === 0) return;
 
         const trackedProps = getTrackedProps();
         for (const node of accesses) {
           if (!trackedProps.has(node.property.name)) continue;
-          const key = resolve(node.object);
-          if (!guarded.has(key) || isNarrowed(node, key)) continue;
+          const key = narrowing.resolve(node.object);
+          if (!guarded.has(key) || narrowing.narrowingCall(node, key)) continue;
           context.report({
             node,
             messageId: "unguardedAccess",

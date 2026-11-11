@@ -232,13 +232,13 @@ function getUser(id: string) {
 
 Inside a guard block (after `isErr(result)` or `UserError(result)` has matched), prefer the typed kind-level guard `UserError.not_found(result)` over a manual `.kind === "not_found"` string comparison. The guard is refactor-safe and provides better type narrowing.
 
-This rule provides **inline suggestions** (not auto-fixes) to replace the comparison with the appropriate guard call.
+This rule provides **inline suggestions** (not auto-fixes) to replace the comparison with the guard of the set that narrowed the value: after `UserError(result)` (or `UserError.suspended(result)`) it suggests `UserError.<kind>(result)`, even when other sets are in scope. After `isErr(result)` the set is unknown, so the check is reported without a suggestion. The same narrowing forms as `no-unguarded-data-access` apply (`if`, guard clauses, ternaries, `&&`, `||`).
 
 **❌ Incorrect**
 
 ```ts
 if (isErr(result)) {
-  if (result.kind === "not_found") { ... }  // ❌ → suggest UserError.not_found(result)
+  if (result.kind === "not_found") { ... }  // ❌ (no suggestion: isErr doesn't say which set)
 }
 
 if (UserError(result)) {

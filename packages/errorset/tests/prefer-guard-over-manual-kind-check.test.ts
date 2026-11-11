@@ -34,28 +34,16 @@ if (x.kind === "foo") {}`,
     },
   ],
   invalid: [
-    // .kind === after isErr() guard in parent if
+    // .kind === after isErr() guard in parent if: isErr doesn't say which set owns the
+    // kind, so it's reported without a suggestion (audit R4: guessing the first set in
+    // the file produced broken code).
     {
       code: `${IMPORT}
 const result = getUser();
 if (isErr(result)) {
   if (result.kind === "not_found") {}
 }`,
-      errors: [
-        {
-          messageId: "preferGuard",
-          suggestions: [
-            {
-              messageId: "preferGuard",
-              output: `${IMPORT}
-const result = getUser();
-if (isErr(result)) {
-  if (UserError.not_found(result)) {}
-}`,
-            },
-          ],
-        },
-      ],
+      errors: [{ messageId: "preferGuardUnknown", suggestions: [] }],
     },
     // .kind === after UserError() guard
     {
@@ -80,11 +68,11 @@ if (UserError(result)) {
         },
       ],
     },
-    // `"literal" === result.kind` (reversed)
+    // `"literal" === result.kind` (reversed); narrowed by UserError so the set is known
     {
       code: `${IMPORT}
 const result = getUser();
-if (isErr(result)) {
+if (UserError(result)) {
   if ("not_found" === result.kind) {}
 }`,
       errors: [
@@ -95,7 +83,7 @@ if (isErr(result)) {
               messageId: "preferGuard",
               output: `${IMPORT}
 const result = getUser();
-if (isErr(result)) {
+if (UserError(result)) {
   if (UserError.not_found(result)) {}
 }`,
             },

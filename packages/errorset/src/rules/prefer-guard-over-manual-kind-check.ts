@@ -10,47 +10,8 @@
  */
 import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
 import { readErrorsetSettings } from "../utils/settings.ts";
-import { getKindEquality, findAncestor, isGuardCall, isIsErrCall } from "../utils/pattern-helpers.ts";
-
-/**
- * Returns true when the given variable identifier appears as the subject of a
- * guard call or isErr() call in an ancestor if/ternary condition.
- * This limits the rule to cases where the value is already known to be an error.
- */
-function isAlreadyGuardedVariable(
-  identifierNode: any,
-  guardNames: Set<string>,
-  isIsErrName: (n: string) => boolean,
-): boolean {
-  if (!identifierNode || identifierNode.type !== "Identifier") return false;
-  const varName = identifierNode.name;
-
-  // Walk up to find an IfStatement or ConditionalExpression whose test
-  // contains a guard call for the same variable.
-  const ifAncestor = findAncestor(identifierNode, (n) => {
-    if (n.type !== "IfStatement" && n.type !== "ConditionalExpression") return false;
-    const test = n.test;
-    // isErr(varName)
-    if (
-      isIsErrCall(test, isIsErrName) &&
-      test.arguments?.[0]?.type === "Identifier" &&
-      test.arguments[0].name === varName
-    ) {
-      return true;
-    }
-    // UserError(varName) or UserError.kind(varName)
-    if (
-      isGuardCall(test, guardNames) &&
-      test.arguments?.[0]?.type === "Identifier" &&
-      test.arguments[0].name === varName
-    ) {
-      return true;
-    }
-    return false;
-  });
-
-  return ifAncestor !== null;
-}
+import { createNarrowing, guardSetName } from "../utils/narrowing.ts";
+import { getKindEquality } from "../utils/pattern-helpers.ts";
 
 export default {
   meta: {
@@ -93,23 +54,17 @@ export default {
         if (!equality) return;
 
         const { object, kindLiteral } = equality;
-        const guardNames = tracker.guardNames();
+        if (object?.type !== "Identifier") return;
 
-        // Only report when the variable is inside an if-test that already confirmed
-        // it's an error via isErr() or a set-level guard — conservative mode.
-        if (!isAlreadyGuardedVariable(object, guardNames, (n) => tracker.isIsErrImport(n))) {
-          return;
-        }
+        // Only report when a guard already narrowed the variable to an error (conservative).
+        // The suggestion uses that guard's set (audit R4); isErr() doesn't identify a set.
+        const narrowing = createNarrowing(context, tracker);
+        const call = narrowing.narrowingCall(node, narrowing.resolve(object));
+        if (!call) return;
 
-        // Try to find which error set owns this kind
-        const varName = object?.type === "Identifier" ? object.name : null;
-
-        // Look for a guard name that could plausibly own this kind
-        // (we can't know for sure without type info, so emit a suggestion)
-        const [firstGuard] = guardNames; // best guess: first guard in file
-        const guardName = firstGuard ?? null;
-
-        if (guardName && varName) {
+        const guardName = guardSetName(call, tracker.guardNames());
+        const varName = object.name;
+        if (guardName) {
           const sourceCode = context.sourceCode;
           context.report({
             node,
