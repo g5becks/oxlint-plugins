@@ -28,6 +28,7 @@ version), TypeScript 5.9.3 for typescript-eslint plus TypeScript 7 (`typescript-
 | `bun run test:compat` / `bun run test:compat:eslint10` | ESLint compatibility and integration tests (`tests/integration`, `tests/eslint-compat`) on ESLint 9 / ESLint 10 (`ESLINT_PACKAGE=eslint-10`, an exact npm alias) |
 | `bun run test:cli` | Real-oxlint suite: bundles each plugin into a temp dir and lints fixtures (`tests/cli`) |
 | `bun run test:bench` | Bench smoke (exact counts asserted, timings only logged) |
+| `bun run bench:profile` | Per-plugin and per-rule cost on `tests/fixtures/corpus` (see [Profiling](#profiling)) |
 | `bun run test:repo` | Repo tooling tests (commit-msg check) |
 | `bun run test:pack` | Pack every package, install into a temp consumer, lint with each plugin |
 | `bun run parity` | Advisory parity report: upstream ESLint plugins (pinned devDependencies) vs the ports on `tests/fixtures/corpus`, per-rule recall/precision and site diff (`scripts/parity.ts --out <file>`) |
@@ -52,6 +53,44 @@ version), TypeScript 5.9.3 for typescript-eslint plus TypeScript 7 (`typescript-
   `// report` comment and compare against `markedLines()`.
 - Known bugs that a later task fixes may be pinned with `test.failing("TASK-0NN: ...")`. The
   marker must name the fixing task, that task removes it, and none may remain at a release.
+
+### Profiling
+
+`bun run bench:profile` runs real oxlint single-threaded over `tests/fixtures/corpus/` (76 files)
+for: no JS plugins (the baseline), each plugin with all its rules, and each rule alone. Each
+measurement is one discarded warm-up run plus `--runs` runs (default 5, minimum 5); the median wall
+time and its delta over the baseline are written to `tests/bench/results/profile-<platform>-<arch>.json`
+(gitignored) with the machine and versions. Options: `--runs <n>`, `--plugins a,b`, `--out <file>`,
+`--quick` (1 run, no warm-up; what `bun run test:bench` does for one plugin so the profiler keeps
+working on the floor and pinned oxlint).
+
+The committed baseline is `tests/bench/baseline/darwin-arm64.json` (Apple M5, oxlint 1.93.0,
+9 runs). Compare against it on the same machine only; refresh it with
+`bun run bench:profile --runs 9 --out tests/bench/baseline/<platform>-<arch>.json` when a change
+is meant to move it, and say so in the commit.
+
+How to read it: most of the delta is fixed. Loading any JS plugin adds about 53 ms on the corpus
+(the per-rule deltas are 53-57 ms even for rules whose callbacks take under 1 ms), so compare rules
+by `callbacksMs`, not by `deltaMs`.
+
+**oxlint rule timings.** `oxlint --debug=timings` prints a per-rule table (time, calls, source
+`js-plugin`) plus the JS plugin runtime split into rule callbacks and shared overhead, but:
+
+- only with oxlint **1.93.0** (pinned) here. On the **1.70.0** floor the flag is accepted and
+  prints nothing extra;
+- only with the `default` output format. Pass `-f default` explicitly: in some environments (observed in an AI-agent shell)
+  oxlint picks the `agent` format by default, and `-f agent`, `-f json` and `-f stylish` omit the
+  table;
+- shared work is charged to the rule that triggers it (scope analysis, for example, is
+  probably charged to the first rule that asks for it), so per-rule callback times don't sum to
+  separable costs.
+
+```sh
+node_modules/.bin/oxlint -c .oxlintrc.json --threads 1 -f default --debug=timings tests/fixtures/corpus
+```
+
+`bench:profile` records `callbacksMs` from this table when it's printed and `null` otherwise
+(`method.timingsAvailable`).
 
 ## Git hooks and commits
 

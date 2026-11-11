@@ -13,6 +13,7 @@
     "test:compat": "bun test ./tests/integration/*.test.ts ./tests/eslint-compat/*.test.ts",
     "test:cli": "bun test ./tests/cli/*.cli.test.ts",
     "test:bench": "bun test ./tests/bench/*.test.ts",
+    "bench:profile": "bun tests/bench/profile.ts",
     "check": "node node_modules/typescript-7/bin/tsc -b --pretty false",
     "lint": "oxlint --deny-warnings packages scripts tests && bun scripts/check-createonce-state.ts",
     "format": "biome format --write .",

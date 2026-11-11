@@ -7,6 +7,7 @@ import {
   benchFixture,
   fixture,
 } from "../cli/helpers/cli-runner";
+import { parseTimings, profile } from "./profile.ts";
 
 let configPath: string;
 
@@ -126,5 +127,33 @@ describe("benchmarks", () => {
       `  Solid (8 rules incl. reactivity, ~200 lines): ${result.durationMs.toFixed(0)}ms, ${result.diagnostics.length} diagnostics`,
     );
     await cleanupConfig(solidConfig);
+  });
+});
+
+// TASK-028: the profiler (`bun run bench:profile`) keeps working on every oxlint in the matrix.
+describe("profiler", () => {
+  test("quick profile: per-plugin and per-rule medians on the corpus", async () => {
+    const p = await profile({ runs: 1, warmup: 0, plugins: ["ts-no-assert"], perRule: true });
+    expect(p.method.files).toBeGreaterThan(50);
+    expect(p.baselineMs).toBeGreaterThan(0);
+    const plugin = p.plugins["ts-no-assert"];
+    expect(plugin?.medianMs).toBeGreaterThan(0);
+    expect(Object.keys(plugin?.rules ?? {})).toEqual(["ts-no-assert/no-type-assertion"]);
+    // Rule timings exist only where oxlint prints them (1.93.0 yes, 1.70.0 no).
+    expect(plugin?.callbacksMs === null).toBe(!p.method.timingsAvailable);
+  }, 60_000);
+
+  test("parses the --debug=timings table", () => {
+    const out = [
+      "Finished in 85ms on 76 files with 1 rules using 1 threads.",
+      "Rule timings:",
+      "Rule                 Time (ms)  Relative  Calls  Source",
+      "------------------  ----------  --------  -----  ---------",
+      "solidjs/reactivity      14.779    100.0%   5203  js-plugin",
+      "JS plugin runtime:",
+      "  Total:               42.225ms",
+    ].join("\n");
+    expect(parseTimings(out)).toEqual({ rules: { "solidjs/reactivity": 14.779 }, jsRuntimeTotalMs: 42.225 });
+    expect(parseTimings("Finished in 85ms")).toBeNull();
   });
 });
