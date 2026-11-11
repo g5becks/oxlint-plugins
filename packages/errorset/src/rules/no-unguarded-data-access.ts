@@ -5,9 +5,17 @@
  * that is the subject of an errorset guard in an ancestor scope WITHOUT first
  * narrowing via the guard.
  *
- * This is conservative: it only reports when the same variable was previously
- * checked via an isErr()/guard call in the file, then has its properties accessed
- * outside such a guard.
+ * Conservative: it only reports accesses on a variable that is passed to an isErr()/guard
+ * call somewhere in the file, resolved through scope analysis (a same-named variable in
+ * another function is a different variable). Results don't depend on traversal order:
+ * everything is collected first and evaluated at Program:exit.
+ *
+ * Narrowing forms understood (audit R2):
+ *   if (G(r)) { r.data }                      if (!G(r)) { ... } else { r.data }
+ *   G(r) ? r.data : ...                       !G(r) ? ... : r.data
+ *   G(r) && r.data                            !G(r) || r.data
+ *   if (!G(r)) return | throw | continue | break;   r.data   (guard clause)
+ * where G is a set guard (UserError), a kind guard (UserError.not_found) or isErr.
  *
  * ❌ const result = getUser(id)
  *    console.log(result.data.id)   // result is User | UserError — crash if User
@@ -21,78 +29,28 @@ import { isGuardCall, isIsErrCall, ERRORSET_PROPERTIES } from "../utils/pattern-
 
 type Options = [{ properties?: string[] }?];
 
-/**
- * Returns true when the node is lexically inside a consequent/alternate
- * block of an if-statement whose test guards the given varName.
- */
-function isInsideGuardBlock(
-  node: any,
-  varName: string,
-  guardNames: Set<string>,
-  isIsErrName: (n: string) => boolean,
-): boolean {
-  // Walk up the ancestry looking for an IfStatement or ConditionalExpression
-  // where the test guards varName.
-  let current = node?.parent;
-  while (current) {
-    if (current.type === "IfStatement") {
-      const test = current.test;
-      if (testGuardsVar(test, varName, guardNames, isIsErrName)) {
-        // We're inside this if — check we're in the consequent (true branch)
-        // where the guard applies.
-        let ancestor = node?.parent;
-        while (ancestor && ancestor !== current) {
-          if (ancestor === current.consequent) return true;
-          ancestor = ancestor.parent;
-        }
-      }
-    }
-    // Stop at function boundaries — a new function context resets narrowing
-    if (
-      current.type === "FunctionDeclaration" ||
-      current.type === "FunctionExpression" ||
-      current.type === "ArrowFunctionExpression"
-    ) {
-      return false;
-    }
-    current = current.parent;
-  }
+type VariableKey = object | string;
+
+function unwrap(node: any): any {
+  let n = node;
+  while (n && (n.type === "ParenthesizedExpression" || n.type === "ChainExpression")) n = n.expression;
+  return n;
+}
+
+/** Whether a statement always leaves the enclosing block (return/throw/continue/break). */
+function exits(stmt: any): boolean {
+  if (!stmt) return false;
+  if (["ReturnStatement", "ThrowStatement", "ContinueStatement", "BreakStatement"].includes(stmt.type)) return true;
+  if (stmt.type === "BlockStatement") return exits(stmt.body?.[stmt.body.length - 1]);
   return false;
 }
 
-function testGuardsVar(
-  test: any,
-  varName: string,
-  guardNames: Set<string>,
-  isIsErrName: (n: string) => boolean,
-): boolean {
-  if (!test) return false;
-  // isErr(varName)
-  if (
-    isIsErrCall(test, isIsErrName) &&
-    test.arguments?.[0]?.type === "Identifier" &&
-    test.arguments[0].name === varName
-  ) {
-    return true;
-  }
-  // UserError(varName) or UserError.kind(varName)
-  if (
-    isGuardCall(test, guardNames) &&
-    test.arguments?.[0]?.type === "Identifier" &&
-    test.arguments[0].name === varName
-  ) {
-    return true;
-  }
-  // Logical AND: isErr(x) && ...  or  UserError(x) && ...
-  if (test.type === "LogicalExpression" && test.operator === "&&") {
-    return (
-      testGuardsVar(test.left, varName, guardNames, isIsErrName) ||
-      testGuardsVar(test.right, varName, guardNames, isIsErrName)
-    );
-  }
-  return false;
+/** Statement lists of block-like nodes (for guard clauses before the access). */
+function statementList(node: any): any[] | undefined {
+  if (node.type === "BlockStatement" || node.type === "Program" || node.type === "StaticBlock") return node.body;
+  if (node.type === "SwitchCase") return node.consequent;
+  return undefined;
 }
-
 export default {
   meta: {
     type: "suggestion" as const,
@@ -123,8 +81,9 @@ export default {
   defaultOptions: [{}] as Options,
   createOnce(context: any) {
     const tracker = createErrorsetImportTracker();
-    // Variables that appear as the subject of any guard call in this file
-    const guardedVarNames = new Set<string>();
+    // Per file: candidate guard calls and property accesses, evaluated at Program:exit.
+    const calls: any[] = [];
+    const accesses: any[] = [];
 
     const getTrackedProps = (): Set<string> => {
       const opts = context.options?.[0] as Options[0];
@@ -134,14 +93,98 @@ export default {
       return ERRORSET_PROPERTIES;
     };
 
+    /** The scope Variable an identifier refers to (or a name key for unresolved globals). */
+    const resolve = (id: any): VariableKey => {
+      let scope = context.sourceCode.getScope(id);
+      while (scope) {
+        const variable = scope.set?.get(id.name);
+        if (variable) return variable;
+        scope = scope.upper;
+      }
+      return `global:${id.name}`;
+    };
+
+    const isGuardCallOn = (node: any, key: VariableKey): boolean => {
+      const n = unwrap(node);
+      if (n?.type !== "CallExpression") return false;
+      const arg0 = n.arguments?.[0];
+      if (arg0?.type !== "Identifier") return false;
+      const isGuard =
+        isGuardCall(n, tracker.guardNames()) || isIsErrCall(n, (name: string) => tracker.isIsErrImport(name));
+      return isGuard && resolve(arg0) === key;
+    };
+
+    /** `test` true implies the variable is an error-set value. */
+    const positive = (test: any, key: VariableKey): boolean => {
+      const t = unwrap(test);
+      if (!t) return false;
+      if (isGuardCallOn(t, key)) return true;
+      if (t.type === "LogicalExpression" && t.operator === "&&") {
+        return positive(t.left, key) || positive(t.right, key);
+      }
+      return false;
+    };
+
+    /** `test` true implies the variable is NOT an error-set value (so false implies it is). */
+    const negative = (test: any, key: VariableKey): boolean => {
+      const t = unwrap(test);
+      if (!t) return false;
+      if (t.type === "UnaryExpression" && t.operator === "!") return positive(t.argument, key);
+      if (t.type === "LogicalExpression" && t.operator === "||") {
+        return negative(t.left, key) && negative(t.right, key);
+      }
+      return false;
+    };
+
+    const isNarrowed = (access: any, key: VariableKey): boolean => {
+      let child = access;
+      let current = access.parent;
+      while (current) {
+        switch (current.type) {
+          case "IfStatement":
+          case "ConditionalExpression":
+            if (child === current.consequent && positive(current.test, key)) return true;
+            if (child === current.alternate && negative(current.test, key)) return true;
+            break;
+          case "LogicalExpression":
+            if (child === current.right) {
+              if (current.operator === "&&" && positive(current.left, key)) return true;
+              if (current.operator === "||" && negative(current.left, key)) return true;
+            }
+            break;
+          default: {
+            const list = statementList(current);
+            if (list) {
+              for (const stmt of list) {
+                if (stmt === child) break;
+                if (
+                  stmt.type === "IfStatement" &&
+                  !stmt.alternate &&
+                  negative(stmt.test, key) &&
+                  exits(stmt.consequent)
+                ) {
+                  return true;
+                }
+              }
+            }
+          }
+        }
+        child = current;
+        current = current.parent;
+      }
+      return false;
+    };
+
     return {
       before() {
         tracker.reset(readErrorsetSettings(context));
-        guardedVarNames.clear();
+        calls.length = 0;
+        accesses.length = 0;
       },
       Program() {
         tracker.reset(readErrorsetSettings(context));
-        guardedVarNames.clear();
+        calls.length = 0;
+        accesses.length = 0;
       },
       ImportDeclaration(node: any) {
         tracker.handleImportDeclaration(node);
@@ -149,48 +192,36 @@ export default {
       VariableDeclaration(node: any) {
         tracker.handleVariableDeclaration(node);
       },
-
-      // Track all variables that appear as args to guard calls or isErr()
       CallExpression(node: any) {
-        if (!tracker.hasErrorsetImport()) return;
-        const guardNames = tracker.guardNames();
-
-        const arg0 = node.arguments?.[0];
-        if (!arg0 || arg0.type !== "Identifier") return;
-
-        if (isIsErrCall(node, (n) => tracker.isIsErrImport(n)) || isGuardCall(node, guardNames)) {
-          guardedVarNames.add(arg0.name);
-        }
+        if (node.arguments?.[0]?.type === "Identifier") calls.push(node);
       },
-
       MemberExpression(node: any) {
+        if (node.computed || node.property?.type !== "Identifier" || node.object?.type !== "Identifier") return;
+        accesses.push(node);
+      },
+      "Program:exit"() {
         if (!tracker.hasErrorsetImport()) return;
         const guardNames = tracker.guardNames();
-        if (guardNames.size === 0 && !tracker.isIsErrImport("isErr")) return;
+        const isIsErrName = (name: string) => tracker.isIsErrImport(name);
 
-        const prop = node.property;
-        if (prop?.type !== "Identifier") return;
+        // Variables that are the subject of any guard call in this file (any position).
+        const guarded = new Set<VariableKey>();
+        for (const call of calls) {
+          if (isGuardCall(call, guardNames) || isIsErrCall(call, isIsErrName)) guarded.add(resolve(call.arguments[0]));
+        }
+        if (guarded.size === 0) return;
 
         const trackedProps = getTrackedProps();
-        if (!trackedProps.has(prop.name)) return;
-
-        // Only care about a known potentially-errorset variable
-        if (node.object?.type !== "Identifier") return;
-        const varName = node.object.name;
-
-        // Only report if this variable has been seen as an arg to a guard call
-        if (!guardedVarNames.has(varName)) return;
-
-        // Report only if NOT inside a guard block
-        if (isInsideGuardBlock(node, varName, guardNames, (n) => tracker.isIsErrImport(n))) {
-          return;
+        for (const node of accesses) {
+          if (!trackedProps.has(node.property.name)) continue;
+          const key = resolve(node.object);
+          if (!guarded.has(key) || isNarrowed(node, key)) continue;
+          context.report({
+            node,
+            messageId: "unguardedAccess",
+            data: { prop: node.property.name, name: node.object.name },
+          });
         }
-
-        context.report({
-          node,
-          messageId: "unguardedAccess",
-          data: { prop: prop.name, name: varName },
-        });
       },
     };
   },

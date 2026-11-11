@@ -266,7 +266,18 @@ if (UserError(result)) {
 
 Accessing errorset result properties (`.data`, `.kind`, `.message`, `.cause`) outside a guard block is unsafe — the value may be a success result, so these properties may not exist.
 
-The rule tracks variables that have been passed to an errorset guard and flags property accesses on them outside any guard's consequent block.
+The rule tracks variables that are passed to an errorset guard (`UserError(r)`, `UserError.not_found(r)` or `isErr(r)`) anywhere in the file, resolved through scope analysis (a same-named variable in another function is a different variable), and flags property accesses on them that aren't narrowed. An access before the first guard call counts too. These forms narrow:
+
+| Form | Narrowed access |
+|---|---|
+| `if (G(r)) { … }` | inside the `if` block |
+| `if (!G(r)) { … } else { … }` | inside the `else` block |
+| `if (!G(r)) return;` (or `throw`, `continue`, `break`) | every later statement in the same block |
+| `G(r) ? r.data : …` / `!G(r) ? … : r.data` | the guarded branch |
+| `G(r) && r.data` | the right-hand side (also inside larger `&&` chains) |
+| `!G(r) \|\| r.data` | the right-hand side |
+
+Narrowing carries into callbacks written inside the narrowed region.
 
 **❌ Incorrect**
 
@@ -293,6 +304,13 @@ if (UserError(result)) {
 if (UserError.not_found(result)) {
   console.log(result.message)  // ✅
 }
+
+function getId(r: User | UserError) {
+  if (!UserError(r)) return r.id  // guard clause
+  return r.data.id                // ✅ — r is a UserError here
+}
+
+const label = UserError(result) ? result.data.id : "ok"  // ✅
 ```
 
 ---
