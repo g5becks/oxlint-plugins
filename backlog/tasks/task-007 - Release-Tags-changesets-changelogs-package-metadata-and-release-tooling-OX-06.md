@@ -3,11 +3,11 @@ id: TASK-007
 title: >-
   Release: Tags, changesets, changelogs, package metadata and release tooling
   (OX-06)
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T17:53:00Z'
+updated_date: '2026-11-11T17:57:00Z'
 labels:
   - release
   - docs
@@ -38,12 +38,12 @@ Audit H3, H5 and H14. The published bundles differ from builds of the repo; ther
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Local annotated tags exist for every published version; each records how the npm tarball compares with a build of that commit
-- [ ] #2 Changesets is configured for independent versions; every package has a CHANGELOG.md with its 0.1.x history
-- [ ] #3 All six package.json files have correct repository (with directory), homepage, bugs and license fields
-- [ ] #4 release-prepare --dry-run writes tarballs, SHA512SUMS, RELEASE_NOTES.md and the publish commands to a temp directory without pushing, tagging remotely or publishing
-- [ ] #5 release.yml passes actionlint; CONTRIBUTING.md and AGENTS.md document setup, tests, tasks and releases
-- [ ] #6 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #1 Local annotated tags exist for every published version; each records how the npm tarball compares with a build of that commit
+- [x] #2 Changesets is configured for independent versions; every package has a CHANGELOG.md with its 0.1.x history
+- [x] #3 All six package.json files have correct repository (with directory), homepage, bugs and license fields
+- [x] #4 release-prepare --dry-run writes tarballs, SHA512SUMS, RELEASE_NOTES.md and the publish commands to a temp directory without pushing, tagging remotely or publishing
+- [x] #5 release.yml passes actionlint; CONTRIBUTING.md and AGENTS.md document setup, tests, tasks and releases
+- [x] #6 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -57,3 +57,44 @@ Audit H3, H5 and H14. The published bundles differ from builds of the repo; ther
 6. CONTRIBUTING.md, AGENTS.md, CLAUDE.md pointer; Colima requirement moved to CONTRIBUTING.
 7. Dry run + ci-local.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Outcome
+- Retroactive LOCAL annotated tags (never pushed), each message recording how the npm tarball compares with a `bun build` (Bun 1.4.4, that commit's lockfile) of the tagged commit:
+  - oxlint-plugin-errorset@0.1.0 -> d4bcb7a
+  - oxlint-plugin-errorset@0.1.1 -> f1287ad
+  - oxlint-plugin-immutable@0.1.1 -> d4bcb7a
+  - oxlint-plugin-query@0.1.1 -> d4bcb7a
+  - oxlint-plugin-router@0.1.1 -> d4bcb7a
+  - oxlint-plugin-solidjs@0.1.1 -> d4bcb7a
+  - oxlint-plugin-ts-no-assert@0.1.2 -> d4bcb7a
+  errorset 0.1.0/0.1.1 and ts-no-assert 0.1.2: only bundler identifier renaming in the bundled compat layer (no rule code difference). immutable (-479 B), query (+1111 B), router (+78 B), solidjs (+338 B): the repo already held unreleased code changes (audit H3). Comparison artifacts: oxlint-plugins-release/logs/task-007-h3/.
+- Not tagged (maintainer decision): query 0.1.0 (2026-02-21T22:52:44Z), router 0.1.0 (2026-02-21T22:52:42Z), ts-no-assert 0.1.1 (2026-02-21T23:56:09Z) were published before the repository's first commit; each CHANGELOG lists them as "published before this repository's history; not tagged" with the npm publish time.
+- Changesets: @changesets/cli 3.0.3 (exact); .changeset/config.json: independent versions (fixed/linked empty), baseBranch main, access public, commit false, private root not versioned, format false (Biome formats). .changeset/README.md explains usage. Backfilled packages/*/CHANGELOG.md with 0.1.x history from git + npm (diffs of consecutive published tarballs: query/router 0.1.0->0.1.1 identical bundles; ts-no-assert 0.1.2 = oxlint `as const` shape; errorset 0.1.1 = README).
+- Changesets added (patch, all six): package-metadata.md, bundled-compat-layer.md (TASK-001's @oxlint/plugins 1.43 -> 1.93 bundled layer).
+- package.json x6: repository {git+https://github.com/g5becks/oxlint-plugins.git, directory packages/<name>}, homepage .../tree/main/packages/<name>#readme, bugs .../issues, license MIT, files [dist, README.md, CHANGELOG.md, LICENSE], exports adds "./package.json". MIT LICENSE added at the root and in each package (holder "Takin Profit", the git author; there was no LICENSE file despite "license": "MIT").
+- scripts/release-prepare.ts <release> [--dry-run] [--out] [--skip-ci]: changeset version, lockfile update + frozen check, `bun run gate` (new root script), release commit, local tags, ci-local on the release commit (must PASS, log saved), build + pack released packages, pack-smoke on oxlint 1.70.0 + pinned, SHA512SUMS, RELEASE_NOTES.md, per-tag NOTES-*.md, MAINTAINER_COMMANDS.md; prints the commands. Never pushes or publishes. pack-smoke now verifies only the tarballs present when given --tarballs (a release may be a subset) and requires CHANGELOG.md + LICENSE in tarballs.
+- .github/workflows/release.yml: on tag `oxlint-plugin-*@*`: checks tag == package.json name@version, skips versions already on npm, frozen install, `bun run gate`, `npm publish --provenance --access public` with `id-token: write` (trusted publishing). SHA-pinned actions.
+- CONTRIBUTING.md (setup, commands, test layout, hooks/commits, CI + ci-local + the Colima overcommit requirement moved here from the ci-local.sh header, tasks, changesets, release procedure, only-the-maintainer-publishes); AGENTS.md gains an agent guide above the Clavix block; CLAUDE.md points at AGENTS.md/CONTRIBUTING.md.
+- Follow-up created: TASK-036 (upstream copyright notices for ported MIT code), m-2, depends on task-007.
+
+## Verification
+- `git tag` -> 7 local tags as above; `git ls-remote --tags origin` not touched (no push).
+- actionlint 1.7.12 on ci.yml + release.yml: exit 0.
+- `bun run gate` exit 0 (unit 129/0, compat 19/0, repo 14/0, CLI 120/0, bench 4/0); `bun run test:pack` PASS (contents incl. CHANGELOG/LICENSE; 6 plugins on oxlint 1.93.0).
+- `bun scripts/release-prepare.ts 0.2.0 --dry-run` (log: oxlint-plugins-release/logs/release-dry-run-51a8ceb.log): exit 0; temp worktree; versions errorset/immutable/query/router/solidjs 0.1.1->0.1.2, ts-no-assert 0.1.2->0.1.3 (only patch changesets so far); gate passed in the worktree; "would tag" six tags; ci-local skipped (dry run); six tarballs + SHA512SUMS (`shasum -a 512 -c` all OK) + RELEASE_NOTES.md + NOTES-*.md + MAINTAINER_COMMANDS.md (marked DRY RUN) in a temp dir; pack-smoke PASS for all six on 1.70.0 and 1.93.0. Afterwards the real repo still had 7 tags, HEAD 51a8ceb, no extra worktree, clean tree.
+- Verified with scripts/ci-local.sh (51a8ceb, PASS); GitHub Actions unavailable (billing lock). All 10 legs pass (incl. advisory latest).
+
+## Decisions
+- No tags for pre-history versions (maintainer). LICENSE holder = git author name. Changesets `format: false` to avoid a second formatter. Dry run cannot run ci-local (its commit is unreachable for a clone).
+
+Consumer-visible change: yes (metadata, LICENSE/CHANGELOG in tarballs, exports ./package.json) - covered by changesets.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Release hygiene: 7 local retroactive tags with H3 comparisons (3 pre-history versions documented, untagged), Changesets with backfilled CHANGELOGs, corrected metadata + MIT LICENSE, release-prepare.ts (dry run verified), release.yml (actionlint clean), CONTRIBUTING.md/AGENTS.md. Verified with scripts/ci-local.sh (51a8ceb, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
