@@ -3,11 +3,11 @@ id: TASK-014
 title: >-
   errorset/prefer-guard-over-manual-kind-check: Use the narrowing guard's set
   (OX-16, R4)
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T20:29:00Z'
+updated_date: '2026-11-11T20:36:00Z'
 labels:
   - errorset
   - bug
@@ -36,7 +36,7 @@ Take the set from the guard call that narrowed the variable (reuse the narrowing
 - [x] #1 The audit Appendix A probe for this finding is committed first as a failing oxlint RuleTester (or CLI) test, then passes; both runs are recorded in the notes
 - [x] #2 A multi-set test suggests UserError.not_found(r) for a variable narrowed by UserError; an unknown narrowing guard gives no suggestion
 - [x] #3 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -66,4 +66,12 @@ Take the set from the guard call that narrowed the variable (reuse the narrowing
 - README updated; changeset .changeset/errorset-prefer-guard-set.md (errorset patch).
 
 Consumer-visible change: yes (correct suggestion; isErr no longer gets a guessed suggestion).
+
+Verified with scripts/ci-local.sh (7ca1b1c, PASS); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+prefer-guard-over-manual-kind-check suggests the set of the guard that narrowed the value (multi-set probe passes); isErr narrowing gets no suggestion; narrowing shared with no-unguarded-data-access via utils/narrowing.ts. Changeset: errorset patch. Verified with scripts/ci-local.sh (7ca1b1c, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
