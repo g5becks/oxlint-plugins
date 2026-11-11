@@ -3,10 +3,10 @@ id: TASK-019
 title: >-
   Migration: Codemod for suppressions and config keys, plus the 0.2 migration
   guide (OX-41)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T21:09:00Z'
+updated_date: '2026-11-11T21:15:00Z'
 labels:
   - docs
   - compat
@@ -43,7 +43,7 @@ Audit OX-41 and U1. From oxlint 1.70, long-form disable comments (`oxlint-plugin
 - [x] #2 On a temp copy of agentx the codemod rewrites the long-form suppressions and the three config files; counts are recorded and compared with the audit's 168 in 90 files; /Users/takinprofit/Dev/agentx is unmodified (git status there is unchanged)
 - [x] #3 docs/migration-0.2.md lists every breaking change and the agentx checklist; every README links it
 - [x] #4 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -78,4 +78,12 @@ Audit OX-41 and U1. From oxlint 1.70, long-form disable comments (`oxlint-plugin
 `bun run gate` exit 0: unit 225/0, compat 40/0, repo 52/0, CLI 162/0, bench 4/0.
 
 Consumer-visible change: yes (docs + codemod).
+
+Verified with scripts/ci-local.sh (23045ed, PASS); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Dependency-free 0.2 codemod (comments + config keys, jsPlugins untouched, idempotent, --check) with 16 tests; on a copy of agentx it rewrote 170 suppressions in 92 files (audit: 168/90) and 53 config keys in 3 files; agentx unmodified. docs/migration-0.2.md (breaking changes + agentx checklist) linked from every README. Verified with scripts/ci-local.sh (23045ed, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
