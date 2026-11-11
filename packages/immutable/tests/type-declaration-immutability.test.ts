@@ -19,6 +19,14 @@ tester.run("type-declaration-immutability", rule, {
     "type Foo = A & B",
     // Type reference only — skip
     "type Foo = SomePrimitive.Root",
+    // Audit R7: readonly forms and unresolvable references
+    "type A = ReadonlySet<string>",
+    "type A = Required<{ readonly a?: string }>",
+    "type A = Omit<{ readonly a: string; readonly b: string }, 'b'>",
+    "type A = Partial<SomeType>",
+    "type A = { readonly f: () => void; method(): void }",
+    "type A = ({ readonly a: string })",
+    "type A = 'x' | 'y'",
   ],
   invalid: [
     // Interface with non-readonly members
@@ -46,6 +54,15 @@ tester.run("type-declaration-immutability", rule, {
       code: "type FooProps = A & { readonly x: string } & { y: number }",
       errors: [{ messageId: "notReadonly" }],
     },
+    // Audit R7: more mutable shapes
+    { code: "type A = Set<string>", errors: [{ messageId: "notReadonly" }] },
+    { code: "type A = WeakMap<object, string>", errors: [{ messageId: "notReadonly" }] },
+    { code: "type A = Required<{ a?: string }>", errors: [{ messageId: "notReadonly" }] },
+    { code: "type A = Pick<{ a: string; b: string }, 'a'>", errors: [{ messageId: "notReadonly" }] },
+    { code: "type A = Omit<{ a: string; readonly b: string }, 'b'>", errors: [{ messageId: "notReadonly" }] },
+    { code: "type A = { readonly a: string } | string[]", errors: [{ messageId: "notReadonly" }] },
+    { code: "type A = { -readonly [K in 'a']: string }", errors: [{ messageId: "notReadonly" }] },
+    { code: "type A = { [key: string]: number }", errors: [{ messageId: "notReadonly" }] },
     // Intersection where only constituent is a mutable literal
     {
       code: "type Foo = SomeBase & { mutableProp: string }",

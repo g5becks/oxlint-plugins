@@ -86,6 +86,34 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 | `immutable-data` | Disallow mutating methods on arrays/objects (`push`, `splice`, etc.) | — |
 | `readonly-type` | Enforce `readonly` on TypeScript type members | — |
 
+### `type-declaration-immutability` without type information
+
+The rule checks the declared type **syntactically** for `ReadonlyShallow` (the property itself
+must be `readonly`; its value type may be mutable, so `{ readonly items: string[] }` is fine):
+
+| Declaration | Result |
+|---|---|
+| `{ a: string }`, `interface I { a: string }`, `{ [k: string]: T }` | reported |
+| `T[]`, `Array<T>`, `[A, B]` | reported (use `readonly T[]`, `ReadonlyArray<T>`, `readonly [A, B]`) |
+| `Map`, `Set`, `WeakMap`, `WeakSet`, `Record<K, V>` | reported (use `ReadonlyMap`, `ReadonlySet`, `Readonly<Record<K, V>>`) |
+| `{ [K in X]: T }`, `{ -readonly [K in X]: T }` | reported (use `{ readonly [K in X]: T }`) |
+| unions and intersections | reported when any member is reported |
+| `Partial`, `Required`, `Pick`, `Omit`, `NonNullable` over a literal | follows the literal |
+| `Readonly<T>`, `readonly` arrays/tuples, primitives, literals, function types | accepted |
+
+What it **can't see** without a type checker (upstream eslint-plugin-functional resolves these):
+
+- **Named types:** `type A = SomeInterface` or `Partial<SomeType>`, where the referenced
+  declaration lives elsewhere. Those aren't reported here; the referenced declaration is checked
+  where it is declared.
+- **Classes and generic parameters:** `type A = MyClass`, `type A<T> = T`.
+- **Deep immutability:** only `ReadonlyShallow` is enforced. The upstream `Immutable` and
+  `ReadonlyDeep` levels need type information.
+
+Measured against upstream `eslint-plugin-functional@10.0.1` (type-aware, ReadonlyShallow /
+AtLeast) on a 22-declaration probe, the rule agrees on all 22
+(`packages/immutable/tests/type-declaration-immutability-probe.test.ts`).
+
 ## License
 
 MIT
