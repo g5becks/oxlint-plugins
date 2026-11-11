@@ -3,11 +3,11 @@ id: TASK-016
 title: >-
   errorset: Support @takinprofit/errorset 0.4/0.5 API patterns and return new
   Error (R6)
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T20:48:00Z'
+updated_date: '2026-11-11T20:52:00Z'
 labels:
   - errorset
 milestone: m-1
@@ -47,7 +47,7 @@ New since the audit. `@takinprofit/errorset` 0.4.0 and 0.5.0 (released 2026-11-1
 - [x] #3 no-new-error-in-errorset-fn reports return new Error; 0.3-era callable no-context patterns still work
 - [x] #4 The README lists supported errorset versions and patterns
 - [x] #5 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #6 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #6 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -96,4 +96,12 @@ New since the audit. `@takinprofit/errorset` 0.4.0 and 0.5.0 (released 2026-11-1
 - README: "Supported errorset versions and patterns" table, requirement line, no-new-error text. Changeset .changeset/errorset-0.5-patterns.md (errorset minor).
 
 Consumer-visible change: yes.
+
+Verified with scripts/ci-local.sh (9314f14, PASS); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+errorset rules support @takinprofit/errorset 0.4/0.5 (.with, object-form sets, merged guards, err.set narrowing, capture helpers, toError) with 0.3 patterns intact; set members are no longer kind guards; return new Error is reported. Fixtures type-check against 0.5.0; pattern x rule table in notes. Changeset: errorset minor. Verified with scripts/ci-local.sh (9314f14, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
