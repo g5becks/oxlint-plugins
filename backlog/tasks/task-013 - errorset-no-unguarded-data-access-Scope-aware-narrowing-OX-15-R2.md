@@ -1,11 +1,11 @@
 ---
 id: TASK-013
 title: 'errorset/no-unguarded-data-access: Scope-aware narrowing (OX-15, R2)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T20:23:00Z'
+updated_date: '2026-11-11T20:27:00Z'
 labels:
   - errorset
   - bug
@@ -38,7 +38,7 @@ Audit R2 (High). `no-unguarded-data-access` tracks guarded variables per file by
 - [x] #2 The 5-case probe gives 5 of 5 expected results, including the same-name variable in another function
 - [x] #3 Each narrowing form (if/else, negated guard with early exit, ternary, &&, ||) has a positive and a negative test; an access before the first guard is reported
 - [x] #4 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -67,4 +67,12 @@ packages/errorset/tests/no-unguarded-data-access-narrowing.test.ts (14 valid, 9 
 - `bun run gate` exit 0: unit 176/0, compat 34/0, repo 18/0, CLI 125/0, bench 4/0.
 
 Consumer-visible change: yes.
+
+Verified with scripts/ci-local.sh (8f4b0d9, PASS); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+no-unguarded-data-access resolves variables by scope and evaluates at Program:exit; guard clauses, else branches, ternaries, && and || narrow; the 5-case probe is 5/5 and accesses before the first guard are reported. Changeset: errorset patch. Verified with scripts/ci-local.sh (8f4b0d9, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
