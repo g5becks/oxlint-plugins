@@ -3,11 +3,11 @@ id: TASK-018
 title: >-
   Compat: oxlint >= 1.70 contract, engines, and removal of pre-1.70 fallbacks
   (OX-19, U4)
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T21:03:00Z'
+updated_date: '2026-11-11T21:06:00Z'
 labels:
   - compat
   - docs
@@ -39,7 +39,7 @@ Audit U4, U3, P4, H7 and H8. No package declares `peerDependencies`; every READM
 - [x] #2 No context getter fallback code remains (grep), and unit, CLI and ESLint-compat suites pass on oxlint 1.70.0 and the pinned version
 - [x] #3 READMEs state the tested range, short-name usage for config keys and disable comments, and the corrected jsx-uses-vars note
 - [x] #4 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -70,4 +70,12 @@ Note from TASK-008 (2026-11-11): ts-no-assert's `as const` handling accepts TSTy
 - `bun run gate` exit 0.
 
 Consumer-visible change: yes (breaking requirements).
+
+Verified with scripts/ci-local.sh (7a18451, PASS); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+All six packages declare oxlint >=1.70.0 <2 (optional eslint >=9) peers and Node ^20.19.0 || >=22.12.0; context getter fallbacks removed from shipped code (ESLint 9/10 verified); READMEs document range, short names and jsx-uses-vars. Breaking changeset for all six. Verified with scripts/ci-local.sh (7a18451, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
