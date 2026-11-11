@@ -5,7 +5,7 @@ The oxlint ports follow these upstream versions (provenance and evidence in `ven
 | Port | Upstream | Upstream tests run against the port |
 |---|---|---|
 | `packages/query` | `@tanstack/eslint-plugin-query` 5.91.4 | yes: `bun run test:upstream` (part of `bun run test:unit`) runs the vendored suites unmodified against the ports in oxlint's `RuleTester` (ESLint-compat mode) |
-| `packages/solidjs` | `eslint-plugin-solid` 0.14.5 | see TASK-024 |
+| `packages/solidjs` | `eslint-plugin-solid` 0.14.5 | yes: `bun run test:upstream:solid` runs the vendored v0.14.5 suites (`vendor/eslint-plugin-solid@0.14.5/test`) unmodified against the ports, with `trackImports` mocked exactly as upstream's own `vitest.setup.js` does (so cases need no `solid-js` import) |
 | `packages/router` | `@tanstack/eslint-plugin-router` (`create-route-property-order`) | no vendored suite; `route-param-names` is a custom rule with its own tests |
 
 Every upstream case the ports intentionally don't match is listed below. Skipped cases are
@@ -44,4 +44,40 @@ other adapters.
 
 ## Solid
 
-See TASK-024.
+All 465 runnable upstream cases pass. Fixed in the port while bringing the suites up (TASK-024):
+`imports` crashed on `import "solid-js"` / `import {} from "solid-js"` when fixing (now uses
+upstream's `appendImports`); static values are now evaluated like upstream's `getStaticValue`
+(string concatenation, unary minus, `const` resolution), which fixes `jsx-no-script-url` on
+`"javascrip" + "t:..."`, `no-innerhtml` on concatenated static HTML, and `style-prop` on
+`'margin-top': -10`; `style-prop`'s string-style fix drops declarations without a value, like
+`style-to-object`.
+
+### solid-jsx-uses-vars-suite
+
+**Whole suite skipped.** Upstream's `jsx-uses-vars` test drives ESLint 8 internals (it registers
+the rule next to ESLint's own `no-unused-vars` through `eslint-v8`), which oxlint's `RuleTester`
+can't do. Under oxlint the rule has no effect: oxlint's `no-unused-vars` is native and doesn't see
+a JS plugin's `markVariableAsUsed` (verified on oxlint 1.70.0 and 1.93.0; pinned by a CLI test).
+It still works in ESLint, so the `recommended` preset (an ESLint preset) keeps it, as upstream does.
+
+### solid-style-prop-vendor-prefixes
+
+Not skipped. Upstream validates vendor-prefixed properties against `known-css-properties`' full
+list; the port (which doesn't bundle that list) accepts any lowercase kebab-case name starting with
+`-webkit-`, `-moz-`, `-ms-` or `-o-`, and suggests the kebab form for camelCase ones
+(`-webkitAlignContent`). Slightly more permissive than upstream for misspelled vendor names.
+
+### solid-reactivity-0145-vs-0190
+
+Not skipped. The audit compared the port with eslint-plugin-solid 0.19.0 and found two
+`reactivity` differences; both are upstream changes between 0.14.5 (which the port follows) and
+0.19.0, not port bugs. Measured 2026-11-11 on minimal reproductions
+(`packages/solidjs/tests/reactivity-parity.test.ts`) and on the original files:
+
+| Case | 0.14.5 | port | 0.19.0 |
+|---|---|---|---|
+| `const [a, setA] = makePersisted(createSignal(""), ...)` (agentx `auth-store.tsx:34`) | reported (`shouldDestructure`) | reported | not reported |
+| a value read from a signal inside a `useQuery(() => ...)` factory and used in `queryFn` (agentx `WatchlistSheet.tsx:604`) | not reported | not reported | reported |
+
+Moving the port to 0.19.0 behavior would mean porting 0.15–0.19's reactivity changes (1,600+ lines
+of upstream diff); not done here.

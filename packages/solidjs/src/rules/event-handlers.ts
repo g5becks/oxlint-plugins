@@ -1,3 +1,4 @@
+import { getStaticValue } from "../utils/static-value.ts";
 import { isDOMElementName } from "../utils/jsx.ts";
 
 const COMMON_EVENTS = [
@@ -69,22 +70,6 @@ for (const event of COMMON_EVENTS) {
 const NONSTANDARD_EVENTS_MAP: Record<string, string> = {
   ondoubleclick: "onDblClick",
 };
-
-function getStaticValue(node: any, scope: any): { value: unknown } | null {
-  if (!node) return null;
-  if (node.type === "Literal") return { value: node.value };
-  if (node.type === "TemplateLiteral" && node.expressions.length === 0) {
-    return { value: node.quasis[0]?.value?.cooked ?? null };
-  }
-  if (node.type === "Identifier" && scope) {
-    const variable = scope.set?.get?.(node.name);
-    const def = variable?.defs?.[0];
-    if (def?.node?.type === "VariableDeclarator" && def.node.parent?.kind === "const" && def.node.init) {
-      return getStaticValue(def.node.init, scope);
-    }
-  }
-  return null;
-}
 
 export default {
   meta: {

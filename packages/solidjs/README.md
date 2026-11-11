@@ -57,7 +57,7 @@ Add the plugin to `jsPlugins` and enable the rules you want:
 }
 ```
 
-> **`jsx-uses-vars`:** this rule marks variables used in JSX as used (through `sourceCode.markVariableAsUsed`), so `no-unused-vars` doesn't flag them. Oxlint implements that API since 1.56, so the rule works on every supported oxlint version (it crashed on older ones). Oxlint's built-in `no-unused-vars` already understands JSX usage, so under oxlint the rule is usually redundant; whether the `recommended` preset keeps it is being re-evaluated against upstream parity.
+> **`jsx-uses-vars`:** don't enable it in `.oxlintrc.json`. It marks variables used in JSX (including Solid directives like `use:tooltip`) through `sourceCode.markVariableAsUsed`, but oxlint's built-in `no-unused-vars` is native and doesn't see that, so under oxlint the rule has no effect (verified on oxlint 1.70 and 1.93). JSX components are already understood natively; a directive imported only for `use:x` is still reported by `no-unused-vars`, so reference it explicitly (`void tooltip;`) or suppress that line. In ESLint the rule works as upstream, so the `recommended` preset (which only ESLint consumes) keeps it.
 
 ## Usage with ESLint
 
@@ -92,7 +92,7 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 | `jsx-no-duplicate-props` | Disallow duplicate props on JSX elements | error |
 | `jsx-no-undef` | Disallow undefined variables in JSX | error |
 | `jsx-no-script-url` | Disallow `javascript:` URLs in JSX | error |
-| `jsx-uses-vars` | Mark JSX variables as used (works on oxlint >= 1.56; see note above) | error |
+| `jsx-uses-vars` | Mark JSX variables as used (ESLint only; a no-op under oxlint, see note above) | error |
 | `no-innerhtml` | Disallow `innerHTML`/`outerHTML` | error |
 | `no-unknown-namespaces` | Disallow unknown JSX namespace prefixes | error |
 | `self-closing-comp` | Enforce self-closing tags for components without children | warn |
@@ -116,6 +116,12 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 | `prefer-for` | Prefer `<For>` over `.map()` in JSX | error |
 | `prefer-show` | Prefer `<Show>` over ternaries/`&&` in JSX | — |
 | `prefer-classlist` | Prefer `classList` object over ternary `class` strings | — |
+
+## Parity with upstream
+
+The rules follow `eslint-plugin-solid` 0.14.5. Its test suites run unmodified against these ports
+on every CI run; differences (including two `reactivity` behaviors that changed upstream in
+0.15–0.19) are listed in [PARITY.md](https://github.com/g5becks/oxlint-plugins/blob/main/PARITY.md).
 
 ## License
 

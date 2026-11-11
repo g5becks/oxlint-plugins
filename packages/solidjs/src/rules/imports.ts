@@ -1,3 +1,4 @@
+import { appendImports } from "../utils/fix-imports.ts";
 type Source = "solid-js" | "solid-js/web" | "solid-js/store";
 
 const primitiveMap = new Map<string, Source>();
@@ -136,10 +137,11 @@ export default {
                   const specText = sourceCode.getText(specifier);
 
                   if (correctDeclaration) {
-                    const lastSpecifier = correctDeclaration.specifiers[correctDeclaration.specifiers.length - 1];
                     const removeResult = removeSpecifierFromNode(fixer, sourceCode, specifier, node);
                     if (!removeResult) return null;
-                    return [removeResult, fixer.insertTextAfter(lastSpecifier, `, ${specText}`)];
+                    // Works for `import "solid-js"` and `import {} from "solid-js"` too (no specifiers).
+                    const append = appendImports(fixer, sourceCode, correctDeclaration, [specText]);
+                    return append ? [removeResult, append] : null;
                   }
 
                   const firstSolidDecl = program.body.find(

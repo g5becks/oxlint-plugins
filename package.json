@@ -29,7 +29,9 @@
     "test:unit:solidjs": "node --test \"packages/solidjs/tests/*.test.ts\"",
     "lint:state": "bun scripts/check-createonce-state.ts",
     "test:compat:eslint10": "ESLINT_PACKAGE=eslint-10 bun test ./tests/integration/*.test.ts ./tests/eslint-compat/*.test.ts",
-    "test:upstream": "node --import ./tests/upstream/query/register.mjs --test tests/upstream/query/skipped-suites.test.ts $(ls vendor/@tanstack/eslint-plugin-query@5.91.4/src/__tests__/*.test.ts | grep -v no-void-query-fn)"
+    "test:upstream": "bun run test:upstream:query && bun run test:upstream:solid",
+    "test:upstream:query": "node --import ./tests/upstream/query/register.mjs --test tests/upstream/query/skipped-suites.test.ts $(ls vendor/@tanstack/eslint-plugin-query@5.91.4/src/__tests__/*.test.ts | grep -v no-void-query-fn)",
+    "test:upstream:solid": "node --import ./tests/upstream/solid/register.mjs --test tests/upstream/solid/skipped-suites.test.ts $(ls vendor/eslint-plugin-solid@0.14.5/test/rules/*.test.ts | grep -v jsx-uses-vars)"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",

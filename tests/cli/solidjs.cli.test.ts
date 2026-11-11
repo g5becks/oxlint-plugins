@@ -512,3 +512,40 @@ describe("reactivity state isolation", () => {
     }
   });
 });
+
+// ── jsx-uses-vars under oxlint (TASK-024 decision) ────
+// oxlint's built-in no-unused-vars is native and doesn't see a JS plugin's
+// markVariableAsUsed, so jsx-uses-vars can't mark Solid directives (`use:tooltip`) as used under
+// oxlint: it is a no-op there and is not recommended for oxlint configs (README). If this test
+// starts failing, oxlint changed and the recommendation should be revisited.
+describe("jsx-uses-vars under oxlint", () => {
+  test("does not affect oxlint's native no-unused-vars", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "jsx-uses-vars-"));
+    const file = join(dir, "a.tsx");
+    await Bun.write(
+      file,
+      'import { tooltip } from "./tooltip";\nimport { Comp } from "./comp";\nexport const A = () => (\n  <div use:tooltip>\n    <Comp />\n  </div>\n);\n',
+    );
+    try {
+      for (const withRule of [false, true]) {
+        const cfg = await writeOxlintConfig({
+          plugins: ["solidjs"],
+          rules: { "no-unused-vars": "error", ...(withRule ? { "solidjs/jsx-uses-vars": "error" } : {}) },
+        });
+        try {
+          // keepBuiltins: `-A all` would turn off the built-in rule.
+          const result = await runOxlint({ configPath: cfg, files: [file], keepBuiltins: true });
+          const unused = result.diagnostics.filter((d) => d.code.endsWith("(no-unused-vars)")).map((d) => d.message);
+          expect({ withRule, unused }).toEqual({
+            withRule,
+            unused: ["Identifier 'tooltip' is imported but never used."],
+          });
+        } finally {
+          await cleanupConfig(cfg);
+        }
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});

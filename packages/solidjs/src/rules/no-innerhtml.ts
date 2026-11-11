@@ -1,16 +1,8 @@
+import { getStaticString } from "../utils/static-value.ts";
 import { jsxPropName } from "../utils/jsx.ts";
 
 function isHtmlLike(str: string): boolean {
   return /<[a-z][\s\S]*>/i.test(str.trim());
-}
-
-function getStringIfConstant(node: any): string | null {
-  if (!node) return null;
-  if (node.type === "Literal" && typeof node.value === "string") return node.value;
-  if (node.type === "TemplateLiteral" && node.expressions.length === 0) {
-    return node.quasis[0]?.value?.cooked ?? null;
-  }
-  return null;
 }
 
 export default {
@@ -84,7 +76,7 @@ export default {
 
         if (allowStatic) {
           const innerHtmlNode = node.value?.type === "JSXExpressionContainer" ? node.value.expression : node.value;
-          const innerHtml = innerHtmlNode && getStringIfConstant(innerHtmlNode);
+          const innerHtml = innerHtmlNode && getStaticString(innerHtmlNode); // no scope: like upstream, identifiers stay "dynamic";
           if (typeof innerHtml === "string") {
             if (isHtmlLike(innerHtml)) {
               if (node.parent?.parent?.type === "JSXElement" && node.parent.parent.children?.length) {

@@ -1,3 +1,4 @@
+import { appendImports } from "../utils/fix-imports.ts";
 import { isDOMElementName } from "../utils/jsx.ts";
 
 const AUTO_COMPONENTS = ["Show", "For", "Index", "Switch", "Match"];
@@ -16,30 +17,6 @@ const formatList = (strings: Array<string>): string => {
 
 function getCommentBefore(node: any, sourceCode: any): any {
   return sourceCode.getCommentsBefore(node).find((comment: any) => comment.loc!.end.line >= node.loc!.start.line - 1);
-}
-
-function appendImports(fixer: any, sourceCode: any, importNode: any, identifiers: Array<string>): any {
-  const identifiersString = identifiers.join(", ");
-  const reversedSpecifiers = importNode.specifiers.slice().reverse();
-  const lastSpecifier = reversedSpecifiers.find((s: any) => s.type === "ImportSpecifier");
-  if (lastSpecifier) {
-    return fixer.insertTextAfter(lastSpecifier, `, ${identifiersString}`);
-  }
-  const otherSpecifier = importNode.specifiers.find(
-    (s: any) => s.type === "ImportDefaultSpecifier" || s.type === "ImportNamespaceSpecifier",
-  );
-  if (otherSpecifier) {
-    return fixer.insertTextAfter(otherSpecifier, `, { ${identifiersString} }`);
-  }
-  if (importNode.specifiers.length === 0) {
-    const [importToken, maybeBrace] = sourceCode.getFirstTokens(importNode, { count: 2 });
-    if (maybeBrace?.value === "{") {
-      return fixer.insertTextAfter(maybeBrace, ` ${identifiersString} `);
-    } else {
-      return importToken ? fixer.insertTextAfter(importToken, ` { ${identifiersString} } from`) : null;
-    }
-  }
-  return null;
 }
 
 function insertImports(fixer: any, sourceCode: any, source: string, identifiers: Array<string>): any {

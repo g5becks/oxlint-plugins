@@ -1,3 +1,4 @@
+import { getStaticValue } from "../utils/static-value.ts";
 import { jsxPropName } from "../utils/jsx.ts";
 
 function toKebabCase(str: string): string {
@@ -14,6 +15,8 @@ function parseStyleString(str: string): Record<string, string> | undefined {
     const prop = trimmed.slice(0, i).trim();
     const value = trimmed.slice(i + 1).trim();
     if (!prop) return undefined;
+    // Like style-to-object (used upstream): declarations without a value are dropped.
+    if (!value) continue;
     result[prop] = value;
   }
   return result;
@@ -31,17 +34,17 @@ function getPropertyName(node: any, scope?: any): string | null {
   return null;
 }
 
-function getStaticValue(node: any, _scope?: any): { value: unknown } | null {
-  if (!node) return null;
-  if (node.type === "Literal") return { value: node.value };
-  if (node.type === "TemplateLiteral" && node.expressions.length === 0) {
-    return { value: node.quasis[0]?.value?.cooked ?? null };
-  }
-  return null;
-}
-
 // Standard CSS properties (comprehensive list for validation)
 const CSS_PROPERTIES = new Set(buildCssPropertyList());
+
+/**
+ * Known CSS property, or a kebab-case vendor-prefixed one (`-webkit-...`, `-moz-...`, `-ms-...`,
+ * `-o-...`). Upstream checks vendor names against known-css-properties' exhaustive list; this
+ * port accepts any lowercase kebab vendor name (PARITY.md#solid-style-prop-vendor-prefixes).
+ */
+function isKnownCssProperty(name: string): boolean {
+  return CSS_PROPERTIES.has(name) || /^-(?:webkit|moz|ms|o)-[a-z][a-z0-9-]*$/.test(name);
+}
 
 function buildCssPropertyList(): string[] {
   // Core layout and box model
@@ -531,9 +534,9 @@ export default {
           for (const prop of properties) {
             const scope = context.sourceCode.getScope(prop);
             const name: string | null = getPropertyName(prop, scope);
-            if (name && !name.startsWith("--") && !CSS_PROPERTIES.has(name)) {
+            if (name && !name.startsWith("--") && !isKnownCssProperty(name)) {
               const kebabName: string = toKebabCase(name);
-              if (CSS_PROPERTIES.has(kebabName)) {
+              if (isKnownCssProperty(kebabName)) {
                 context.report({
                   node: prop.key,
                   messageId: "kebabStyleProp",
