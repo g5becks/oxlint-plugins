@@ -29,7 +29,8 @@ On oxlint >= 1.70 the plugin's rules are named `immutable/<rule>` (oxlint strips
 The long form `oxlint-plugin-immutable/<rule>` still works as a config key, but **disable comments
 with the long form are ignored** on oxlint >= 1.70, and the short form doesn't exist before 1.70.
 When upgrading from oxlint <= 1.69, rename suppressions, config keys and the oxlint version
-together. Diagnostics are printed as `immutable(<rule>)`.
+together: the [0.2 migration guide](https://github.com/g5becks/oxlint-plugins/blob/main/docs/migration-0.2.md)
+has a codemod that does the renaming. Diagnostics are printed as `immutable(<rule>)`.
 
 ## Installation
 
