@@ -30,6 +30,7 @@ version), TypeScript 5.9.3 for typescript-eslint plus TypeScript 7 (`typescript-
 | `bun run test:bench` | Bench smoke (exact counts asserted, timings only logged) |
 | `bun run test:repo` | Repo tooling tests (commit-msg check) |
 | `bun run test:pack` | Pack every package, install into a temp consumer, lint with each plugin |
+| `bun run parity` | Advisory parity report: upstream ESLint plugins (pinned devDependencies) vs the ports on `tests/fixtures/corpus`, per-rule recall/precision and site diff (`scripts/parity.ts --out <file>`) |
 | `bun run gate` | Everything above except pack, in CI order |
 | `bash scripts/ci-local.sh [ref]` | Local mirror of `.github/workflows/ci.yml` (see below) |
 
