@@ -1,15 +1,15 @@
 /**
- * Tracks imports from `@takinprofit/errorset` and errorset guard identifiers
- * declared at module scope. Used by all plugin-errorset rules.
+ * Tracks imports from `@takinprofit/errorset` (and the re-export modules configured in
+ * `settings.errorset.modules`) and errorset guard identifiers. Used by all errorset rules.
  */
-
-const ERRORSET_SOURCE = "@takinprofit/errorset";
+import { ERRORSET_SOURCE, type ErrorsetSettings, parseErrorsetSettings } from "./settings.ts";
 
 export type ErrorsetImportTracker = {
-  reset(): void;
+  /** Forget the previous file; optionally apply the file's `settings.errorset`. */
+  reset(settings?: ErrorsetSettings): void;
   handleImportDeclaration(node: any): void;
   handleVariableDeclaration(node: any): void;
-  /** True once the file has at least one import from @takinprofit/errorset */
+  /** True once the file imports from @takinprofit/errorset, or a guard / errorset export from a configured module */
   hasErrorsetImport(): boolean;
   /** True if the given identifier name is a local errorset factory import (e.g. "errorSet") */
   isErrorsetFactory(name: string): boolean;
@@ -27,26 +27,47 @@ export function createErrorsetImportTracker(): ErrorsetImportTracker {
   const importedNames = new Map<string, string>();
   // Local variable names that hold errorset guards (const X = errorSet(...).init<T>())
   const guardNames_ = new Set<string>();
+  let settings: ErrorsetSettings = parseErrorsetSettings(undefined);
 
   return {
-    reset() {
+    reset(next?: ErrorsetSettings) {
       importedFromErrorset = false;
       importedNames.clear();
       guardNames_.clear();
+      if (next) settings = next;
     },
 
     handleImportDeclaration(node: any) {
-      if (node?.source?.value !== ERRORSET_SOURCE) return;
-      importedFromErrorset = true;
+      const source = node?.source?.value;
+      if (typeof source !== "string" || !settings.modules.has(source)) return;
+      // `import type { UserError } from "..."` provides no runtime guard.
+      if (node.importKind === "type") return;
+      const isLibrary = source === ERRORSET_SOURCE;
+      if (isLibrary) importedFromErrorset = true;
 
       for (const specifier of node.specifiers ?? []) {
+        // Default and namespace imports (`import * as core`) are not tracked: rules match
+        // guards by identifier, so `core.UserError` is not recognized (documented in the README).
         if (specifier?.type !== "ImportSpecifier") continue;
+        if (specifier.importKind === "type") continue;
         const localName: string = specifier.local?.name;
         const importedName: string =
           specifier.imported?.type === "Identifier"
             ? specifier.imported.name
             : (specifier.imported?.value ?? localName);
-        if (localName) importedNames.set(localName, importedName);
+        if (!localName) continue;
+        if (isLibrary) {
+          importedNames.set(localName, importedName);
+          continue;
+        }
+        // Configured re-export module: errorset exports and guard-named sets.
+        if (importedName === "errorSet" || importedName === "isErr") {
+          importedNames.set(localName, importedName);
+          importedFromErrorset = true;
+        } else if (settings.guardPattern.test(importedName)) {
+          guardNames_.add(localName);
+          importedFromErrorset = true;
+        }
       }
     },
 

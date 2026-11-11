@@ -16,6 +16,7 @@
  *    if (UserError(result)) { console.log(result.data.id) }
  */
 import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
+import { readErrorsetSettings } from "../utils/settings.ts";
 import { isGuardCall, isIsErrCall, ERRORSET_PROPERTIES } from "../utils/pattern-helpers.ts";
 
 type Options = [{ properties?: string[] }?];
@@ -135,11 +136,11 @@ export default {
 
     return {
       before() {
-        tracker.reset();
+        tracker.reset(readErrorsetSettings(context));
         guardedVarNames.clear();
       },
       Program() {
-        tracker.reset();
+        tracker.reset(readErrorsetSettings(context));
         guardedVarNames.clear();
       },
       ImportDeclaration(node: any) {

@@ -14,6 +14,7 @@
  *    }
  */
 import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
+import { readErrorsetSettings } from "../utils/settings.ts";
 import { isErrorsetCreation, getEnclosingFunction, CAPTURE_METHODS } from "../utils/pattern-helpers.ts";
 
 type Options = [{ allowedBuiltins?: string[] }?];
@@ -76,12 +77,12 @@ export default {
 
     return {
       before() {
-        tracker.reset();
+        tracker.reset(readErrorsetSettings(context));
         errorsetFunctions.clear();
         pendingViolations.length = 0;
       },
       Program() {
-        tracker.reset();
+        tracker.reset(readErrorsetSettings(context));
         errorsetFunctions.clear();
         pendingViolations.length = 0;
       },

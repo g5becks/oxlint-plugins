@@ -54,13 +54,33 @@ for (const RULE of RULES) {
   });
 }
 
-describe("known bugs (audit probes)", () => {
-  // Audit R1: rules are inert unless the file imports @takinprofit/errorset itself.
-  test.failing("TASK-012: reports error sets imported from a re-exporting module", async () => {
+describe("audit probes", () => {
+  // Audit R1: rules were inert unless the file imported @takinprofit/errorset itself.
+  test("reports error sets imported from a module listed in settings.errorset.modules (audit R1)", async () => {
     const file = ruleFixture(PLUGIN, "reexported-set");
-    const result = await runOxlint({ configPath, files: [file] });
-    const diags = result.diagnostics.filter((d) => d.code === ruleCode(PLUGIN, "no-throw-errorset"));
-    expect(reportedLines(diags)).toEqual(await markedLines(file));
+    const withModules = await writeOxlintConfig({
+      plugins: [PLUGIN],
+      rules: Object.fromEntries(RULES.map((r) => [`errorset/${r}`, "error"])),
+      settings: { errorset: { modules: ["@agentx/core"] } },
+    });
+    try {
+      const result = await runOxlint({ configPath: withModules, files: [file] });
+      const expected = await markedLines(file);
+      expect(expected).toHaveLength(3);
+      expect(reportedLines(result.diagnostics)).toEqual(expected);
+      expect(result.diagnostics.map((d) => d.code).sort()).toEqual([
+        "errorset(no-catch-errorset)",
+        "errorset(no-new-error-in-errorset-fn)",
+        "errorset(no-throw-errorset)",
+      ]);
+    } finally {
+      await cleanupConfig(withModules);
+    }
+  });
+
+  test("without settings, sets imported from other modules stay unreported (unchanged default)", async () => {
+    const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, "reexported-set")] });
+    expect(result.diagnostics).toEqual([]);
   });
 
   // Audit R3: no-throw-errorset used to autofix `throw` -> `return`, which changes runtime

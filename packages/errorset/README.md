@@ -78,6 +78,45 @@ export default [
 ];
 ```
 
+## Settings: error sets re-exported from your own modules
+
+By default the rules only recognize error sets defined in the same file with
+`errorSet(...).init()` from `@takinprofit/errorset`. If your error sets live in a shared
+module (for example `export const UserError = errorSet(...).init()` in `@acme/core`, imported
+everywhere else), list that module in `settings.errorset.modules`:
+
+```json
+{
+  "jsPlugins": ["./node_modules/oxlint-plugin-errorset/dist/index.js"],
+  "settings": {
+    "errorset": {
+      "modules": ["@acme/core"],
+      "guardPattern": "^[A-Z]\\w*(Error|Err)$"
+    }
+  },
+  "rules": {
+    "errorset/no-throw-errorset": "error"
+  }
+}
+```
+
+ESLint reads the same object from its flat-config `settings`.
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `modules` | `["@takinprofit/errorset"]` | Modules that re-export error sets. A named import from one of them (also aliased: `import { UserError as UE }`) whose **imported** name matches `guardPattern` is treated as an error-set guard; `errorSet` and `isErr` imported from them are recognized too. `@takinprofit/errorset` is always included. |
+| `guardPattern` | `^[A-Z]\w*(Error\|Err)$` | Regular expression (a string) the imported name must match. |
+
+Notes:
+
+- Type-only imports (`import type { UserError }`, `import { type UserError }`) are never guards.
+- Namespace imports (`import * as core from "@acme/core"` then `core.UserError`) are **not**
+  recognized; import the sets by name.
+- Invalid settings never break linting: a `modules` value that isn't an array of non-empty
+  strings, or a `guardPattern` that doesn't compile, is ignored and the default is used.
+- The `recommended` config only lists rules; add `settings.errorset` yourself when your sets
+  are re-exported.
+
 ---
 
 ## Rules

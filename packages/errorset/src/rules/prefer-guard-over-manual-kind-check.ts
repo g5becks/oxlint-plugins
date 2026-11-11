@@ -9,6 +9,7 @@
  * ✅ if (UserError.not_found(result)) { result.data.id }  // data is { id: string }
  */
 import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
+import { readErrorsetSettings } from "../utils/settings.ts";
 import { getKindEquality, findAncestor, isGuardCall, isIsErrCall } from "../utils/pattern-helpers.ts";
 
 /**
@@ -74,10 +75,10 @@ export default {
 
     return {
       before() {
-        tracker.reset();
+        tracker.reset(readErrorsetSettings(context));
       },
       Program() {
-        tracker.reset();
+        tracker.reset(readErrorsetSettings(context));
       },
       ImportDeclaration(node: any) {
         tracker.handleImportDeclaration(node);

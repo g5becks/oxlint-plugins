@@ -7,6 +7,7 @@
  * ✅ return UserError.not_found`User ${"id"} not found`({ id })
  */
 import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
+import { readErrorsetSettings } from "../utils/settings.ts";
 import { getErrorsetTag, getMemberObjectName, CAPTURE_METHODS } from "../utils/pattern-helpers.ts";
 
 /**
@@ -108,10 +109,10 @@ export default {
 
     return {
       before() {
-        tracker.reset();
+        tracker.reset(readErrorsetSettings(context));
       },
       Program() {
-        tracker.reset();
+        tracker.reset(readErrorsetSettings(context));
       },
       ImportDeclaration(node: any) {
         tracker.handleImportDeclaration(node);

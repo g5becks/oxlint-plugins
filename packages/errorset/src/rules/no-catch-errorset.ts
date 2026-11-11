@@ -11,6 +11,7 @@
  * ❌ catch (e) { if (e.kind === "not_found") { ... } }
  */
 import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
+import { readErrorsetSettings } from "../utils/settings.ts";
 import { isGuardCall, isErrorsetInstanceof, isIsErrCall } from "../utils/pattern-helpers.ts";
 
 function isInsideCatch(node: any): boolean {
@@ -57,10 +58,10 @@ export default {
 
     return {
       before() {
-        tracker.reset();
+        tracker.reset(readErrorsetSettings(context));
       },
       Program() {
-        tracker.reset();
+        tracker.reset(readErrorsetSettings(context));
       },
       ImportDeclaration(node: any) {
         tracker.handleImportDeclaration(node);
