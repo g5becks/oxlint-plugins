@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { RuleTester } from "eslint";
+import { RuleTester } from "../helpers/eslint.ts";
 import functionalPlugin from "../../packages/immutable/src/index";
 import queryPlugin from "../../packages/query/src/index";
 import routerPlugin from "../../packages/router/src/index";

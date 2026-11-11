@@ -5,9 +5,8 @@
     "includes": [
       "**",
       "!**/fixtures",
-      "!**/upstream",
+      "!vendor",
       "!**/dist",
-      "!client",
       "!backlog",
       "!.clavix",
       "!.serena",

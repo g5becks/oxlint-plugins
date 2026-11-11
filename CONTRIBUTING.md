@@ -12,7 +12,7 @@ Directory names are the normalized plugin names (the rule prefix on oxlint >= 1.
   needs Node type stripping). oxlint itself needs Node `^20.19.0 || >=22.12.0`.
 - `bun install --frozen-lockfile`. This also installs the git hooks (lefthook, via `prepare`).
 
-Every tool is pinned exactly in the root `package.json`: oxlint and `@oxlint/plugins` (same
+Every tool is pinned exactly in the root `package.json` (vendored upstream sources live in `vendor/`, the real-world lint corpus in `tests/fixtures/corpus/`): oxlint and `@oxlint/plugins` (same
 version), TypeScript 5.9.3 for typescript-eslint plus TypeScript 7 (`typescript-7` alias) for
 `bun run check`, Biome, lefthook, Changesets, Backlog.md. Never use `bunx oxlint`: tests use
 `node_modules/.bin/oxlint`, or `OXLINT_BIN=<path>` to test another oxlint version.
@@ -25,7 +25,7 @@ version), TypeScript 5.9.3 for typescript-eslint plus TypeScript 7 (`typescript-
 | `bun run check` | `tsc -b` on TypeScript 7 (all packages, tests and scripts) |
 | `bun run lint` / `bun run format` / `bun run format:check` | oxlint repo lint plus `scripts/check-createonce-state.ts` (closure state in `createOnce` must be reset in `before()`); Biome formatting |
 | `bun run test:unit` | Unit tests per rule (`packages/*/tests`) in oxlint's `RuleTester` under `node --test`; `bun run test:unit:<name>` for one package |
-| `bun run test:compat` | ESLint compatibility and integration tests (`tests/integration`, `tests/eslint-compat`) |
+| `bun run test:compat` / `bun run test:compat:eslint10` | ESLint compatibility and integration tests (`tests/integration`, `tests/eslint-compat`) on ESLint 9 / ESLint 10 (`ESLINT_PACKAGE=eslint-10`, an exact npm alias) |
 | `bun run test:cli` | Real-oxlint suite: bundles each plugin into a temp dir and lints fixtures (`tests/cli`) |
 | `bun run test:bench` | Bench smoke (exact counts asserted, timings only logged) |
 | `bun run test:repo` | Repo tooling tests (commit-msg check) |

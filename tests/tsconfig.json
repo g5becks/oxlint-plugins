@@ -4,5 +4,5 @@
     "composite": true
   },
   "include": ["**/*.ts", "../scripts/**/*.ts", "../packages/*/src/**/*.ts"],
-  "exclude": ["**/fixtures/**", "../packages/*/src/upstream/**"]
+  "exclude": ["**/fixtures/**"]
 }

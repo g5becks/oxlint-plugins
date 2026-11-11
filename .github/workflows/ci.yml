@@ -110,6 +110,10 @@ jobs:
       - run: bun run test:bench
 
   eslint-compat:
+    strategy:
+      fail-fast: false
+      matrix:
+        eslint: ["9", "10"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -117,7 +121,11 @@ jobs:
         with:
           bun-version: ${{ env.BUN_VERSION }}
       - run: bun install --frozen-lockfile
-      - run: bun run test:compat
+      - name: ESLint ${{ matrix.eslint }} compatibility
+        env:
+          ESLINT_MAJOR: ${{ matrix.eslint }}
+        run: |
+          if [ "$ESLINT_MAJOR" = "10" ]; then bun run test:compat:eslint10; else bun run test:compat; fi
 
   pack:
     runs-on: ubuntu-latest

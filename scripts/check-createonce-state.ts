@@ -150,7 +150,7 @@ async function shippedRuleFiles(): Promise<string[]> {
   const glob = new Bun.Glob("packages/*/src/**/*.ts");
   const files: string[] = [];
   for await (const f of glob.scan({ cwd: REPO_ROOT, absolute: true })) {
-    if (!f.includes("/upstream/")) files.push(f);
+    files.push(f);
   }
   return files.sort();
 }
