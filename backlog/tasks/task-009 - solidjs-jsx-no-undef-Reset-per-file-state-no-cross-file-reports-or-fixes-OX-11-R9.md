@@ -3,11 +3,11 @@ id: TASK-009
 title: >-
   solidjs/jsx-no-undef: Reset per-file state; no cross-file reports or fixes
   (OX-11, R9)
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T18:09:00Z'
+updated_date: '2026-11-11T19:56:00Z'
 labels:
   - solidjs
   - bug
@@ -40,7 +40,7 @@ Audit R9 (Critical). `missingComponentsSet` (`jsx-no-undef.ts:118`) is created o
 - [x] #2 Three multi-threaded corpus runs produce identical normalized output (hashes recorded)
 - [x] #3 oxlint --fix over one invalid and five valid files changes only the invalid file (test)
 - [x] #4 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -71,4 +71,16 @@ Audit R9 (Critical). `missingComponentsSet` (`jsx-no-undef.ts:118`) is created o
 - Changeset .changeset/solidjs-jsx-no-undef-state.md (oxlint-plugin-solidjs: patch; bug fix, not breaking).
 
 Consumer-visible change: yes (jsx-no-undef no longer reports/fixes unrelated files).
+
+## ci-local (ae6dbc7), with network retries
+- Attempt 1: RESULT: FAIL, only pack (linux) failed: `error: failed to download typescript@5.9.3: DNSResolveFailed` during bun install in the container (all other 12 legs passed).
+- Attempt 2 (after 2 min): RESULT: FAIL, 9 Linux legs failed, every one with `DNSResolveFailed` during `bun install` (e.g. @eslint/config-array, json-buffer, optionator, cross-spawn); macOS legs passed. Single DNS lookups inside a container succeeded 5/5 right after, so the failures were intermittent (Colima DNS under parallel install load).
+- Attempt 3 (after 5 more min): RESULT: PASS, all 13 legs pass.
+Verified with scripts/ci-local.sh (ae6dbc7, PASS on the third attempt; the first two failed only on DNS errors in Docker); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+jsx-no-undef resets its per-file state in before(): the R9 probe, a --fix safety test and an ESLint regression went from failing to passing, and three multi-threaded corpus runs are now identical (were 79/30/18 spurious-ish reports with different hashes). Changeset: solidjs patch. Verified with scripts/ci-local.sh (ae6dbc7, PASS; 3rd attempt after DNS-only failures).
+<!-- SECTION:FINAL_SUMMARY:END -->
