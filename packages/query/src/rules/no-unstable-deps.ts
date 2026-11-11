@@ -74,7 +74,12 @@ export default {
       ImportDeclaration(node: any) {
         tracker.handleImportDeclaration(node);
 
-        if (node.specifiers?.length > 0 && node.importKind === "value" && node.source?.value === "react") {
+        if (
+          node.specifiers?.length > 0 &&
+          node.importKind === "value" &&
+          // "react" is the real module; upstream 5.91.4 only matches "React" (see PARITY.md).
+          (node.source?.value === "react" || node.source?.value === "React")
+        ) {
           for (const specifier of node.specifiers) {
             if (
               specifier.type === "ImportSpecifier" &&

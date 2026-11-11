@@ -218,8 +218,10 @@ export default {
             });
           }
 
+          // Report on the options object, like upstream @tanstack/eslint-plugin-query >= 5.107
+          // (5.91.4 reported on the queryKey property), so squiggles and disable comments match.
           context.report({
-            node,
+            node: node.parent,
             messageId: "missingDeps",
             data: {
               deps: uniqueMissingRefs.map((ref: any) => ref.text).join(", "),

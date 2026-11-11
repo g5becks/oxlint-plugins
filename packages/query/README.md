@@ -81,10 +81,18 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 |---|---|---|
 | `exhaustive-deps` | All external variables used in `queryFn` must be listed in `queryKey` | error |
 | `no-rest-destructuring` | Object rest destructuring of query results causes excessive re-renders | warn |
-| `stable-query-client` | `QueryClient` must be stable across renders | error |
+| `stable-query-client` | `QueryClient` must be stable across renders (**React only**: checks `@tanstack/react-query`; a no-op for Solid and other adapters, as upstream) | error |
 | `no-unstable-deps` | Query key arrays must not contain unstable object references | error |
 | `infinite-query-property-order` | Enforces correct property ordering in `useInfiniteQuery` calls | error |
 | `mutation-property-order` | Enforces correct property ordering in `useMutation` calls | error |
+
+## Parity with upstream
+
+The rules follow `@tanstack/eslint-plugin-query` 5.91.4. Its test suites run unmodified against
+these ports on every CI run; the few intentional differences (for example, `exhaustive-deps`
+reports on the `useQuery({...})` options object like upstream 5.107+, and `no-void-query-fn` isn't
+ported because it needs type information) are listed in
+[PARITY.md](https://github.com/g5becks/oxlint-plugins/blob/main/PARITY.md).
 
 ## License
 
