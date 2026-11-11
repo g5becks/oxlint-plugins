@@ -2,31 +2,94 @@ type Source = "solid-js" | "solid-js/web" | "solid-js/store";
 
 const primitiveMap = new Map<string, Source>();
 for (const p of [
-  "createSignal", "createEffect", "createMemo", "createResource", "onMount", "onCleanup",
-  "onError", "untrack", "batch", "on", "createRoot", "getOwner", "runWithOwner", "mergeProps",
-  "splitProps", "useTransition", "observable", "from", "mapArray", "indexArray", "createContext",
-  "useContext", "children", "lazy", "createUniqueId", "createDeferred", "createRenderEffect",
-  "createComputed", "createReaction", "createSelector", "DEV", "For", "Show", "Switch", "Match",
-  "Index", "ErrorBoundary", "Suspense", "SuspenseList",
-]) primitiveMap.set(p, "solid-js");
+  "createSignal",
+  "createEffect",
+  "createMemo",
+  "createResource",
+  "onMount",
+  "onCleanup",
+  "onError",
+  "untrack",
+  "batch",
+  "on",
+  "createRoot",
+  "getOwner",
+  "runWithOwner",
+  "mergeProps",
+  "splitProps",
+  "useTransition",
+  "observable",
+  "from",
+  "mapArray",
+  "indexArray",
+  "createContext",
+  "useContext",
+  "children",
+  "lazy",
+  "createUniqueId",
+  "createDeferred",
+  "createRenderEffect",
+  "createComputed",
+  "createReaction",
+  "createSelector",
+  "DEV",
+  "For",
+  "Show",
+  "Switch",
+  "Match",
+  "Index",
+  "ErrorBoundary",
+  "Suspense",
+  "SuspenseList",
+])
+  primitiveMap.set(p, "solid-js");
 
 for (const p of [
-  "Portal", "render", "hydrate", "renderToString", "renderToStream", "isServer",
-  "renderToStringAsync", "generateHydrationScript", "HydrationScript", "Dynamic",
-]) primitiveMap.set(p, "solid-js/web");
+  "Portal",
+  "render",
+  "hydrate",
+  "renderToString",
+  "renderToStream",
+  "isServer",
+  "renderToStringAsync",
+  "generateHydrationScript",
+  "HydrationScript",
+  "Dynamic",
+])
+  primitiveMap.set(p, "solid-js/web");
 
-for (const p of [
-  "createStore", "produce", "reconcile", "unwrap", "createMutable", "modifyMutable",
-]) primitiveMap.set(p, "solid-js/store");
+for (const p of ["createStore", "produce", "reconcile", "unwrap", "createMutable", "modifyMutable"])
+  primitiveMap.set(p, "solid-js/store");
 
 const typeMap = new Map<string, Source>();
 for (const t of [
-  "Signal", "Accessor", "Setter", "Resource", "ResourceActions", "ResourceOptions",
-  "ResourceReturn", "ResourceFetcher", "InitializedResourceReturn", "Component", "VoidProps",
-  "VoidComponent", "ParentProps", "ParentComponent", "FlowProps", "FlowComponent",
-  "ValidComponent", "ComponentProps", "Ref", "MergeProps", "SplitPrips", "Context", "JSX",
-  "ResolvedChildren", "MatchProps",
-]) typeMap.set(t, "solid-js");
+  "Signal",
+  "Accessor",
+  "Setter",
+  "Resource",
+  "ResourceActions",
+  "ResourceOptions",
+  "ResourceReturn",
+  "ResourceFetcher",
+  "InitializedResourceReturn",
+  "Component",
+  "VoidProps",
+  "VoidComponent",
+  "ParentProps",
+  "ParentComponent",
+  "FlowProps",
+  "FlowComponent",
+  "ValidComponent",
+  "ComponentProps",
+  "Ref",
+  "MergeProps",
+  "SplitPrips",
+  "Context",
+  "JSX",
+  "ResolvedChildren",
+  "MatchProps",
+])
+  typeMap.set(t, "solid-js");
 for (const t of ["MountableElement"]) typeMap.set(t, "solid-js/web");
 for (const t of ["StoreNode", "Store", "SetStoreFunction"]) typeMap.set(t, "solid-js/store");
 
@@ -37,8 +100,7 @@ export default {
   meta: {
     type: "suggestion" as const,
     docs: {
-      description:
-        'Enforce consistent imports from "solid-js", "solid-js/web", and "solid-js/store".',
+      description: 'Enforce consistent imports from "solid-js", "solid-js/web", and "solid-js/store".',
       recommended: "error",
     },
     fixable: "code" as const,
@@ -74,14 +136,10 @@ export default {
                   const specText = sourceCode.getText(specifier);
 
                   if (correctDeclaration) {
-                    const lastSpecifier =
-                      correctDeclaration.specifiers[correctDeclaration.specifiers.length - 1];
+                    const lastSpecifier = correctDeclaration.specifiers[correctDeclaration.specifiers.length - 1];
                     const removeResult = removeSpecifierFromNode(fixer, sourceCode, specifier, node);
                     if (!removeResult) return null;
-                    return [
-                      removeResult,
-                      fixer.insertTextAfter(lastSpecifier, `, ${specText}`),
-                    ];
+                    return [removeResult, fixer.insertTextAfter(lastSpecifier, `, ${specText}`)];
                   }
 
                   const firstSolidDecl = program.body.find(

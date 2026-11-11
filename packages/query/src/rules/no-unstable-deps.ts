@@ -54,8 +54,7 @@ export default {
       const firstArg = callExpression.arguments[0];
       if (!firstArg || firstArg.type !== "ObjectExpression") return false;
       return (firstArg.properties ?? []).some(
-        (prop: any) =>
-          prop.type === "Property" && prop.key?.type === "Identifier" && prop.key.name === "combine",
+        (prop: any) => prop.type === "Property" && prop.key?.type === "Identifier" && prop.key.name === "combine",
       );
     }
 
@@ -75,11 +74,7 @@ export default {
       ImportDeclaration(node: any) {
         tracker.handleImportDeclaration(node);
 
-        if (
-          node.specifiers?.length > 0 &&
-          node.importKind === "value" &&
-          node.source?.value === "react"
-        ) {
+        if (node.specifiers?.length > 0 && node.importKind === "value" && node.source?.value === "react") {
           for (const specifier of node.specifiers) {
             if (
               specifier.type === "ImportSpecifier" &&
@@ -110,18 +105,10 @@ export default {
 
       CallExpression(node: any) {
         const reactHook = getReactHook(node);
-        if (
-          reactHook !== undefined &&
-          node.arguments?.length > 1 &&
-          node.arguments[1]?.type === "ArrayExpression"
-        ) {
+        if (reactHook !== undefined && node.arguments?.length > 1 && node.arguments[1]?.type === "ArrayExpression") {
           const depsArray = node.arguments[1].elements ?? [];
           for (const dep of depsArray) {
-            if (
-              dep != null &&
-              dep.type === "Identifier" &&
-              trackedVariables[dep.name] !== undefined
-            ) {
+            if (dep != null && dep.type === "Identifier" && trackedVariables[dep.name] !== undefined) {
               const queryHook = trackedVariables[dep.name];
               context.report({
                 node: dep,

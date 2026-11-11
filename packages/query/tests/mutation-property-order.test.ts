@@ -14,7 +14,8 @@ tester.run("mutation-property-order", rule as any, {
   invalid: [
     {
       code: "import { useMutation } from '@tanstack/react-query'; useMutation({ onError: () => {}, onMutate: () => {} });",
-      output: "import { useMutation } from '@tanstack/react-query'; useMutation({ onMutate: () => {}, onError: () => {} });",
+      output:
+        "import { useMutation } from '@tanstack/react-query'; useMutation({ onMutate: () => {}, onError: () => {} });",
       errors: [{ messageId: "invalidOrder" }],
     },
   ],

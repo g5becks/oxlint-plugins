@@ -48,10 +48,7 @@ export default {
 
         for (const specifier of node.specifiers ?? []) {
           // import React from "react"  or  import * as React from "react"
-          if (
-            specifier.type === "ImportDefaultSpecifier" ||
-            specifier.type === "ImportNamespaceSpecifier"
-          ) {
+          if (specifier.type === "ImportDefaultSpecifier" || specifier.type === "ImportNamespaceSpecifier") {
             reactNamespaceName = specifier.local?.name ?? null;
           }
           // import { useState } from "react"  or  import { useState as useSt } from "react"

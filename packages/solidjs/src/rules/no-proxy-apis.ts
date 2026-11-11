@@ -2,9 +2,7 @@ import { trackImports } from "../utils/imports";
 import { trace } from "../utils/trace";
 
 function isFunctionNode(node: any): boolean {
-  return ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(
-    node?.type,
-  );
+  return ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(node?.type);
 }
 
 function isPropsByName(name: string): boolean {
@@ -15,14 +13,12 @@ export default {
   meta: {
     type: "problem" as const,
     docs: {
-      description:
-        "Disallow usage of APIs that use ES6 Proxies, only to target environments that don't support them.",
+      description: "Disallow usage of APIs that use ES6 Proxies, only to target environments that don't support them.",
       recommended: "warn",
     },
     schema: [],
     messages: {
-      noStore:
-        "Solid Store APIs use Proxies, which are incompatible with your target environment.",
+      noStore: "Solid Store APIs use Proxies, which are incompatible with your target environment.",
       spreadCall:
         "Using a function call in JSX spread makes Solid use Proxies, which are incompatible with your target environment.",
       spreadMember:
@@ -68,10 +64,7 @@ export default {
               .filter((arg: any) => {
                 if (arg.type === "SpreadElement") return true;
                 const traced = trace(arg, context);
-                return (
-                  (traced.type === "Identifier" && !isPropsByName(traced.name)) ||
-                  isFunctionNode(traced)
-                );
+                return (traced.type === "Identifier" && !isPropsByName(traced.name)) || isFunctionNode(traced);
               })
               .forEach((badArg: any) => {
                 context.report({ node: badArg, messageId: "mergeProps" });

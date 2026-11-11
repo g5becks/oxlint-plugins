@@ -155,9 +155,7 @@ function getExternalRefs(params: { scopeManager: any; sourceCode: any; node: any
       };
     });
 
-  const localRefIds = new Set(
-    [...(scope.set?.values?.() ?? [])].map((x: any) => sourceCode.getText(x.identifiers[0])),
-  );
+  const localRefIds = new Set([...(scope.set?.values?.() ?? [])].map((x: any) => sourceCode.getText(x.identifiers[0])));
 
   const externalRefs = references.filter((x: any) => x.variable.resolved == null || !localRefIds.has(x.text));
 
@@ -165,9 +163,7 @@ function getExternalRefs(params: { scopeManager: any; sourceCode: any; node: any
 }
 
 function mapKeyNodeToText(node: any, sourceCode: any): string {
-  return sourceCode.getText(
-    traverseUpOnly(node, ["MemberExpression", "TSNonNullExpression", "Identifier"]),
-  );
+  return sourceCode.getText(traverseUpOnly(node, ["MemberExpression", "TSNonNullExpression", "Identifier"]));
 }
 
 function mapKeyNodeToBaseText(node: any, sourceCode: any): string {
@@ -202,9 +198,7 @@ function getReferencedExpressionByIdentifier(params: { node: any; context: any }
   const sourceCode = context.sourceCode ?? context.getSourceCode();
   const scope = sourceCode.getScope?.(node) ?? context.getScope?.();
 
-  const resolvedNode = scope?.references
-    ?.find((ref: any) => ref.identifier === node)
-    ?.resolved?.defs?.[0]?.node;
+  const resolvedNode = scope?.references?.find((ref: any) => ref.identifier === node)?.resolved?.defs?.[0]?.node;
 
   if (resolvedNode?.type !== "VariableDeclarator") {
     return null;

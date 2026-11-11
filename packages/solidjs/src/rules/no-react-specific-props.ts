@@ -9,8 +9,7 @@ export default {
   meta: {
     type: "problem" as const,
     docs: {
-      description:
-        "Disallow usage of React-specific `className`/`htmlFor` props, which were deprecated in v1.4.0.",
+      description: "Disallow usage of React-specific `className`/`htmlFor` props, which were deprecated in v1.4.0.",
       recommended: "error",
     },
     fixable: "code" as const,

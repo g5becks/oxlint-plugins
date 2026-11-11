@@ -154,9 +154,12 @@ async function spawnOxlint(args: string[]): Promise<OxlintResult> {
 /** Spawn oxlint with --format json -A all, parse output, return structured result */
 export async function runOxlint(options: RunOptions): Promise<OxlintResult> {
   return spawnOxlint([
-    "-c", options.configPath,
-    "--format", "json",
-    "-A", "all",
+    "-c",
+    options.configPath,
+    "--format",
+    "json",
+    "-A",
+    "all",
     ...(options.extraArgs ?? []),
     ...options.files.map(absolute),
   ]);
@@ -181,9 +184,7 @@ export function ruleFixture(plugin: string, rule: string, ext = "ts"): string {
 /** 1-based line numbers of a fixture that carry a `// report` marker comment. */
 export async function markedLines(file: string): Promise<number[]> {
   const text = await Bun.file(absolute(file)).text();
-  return text
-    .split("\n")
-    .flatMap((line, i) => (/\/\/ report\b/.test(line) ? [i + 1] : []));
+  return text.split("\n").flatMap((line, i) => (/\/\/ report\b/.test(line) ? [i + 1] : []));
 }
 
 /** Sorted 1-based start lines of the given diagnostics. */
@@ -214,9 +215,12 @@ export async function runOxlintWithFix(options: RunOptions): Promise<OxlintFixRe
     }
 
     const result = await spawnOxlint([
-      "-c", options.configPath,
-      "--format", "json",
-      "-A", "all",
+      "-c",
+      options.configPath,
+      "--format",
+      "json",
+      "-A",
+      "all",
       "--fix",
       ...(options.extraArgs ?? []),
       ...tempFiles,

@@ -70,7 +70,11 @@ export function createPropertyOrderRule<TFunc extends string, TProp extends stri
             return { name: `_property_${index}`, property };
           });
 
-          const sortedProperties = sortDataByOrder<{ name: string; property: any }, "name">(properties, orderRules as any, "name");
+          const sortedProperties = sortDataByOrder<{ name: string; property: any }, "name">(
+            properties,
+            orderRules as any,
+            "name",
+          );
           if (sortedProperties == null) {
             return;
           }
@@ -93,10 +97,7 @@ export function createPropertyOrderRule<TFunc extends string, TProp extends stri
                 return sourceText + sourceCode.getText(specifier.property) + textBetweenProperties;
               }, "");
 
-              return fixer.replaceTextRange(
-                [allProperties[0].range[0], allProperties.at(-1).range[1]],
-                reorderedText,
-              );
+              return fixer.replaceTextRange([allProperties[0].range[0], allProperties.at(-1).range[1]], reorderedText);
             },
           });
         },

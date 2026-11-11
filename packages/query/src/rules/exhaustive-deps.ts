@@ -60,10 +60,7 @@ function getQueryFnRelevantNode(queryFn: any): any {
     return queryFn.value;
   }
 
-  if (
-    queryFn.value.consequent?.type === "Identifier" &&
-    queryFn.value.consequent.name === "skipToken"
-  ) {
+  if (queryFn.value.consequent?.type === "Identifier" && queryFn.value.consequent.name === "skipToken") {
     return queryFn.value.alternate;
   }
 
@@ -135,10 +132,7 @@ export default {
       },
 
       Property(node: any) {
-        if (
-          !ASTUtils.isObjectExpression(node.parent) ||
-          !ASTUtils.isIdentifierWithName(node.key, QUERY_KEY)
-        ) {
+        if (!ASTUtils.isObjectExpression(node.parent) || !ASTUtils.isIdentifierWithName(node.key, QUERY_KEY)) {
           return;
         }
 
@@ -146,11 +140,7 @@ export default {
         const queryKey = ASTUtils.findPropertyWithIdentifierKey(node.parent.properties, QUERY_KEY);
         const queryFn = ASTUtils.findPropertyWithIdentifierKey(node.parent.properties, QUERY_FN);
 
-        if (
-          scopeManager == null ||
-          queryKey === undefined ||
-          queryFn === undefined
-        ) {
+        if (scopeManager == null || queryKey === undefined || queryFn === undefined) {
           return;
         }
 
@@ -214,9 +204,7 @@ export default {
           const queryKeyValue = context.sourceCode.getText(queryKeyNode);
 
           const existingWithMissing =
-            queryKeyValue === "[]"
-              ? `[${missingAsText}]`
-              : queryKeyValue.replace(/\]$/, `, ${missingAsText}]`);
+            queryKeyValue === "[]" ? `[${missingAsText}]` : queryKeyValue.replace(/\]$/, `, ${missingAsText}]`);
 
           const suggestions: Array<any> = [];
 

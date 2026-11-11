@@ -1,7 +1,6 @@
 import { isDOMElementName } from "../utils/jsx";
 
-const voidDOMElementRegex =
-  /^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/;
+const voidDOMElementRegex = /^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/;
 
 function isComponent(node: any): boolean {
   return (
@@ -101,10 +100,7 @@ export default {
                 const tagName = sourceCode.getText(node.name);
                 const selfCloseEnding = node.range[1];
                 const lastTokens = sourceCode.getLastTokens(node, { count: 3 });
-                const isSpaceBeforeSelfClose = sourceCode.isSpaceBetween?.(
-                  lastTokens[0],
-                  lastTokens[1],
-                );
+                const isSpaceBeforeSelfClose = sourceCode.isSpaceBetween?.(lastTokens[0], lastTokens[1]);
                 const range = [
                   isSpaceBeforeSelfClose ? selfCloseEnding - 3 : selfCloseEnding - 2,
                   selfCloseEnding,

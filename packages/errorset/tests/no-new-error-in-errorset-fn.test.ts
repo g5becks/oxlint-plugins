@@ -1,14 +1,14 @@
-import { RuleTester } from "eslint"
-import plugin from "../src/index.ts"
+import { RuleTester } from "eslint";
+import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["no-new-error-in-errorset-fn"]
+const rule = (plugin as any).rules["no-new-error-in-errorset-fn"];
 
 const tester = new RuleTester({
   languageOptions: { ecmaVersion: "latest", sourceType: "module" },
-})
+});
 
 const IMPORT = `import { errorSet } from "@takinprofit/errorset";
-const UserError = errorSet("UserError", ["not_found", "invalid"]).init();`
+const UserError = errorSet("UserError", ["not_found", "invalid"]).init();`;
 
 tester.run("no-new-error-in-errorset-fn", rule as any, {
   valid: [
@@ -77,4 +77,4 @@ const getUser = (id) => {
       errors: [{ messageId: "noNewError", data: { name: "Error" } }],
     },
   ],
-})
+});

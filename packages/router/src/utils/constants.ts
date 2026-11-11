@@ -1,8 +1,4 @@
-export const pathAsFirstArgFunctions = [
-  "createFileRoute",
-  "createLazyFileRoute",
-  "createLazyRoute",
-] as const;
+export const pathAsFirstArgFunctions = ["createFileRoute", "createLazyFileRoute", "createLazyRoute"] as const;
 
 export const pathAsPropertyFunctions = ["createRoute"] as const;
 

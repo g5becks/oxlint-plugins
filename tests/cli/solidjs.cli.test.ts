@@ -135,7 +135,7 @@ describe("no-react-specific-props", () => {
     const result = await runOxlintWithFix({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const fixed = result.fixedFiles["no-react-specific-props.tsx"];
     expect(fixed).toBeDefined();
-    expect(fixed).toContain('class=');
+    expect(fixed).toContain("class=");
     // The fix replaces className= with class= in JSX attributes
     expect(fixed).not.toContain("className=");
   });

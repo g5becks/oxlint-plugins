@@ -14,8 +14,7 @@ export default {
     schema: [],
     messages: {
       preferShowAnd: "Use Solid's `<Show />` component for conditionally showing content.",
-      preferShowTernary:
-        "Use Solid's `<Show />` component for conditionally showing content with a fallback.",
+      preferShowTernary: "Use Solid's `<Show />` component for conditionally showing content with a fallback.",
     },
   },
   defaultOptions: [],
@@ -32,8 +31,7 @@ export default {
           messageId: "preferShowAnd",
           fix: (fixer: any) =>
             fixer.replaceText(
-              node.parent?.type === "JSXExpressionContainer" &&
-                isJSXElementOrFragment(node.parent.parent)
+              node.parent?.type === "JSXExpressionContainer" && isJSXElementOrFragment(node.parent.parent)
                 ? node.parent
                 : node,
               `<Show when={${context.sourceCode.getText(node.left)}}>${putIntoJSX(node.right)}</Show>`,
@@ -43,17 +41,13 @@ export default {
     };
 
     const conditionalExpressionHandler = (node: any) => {
-      if (
-        EXPENSIVE_TYPES.includes(node.consequent?.type) ||
-        EXPENSIVE_TYPES.includes(node.alternate?.type)
-      ) {
+      if (EXPENSIVE_TYPES.includes(node.consequent?.type) || EXPENSIVE_TYPES.includes(node.alternate?.type)) {
         context.report({
           node,
           messageId: "preferShowTernary",
           fix: (fixer: any) =>
             fixer.replaceText(
-              node.parent?.type === "JSXExpressionContainer" &&
-                isJSXElementOrFragment(node.parent.parent)
+              node.parent?.type === "JSXExpressionContainer" && isJSXElementOrFragment(node.parent.parent)
                 ? node.parent
                 : node,
               `<Show when={${context.sourceCode.getText(node.test)}} fallback={${context.sourceCode.getText(

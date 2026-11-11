@@ -11,16 +11,12 @@ const isFunctionNode = (node: any): boolean =>
     node.type === "FunctionExpression" ||
     node.type === "ArrowFunctionExpression");
 
-const isProgramOrFunctionNode = (node: any): boolean =>
-  !!node && (node.type === "Program" || isFunctionNode(node));
+const isProgramOrFunctionNode = (node: any): boolean => !!node && (node.type === "Program" || isFunctionNode(node));
 
 const isPropsByName = (name: string): boolean => /[pP]rops/.test(name);
 
 const getFunctionName = (node: any): string | null => {
-  if (
-    (node.type === "FunctionDeclaration" || node.type === "FunctionExpression") &&
-    node.id != null
-  ) {
+  if ((node.type === "FunctionDeclaration" || node.type === "FunctionExpression") && node.id != null) {
     return node.id.name;
   }
   if (node.parent?.type === "VariableDeclarator" && node.parent.id.type === "Identifier") {
@@ -30,11 +26,7 @@ const getFunctionName = (node: any): string | null => {
 };
 
 function ignoreTransparentWrappers(node: any, up = false): any {
-  if (
-    node.type === "TSAsExpression" ||
-    node.type === "TSNonNullExpression" ||
-    node.type === "TSSatisfiesExpression"
-  ) {
+  if (node.type === "TSAsExpression" || node.type === "TSNonNullExpression" || node.type === "TSSatisfiesExpression") {
     const next = up ? node.parent : node.expression;
     if (next) return ignoreTransparentWrappers(next, up);
   }
@@ -87,7 +79,9 @@ function getFunctionHeadLoc(node: any, sourceCode: any): any {
 // Simple tree walker replacing estraverse
 function walkTree(node: any, enter: (n: any, skip: () => void) => void): void {
   let skipped = false;
-  const skipFn = () => { skipped = true; };
+  const skipFn = () => {
+    skipped = true;
+  };
   enter(node, skipFn);
   if (skipped) return;
   for (const key of Object.keys(node)) {
@@ -125,7 +119,9 @@ class ScopeStackItem {
   trackedScopes: TrackedScope[] = [];
   unnamedDerivedSignals = new Set<any>();
   hasJSX = false;
-  constructor(node: any) { this.node = node; }
+  constructor(node: any) {
+    this.node = node;
+  }
 }
 
 class ScopeStack {
@@ -203,9 +199,7 @@ class ScopeStack {
     this.props = this.props.filter((v) => v.references.length !== 0);
   }
 
-  private *consumeRefs(
-    variables: ReactiveVariable[]
-  ): Iterable<{ reference: any; declarationScope: any }> {
+  private *consumeRefs(variables: ReactiveVariable[]): Iterable<{ reference: any; declarationScope: any }> {
     for (const variable of variables) {
       const inScope: any[] = [];
       const notInScope: any[] = [];
@@ -285,22 +279,18 @@ export default {
         "The reactive variable '{{name}}' should be used within JSX, a tracked scope (like createEffect), or inside an event handler function, or else changes will be ignored.",
       expectedFunctionGotExpression:
         "The reactive variable '{{name}}' should be wrapped in a function for reactivity. This includes event handler bindings on native elements, which are not reactive like other JSX props.",
-      badSignal:
-        "The reactive variable '{{name}}' should be called as a function when used in {{where}}.",
+      badSignal: "The reactive variable '{{name}}' should be called as a function when used in {{where}}.",
       badUnnamedDerivedSignal:
         "This function should be passed to a tracked scope (like createEffect) or an event handler because it contains reactivity, or else changes will be ignored.",
       shouldDestructure:
         "For proper analysis, array destructuring should be used to capture the {{nth}}result of this function call.",
-      shouldAssign:
-        "For proper analysis, a variable should be used to capture the result of this function call.",
-      noAsyncTrackedScope:
-        "This tracked scope should not be async. Solid's reactivity only tracks synchronously.",
+      shouldAssign: "For proper analysis, a variable should be used to capture the result of this function call.",
+      noAsyncTrackedScope: "This tracked scope should not be async. Solid's reactivity only tracks synchronously.",
     },
   },
   defaultOptions: [{ customReactiveFunctions: [] as string[] }],
   createOnce(context: any) {
-    const getCustomReactiveFunctions = (): string[] =>
-      context.options?.[0]?.customReactiveFunctions ?? [];
+    const getCustomReactiveFunctions = (): string[] => context.options?.[0]?.customReactiveFunctions ?? [];
 
     const warnShouldDestructure = (node: any, nth?: string) =>
       context.report({
@@ -308,8 +298,7 @@ export default {
         messageId: "shouldDestructure",
         data: nth ? { nth: nth + " " } : undefined,
       });
-    const warnShouldAssign = (node: any) =>
-      context.report({ node, messageId: "shouldAssign" });
+    const warnShouldAssign = (node: any) => context.report({ node, messageId: "shouldAssign" });
 
     const scopeStack = new ScopeStack();
     const { currentScope, parentScope } = scopeStack;
@@ -342,19 +331,15 @@ export default {
         case "called-function":
           return node === trackedScope.node;
         case "expression":
-          return Boolean(
-            findInScope(node, currentScope().node, (n: any) => n === trackedScope.node)
-          );
+          return Boolean(findInScope(node, currentScope().node, (n: any) => n === trackedScope.node));
       }
     };
 
     const handleTrackedScopes = (identifier: any, declarationScope: any) => {
       const currentScopeNode = currentScope().node;
-      if (
-        !currentScope().trackedScopes.find((ts) => matchTrackedScope(ts, identifier))
-      ) {
+      if (!currentScope().trackedScopes.find((ts) => matchTrackedScope(ts, identifier))) {
         const matchedExpression = currentScope().trackedScopes.find((ts) =>
-          matchTrackedScope({ ...ts, expect: "expression" }, identifier)
+          matchTrackedScope({ ...ts, expect: "expression" }, identifier),
         );
         if (declarationScope === currentScopeNode) {
           let parentMemberExpression: any = null;
@@ -364,15 +349,12 @@ export default {
               parentMemberExpression = parentMemberExpression.parent;
             }
           }
-          const parentCallExpression =
-            identifier.parent?.type === "CallExpression" ? identifier.parent : null;
+          const parentCallExpression = identifier.parent?.type === "CallExpression" ? identifier.parent : null;
           context.report({
             node: parentMemberExpression ?? parentCallExpression ?? identifier,
             messageId: matchedExpression ? "expectedFunctionGotExpression" : "untrackedReactive",
             data: {
-              name: parentMemberExpression
-                ? context.sourceCode.getText(parentMemberExpression)
-                : identifier.name,
+              name: parentMemberExpression ? context.sourceCode.getText(parentMemberExpression) : identifier.name,
             },
           });
         } else {
@@ -382,8 +364,7 @@ export default {
             (parentScope().unnamedDerivedSignals ??= new Set()).add(currentScopeNode);
 
           if (currentScopeNode.type === "FunctionDeclaration") {
-            const functionVariable =
-              context.sourceCode.scopeManager?.getDeclaredVariables(currentScopeNode)?.[0];
+            const functionVariable = context.sourceCode.scopeManager?.getDeclaredVariables(currentScopeNode)?.[0];
             if (functionVariable) {
               scopeStack.pushUniqueSignal(functionVariable, declarationScope);
             } else {
@@ -391,8 +372,7 @@ export default {
             }
           } else if (currentScopeNode.parent?.type === "VariableDeclarator") {
             const declarator = currentScopeNode.parent;
-            const functionVariable =
-              context.sourceCode.scopeManager?.getDeclaredVariables(declarator)?.[0];
+            const functionVariable = context.sourceCode.scopeManager?.getDeclaredVariables(declarator)?.[0];
             if (functionVariable) {
               scopeStack.pushUniqueSignal(functionVariable, declarationScope);
             } else {
@@ -440,18 +420,16 @@ export default {
             });
           if (
             identifier.parent?.type === "CallExpression" ||
-            (identifier.parent?.type === "ArrayExpression" &&
-              identifier.parent.parent?.type === "CallExpression")
+            (identifier.parent?.type === "ArrayExpression" && identifier.parent.parent?.type === "CallExpression")
           ) {
             handleTrackedScopes(identifier, declarationScope);
           } else if (identifier.parent?.type === "TemplateLiteral") {
             reportBadSignal("template literals");
           } else if (
             identifier.parent?.type === "BinaryExpression" &&
-            [
-              "<", "<=", ">", ">=", "<<", ">>", ">>>",
-              "+", "-", "*", "/", "%", "**", "|", "^", "&", "in",
-            ].includes(identifier.parent.operator)
+            ["<", "<=", ">", ">=", "<<", ">>", ">>>", "+", "-", "*", "/", "%", "**", "|", "^", "&", "in"].includes(
+              identifier.parent.operator,
+            )
           ) {
             reportBadSignal("arithmetic or comparisons");
           } else if (
@@ -468,9 +446,7 @@ export default {
           } else if (
             identifier.parent?.type === "JSXExpressionContainer" &&
             !currentScope().trackedScopes.find(
-              (ts) =>
-                ts.node === identifier &&
-                (ts.expect === "function" || ts.expect === "called-function")
+              (ts) => ts.node === identifier && (ts.expect === "function" || ts.expect === "called-function"),
             )
           ) {
             const elementOrAttribute = identifier.parent.parent;
@@ -496,10 +472,7 @@ export default {
             messageId: "noWrite",
             data: { name: identifier.name },
           });
-        } else if (
-          identifier.parent?.type === "MemberExpression" &&
-          identifier.parent.object === identifier
-        ) {
+        } else if (identifier.parent?.type === "MemberExpression" && identifier.parent.object === identifier) {
           const { parent } = identifier;
           if (parent.parent?.type === "AssignmentExpression" && parent.parent.left === parent) {
             context.report({
@@ -531,9 +504,7 @@ export default {
       const { unnamedDerivedSignals } = currentScope();
       if (unnamedDerivedSignals) {
         for (const node of unnamedDerivedSignals) {
-          if (
-            !currentScope().trackedScopes.find((ts) => matchTrackedScope(ts, node))
-          ) {
+          if (!currentScope().trackedScopes.find((ts) => matchTrackedScope(ts, node))) {
             context.report({
               loc: getFunctionHeadLoc(node, context.sourceCode),
               messageId: "badUnnamedDerivedSignal",
@@ -547,22 +518,15 @@ export default {
 
     // ---- Sync callback detection ----
     const checkForSyncCallbacks = (node: any) => {
-      if (
-        node.arguments.length === 1 &&
-        isFunctionNode(node.arguments[0]) &&
-        !node.arguments[0].async
-      ) {
-        if (
-          node.callee.type === "Identifier" &&
-          matchImport(["batch", "produce"], node.callee.name)
-        ) {
+      if (node.arguments.length === 1 && isFunctionNode(node.arguments[0]) && !node.arguments[0].async) {
+        if (node.callee.type === "Identifier" && matchImport(["batch", "produce"], node.callee.name)) {
           scopeStack.syncCallbacks.add(node.arguments[0]);
         } else if (
           node.callee.type === "MemberExpression" &&
           !node.callee.computed &&
           node.callee.object.type !== "ObjectExpression" &&
           /^(?:forEach|map|flatMap|reduce|reduceRight|find|findIndex|filter|every|some)$/.test(
-            node.callee.property.name
+            node.callee.property.name,
           )
         ) {
           scopeStack.syncCallbacks.add(node.arguments[0]);
@@ -577,11 +541,7 @@ export default {
           if (setter) {
             for (const reference of setter.references) {
               const { identifier } = reference;
-              if (
-                !reference.init &&
-                reference.isRead() &&
-                identifier.parent?.type === "CallExpression"
-              ) {
+              if (!reference.init && reference.isRead() && identifier.parent?.type === "CallExpression") {
                 for (const arg of identifier.parent.arguments) {
                   if (isFunctionNode(arg) && !arg.async) {
                     scopeStack.syncCallbacks.add(arg);
@@ -635,9 +595,7 @@ export default {
           }
         } else if (matchImport("splitProps", callee.name)) {
           if (id?.type === "ArrayPattern") {
-            const vars = id.elements
-              .map((_: any, i: number) => getNthDestructuredVar(id, i, context))
-              .filter(Boolean);
+            const vars = id.elements.map((_: any, i: number) => getNthDestructuredVar(id, i, context)).filter(Boolean);
             if (vars.length === 0) {
               warnShouldDestructure(id);
             } else {
@@ -655,21 +613,13 @@ export default {
           if (mutable) scopeStack.pushProps(mutable, currentScope().node);
         } else if (matchImport("mapArray", callee.name)) {
           const arg1 = init.arguments[1];
-          if (
-            isFunctionNode(arg1) &&
-            arg1.params.length >= 2 &&
-            arg1.params[1].type === "Identifier"
-          ) {
+          if (isFunctionNode(arg1) && arg1.params.length >= 2 && arg1.params[1].type === "Identifier") {
             const indexSignal = findVariable(context, arg1.params[1]);
             if (indexSignal) scopeStack.pushSignal(indexSignal);
           }
         } else if (matchImport("indexArray", callee.name)) {
           const arg1 = init.arguments[1];
-          if (
-            isFunctionNode(arg1) &&
-            arg1.params.length >= 1 &&
-            arg1.params[0].type === "Identifier"
-          ) {
+          if (isFunctionNode(arg1) && arg1.params.length >= 1 && arg1.params[0].type === "Identifier") {
             const valueSignal = findVariable(context, arg1.params[0]);
             if (valueSignal) scopeStack.pushSignal(valueSignal);
           }
@@ -721,8 +671,7 @@ export default {
           node.parent?.type === "JSXAttribute" &&
           node.parent.name.name === "value" &&
           node.parent.parent?.type === "JSXOpeningElement" &&
-          ((node.parent.parent.name.type === "JSXIdentifier" &&
-            node.parent.parent.name.name.endsWith("Provider")) ||
+          ((node.parent.parent.name.type === "JSXIdentifier" && node.parent.parent.name.name.endsWith("Provider")) ||
             (node.parent.parent.name.type === "JSXMemberExpression" &&
               node.parent.parent.name.property.name === "Provider"))
         ) {
@@ -750,31 +699,54 @@ export default {
       } else if (node.type === "JSXSpreadAttribute") {
         pushTrackedScope(node.argument, "expression");
       } else if (node.type === "NewExpression") {
-        const { callee, arguments: { 0: arg0 } } = node;
+        const {
+          callee,
+          arguments: { 0: arg0 },
+        } = node;
         if (
-          callee.type === "Identifier" && arg0 &&
-          ["IntersectionObserver", "MutationObserver", "PerformanceObserver",
-            "ReportingObserver", "ResizeObserver"].includes(callee.name)
+          callee.type === "Identifier" &&
+          arg0 &&
+          [
+            "IntersectionObserver",
+            "MutationObserver",
+            "PerformanceObserver",
+            "ReportingObserver",
+            "ResizeObserver",
+          ].includes(callee.name)
         ) {
           pushTrackedScope(arg0, "called-function");
         }
       } else if (node.type === "CallExpression") {
         if (node.callee.type === "Identifier") {
-          const { callee, arguments: { 0: arg0, 1: arg1 } } = node;
+          const {
+            callee,
+            arguments: { 0: arg0, 1: arg1 },
+          } = node;
           if (
             matchImport(
-              ["createMemo", "children", "createEffect", "createRenderEffect",
-                "createDeferred", "createComputed", "createSelector", "untrack",
-                "mapArray", "indexArray", "observable"],
-              callee.name
+              [
+                "createMemo",
+                "children",
+                "createEffect",
+                "createRenderEffect",
+                "createDeferred",
+                "createComputed",
+                "createSelector",
+                "untrack",
+                "mapArray",
+                "indexArray",
+                "observable",
+              ],
+              callee.name,
             ) ||
             (matchImport("createResource", callee.name) && node.arguments.length >= 2)
           ) {
             pushTrackedScope(arg0, "function");
           } else if (
             matchImport(["onMount", "onCleanup", "onError"], callee.name) ||
-            ["setInterval", "setTimeout", "setImmediate",
-              "requestAnimationFrame", "requestIdleCallback"].includes(callee.name)
+            ["setInterval", "setTimeout", "setImmediate", "requestAnimationFrame", "requestIdleCallback"].includes(
+              callee.name,
+            )
           ) {
             pushTrackedScope(arg0, "called-function");
           } else if (matchImport("on", callee.name)) {
@@ -790,11 +762,7 @@ export default {
             if (arg1) pushTrackedScope(arg1, "called-function");
           } else if (matchImport("createStore", callee.name) && arg0?.type === "ObjectExpression") {
             for (const property of arg0.properties) {
-              if (
-                property.type === "Property" &&
-                property.kind === "get" &&
-                isFunctionNode(property.value)
-              ) {
+              if (property.type === "Property" && property.kind === "get" && isFunctionNode(property.value)) {
                 pushTrackedScope(property.value, "function");
               }
             }
@@ -814,9 +782,9 @@ export default {
                   const scopeStackIndex = scopeStack.findIndex(({ node }: any) => ownerFunction === node);
                   if (
                     (scopeStackIndex >= 1 &&
-                      !scopeStack.at(scopeStackIndex - 1)!.trackedScopes.some(
-                        (ts: any) => ts.expect === "function" && ts.node === ownerFunction
-                      )) ||
+                      !scopeStack
+                        .at(scopeStackIndex - 1)!
+                        .trackedScopes.some((ts: any) => ts.expect === "function" && ts.node === ownerFunction)) ||
                     scopeStackIndex === 0
                   ) {
                     isTrackedScope = false;
@@ -825,26 +793,18 @@ export default {
               }
               if (isTrackedScope) pushTrackedScope(arg1, "function");
             }
-          } else if (
-            /^(?:use|create)[A-Z]/.test(callee.name) ||
-            getCustomReactiveFunctions().includes(callee.name)
-          ) {
+          } else if (/^(?:use|create)[A-Z]/.test(callee.name) || getCustomReactiveFunctions().includes(callee.name)) {
             for (const arg of node.arguments) {
               permissivelyTrackNode(arg);
             }
           }
         } else if (node.callee.type === "MemberExpression") {
           const { property } = node.callee;
-          if (
-            property.type === "Identifier" &&
-            property.name === "addEventListener" &&
-            node.arguments.length >= 2
-          ) {
+          if (property.type === "Identifier" && property.name === "addEventListener" && node.arguments.length >= 2) {
             pushTrackedScope(node.arguments[1], "called-function");
           } else if (
             property.type === "Identifier" &&
-            (/^(?:use|create)[A-Z]/.test(property.name) ||
-              getCustomReactiveFunctions().includes(property.name))
+            (/^(?:use|create)[A-Z]/.test(property.name) || getCustomReactiveFunctions().includes(property.name))
           ) {
             for (const arg of node.arguments) {
               permissivelyTrackNode(arg);
@@ -900,8 +860,12 @@ export default {
     // ---- Visitors ----
     return {
       ImportDeclaration: handleImportDeclaration,
-      JSXExpressionContainer(node: any) { checkForTrackedScopes(node); },
-      JSXSpreadAttribute(node: any) { checkForTrackedScopes(node); },
+      JSXExpressionContainer(node: any) {
+        checkForTrackedScopes(node);
+      },
+      JSXSpreadAttribute(node: any) {
+        checkForTrackedScopes(node);
+      },
       CallExpression(node: any) {
         checkForTrackedScopes(node);
         checkForSyncCallbacks(node);
@@ -910,7 +874,9 @@ export default {
           checkForReactiveAssignment(null, node);
         }
       },
-      NewExpression(node: any) { checkForTrackedScopes(node); },
+      NewExpression(node: any) {
+        checkForTrackedScopes(node);
+      },
       VariableDeclarator(node: any) {
         if (node.init) {
           checkForReactiveAssignment(node.id, node.init);
@@ -923,7 +889,9 @@ export default {
         }
         checkForTrackedScopes(node);
       },
-      TaggedTemplateExpression(node: any) { checkForTrackedScopes(node); },
+      TaggedTemplateExpression(node: any) {
+        checkForTrackedScopes(node);
+      },
       "JSXElement > JSXExpressionContainer > :function"(node: any) {
         if (
           isFunctionNode(node) &&
@@ -933,11 +901,7 @@ export default {
           const element = node.parent.parent;
           if (element.openingElement.name.type === "JSXIdentifier") {
             const tagName = element.openingElement.name.name;
-            if (
-              matchImport("For", tagName) &&
-              node.params.length === 2 &&
-              node.params[1].type === "Identifier"
-            ) {
+            if (matchImport("For", tagName) && node.params.length === 2 && node.params[1].type === "Identifier") {
               const index = findVariable(context, node.params[1]);
               if (index) scopeStack.pushSignal(index, currentScope().node);
             } else if (

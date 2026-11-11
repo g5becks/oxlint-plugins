@@ -94,9 +94,7 @@ export default {
         }
 
         if (typeAnnotation?.type === "TSIntersectionType") {
-          const literalConstituents = (typeAnnotation.types ?? []).filter(
-            (t: any) => t.type === "TSTypeLiteral"
-          );
+          const literalConstituents = (typeAnnotation.types ?? []).filter((t: any) => t.type === "TSTypeLiteral");
           // No literal constituents means all parts are type references —
           // we can't assess immutability without the type checker, so skip.
           if (literalConstituents.length === 0) {

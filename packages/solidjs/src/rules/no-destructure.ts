@@ -45,8 +45,7 @@ export default {
     fixable: "code" as const,
     schema: [],
     messages: {
-      noDestructure:
-        "Destructuring component props breaks Solid's reactivity; use property access instead.",
+      noDestructure: "Destructuring component props breaks Solid's reactivity; use property access instead.",
     },
   },
   defaultOptions: [],
@@ -118,16 +117,14 @@ export default {
             (info) =>
               `${info.computed ? "[" : ""}${sourceCode.getText(info.real)}${
                 info.computed ? "]" : ""
-              }: ${sourceCode.getText(info.init)}`
+              }: ${sourceCode.getText(info.init)}`,
           )
           .join(", ");
 
       const splitPropsArray = () =>
         `[${propertyInfo
           .map((info) =>
-            info.real.type === "Identifier"
-              ? JSON.stringify(info.real.name)
-              : sourceCode.getText(info.real)
+            info.real.type === "Identifier" ? JSON.stringify(info.real.name) : sourceCode.getText(info.real),
           )
           .join(", ")}]`;
 
@@ -166,9 +163,7 @@ export default {
 
       const scope = sourceCode.scopeManager?.acquire(func);
       if (scope) {
-        for (const [info, variable] of propertyInfo.map(
-          (info) => [info, scope.set.get(info.var)] as const
-        )) {
+        for (const [info, variable] of propertyInfo.map((info) => [info, scope.set.get(info.var)] as const)) {
           if (variable) {
             for (const reference of variable.references) {
               if (reference.isReadOnly()) {

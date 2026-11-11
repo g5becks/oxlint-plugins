@@ -17,8 +17,7 @@ export default {
   meta: {
     type: "problem" as const,
     docs: {
-      description:
-        "Disallow usage of the innerHTML attribute, which can often lead to security vulnerabilities.",
+      description: "Disallow usage of the innerHTML attribute, which can often lead to security vulnerabilities.",
       recommended: "error",
     },
     fixable: "code" as const,
@@ -44,8 +43,7 @@ export default {
         "The innerHTML attribute should not be used on an element with child elements; they will be overwritten.",
       notHtml: "The string passed to innerHTML does not appear to be valid HTML.",
       useInnerText: "For text content, using innerText is clearer and safer.",
-      dangerouslySetInnerHTML:
-        "The dangerouslySetInnerHTML prop is not supported; use innerHTML instead.",
+      dangerouslySetInnerHTML: "The dangerouslySetInnerHTML prop is not supported; use innerHTML instead.",
     },
   },
   defaultOptions: [{ allowStatic: true }],
@@ -60,11 +58,7 @@ export default {
             node.value.expression.properties.length === 1
           ) {
             const htmlProp = node.value.expression.properties[0];
-            if (
-              htmlProp.type === "Property" &&
-              htmlProp.key.type === "Identifier" &&
-              htmlProp.key.name === "__html"
-            ) {
+            if (htmlProp.type === "Property" && htmlProp.key.type === "Identifier" && htmlProp.key.name === "__html") {
               context.report({
                 node,
                 messageId: "dangerouslySetInnerHTML",
@@ -89,15 +83,11 @@ export default {
         }
 
         if (allowStatic) {
-          const innerHtmlNode =
-            node.value?.type === "JSXExpressionContainer" ? node.value.expression : node.value;
+          const innerHtmlNode = node.value?.type === "JSXExpressionContainer" ? node.value.expression : node.value;
           const innerHtml = innerHtmlNode && getStringIfConstant(innerHtmlNode);
           if (typeof innerHtml === "string") {
             if (isHtmlLike(innerHtml)) {
-              if (
-                node.parent?.parent?.type === "JSXElement" &&
-                node.parent.parent.children?.length
-              ) {
+              if (node.parent?.parent?.type === "JSXElement" && node.parent.parent.children?.length) {
                 context.report({
                   node: node.parent.parent,
                   messageId: "conflict",

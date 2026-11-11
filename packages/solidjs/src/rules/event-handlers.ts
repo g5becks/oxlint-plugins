@@ -1,16 +1,64 @@
 import { isDOMElementName } from "../utils/jsx";
 
 const COMMON_EVENTS = [
-  "onAnimationEnd", "onAnimationIteration", "onAnimationStart", "onBeforeInput", "onBlur",
-  "onChange", "onClick", "onContextMenu", "onCopy", "onCut", "onDblClick", "onDrag", "onDragEnd",
-  "onDragEnter", "onDragExit", "onDragLeave", "onDragOver", "onDragStart", "onDrop", "onError",
-  "onFocus", "onFocusIn", "onFocusOut", "onGotPointerCapture", "onInput", "onInvalid",
-  "onKeyDown", "onKeyPress", "onKeyUp", "onLoad", "onLostPointerCapture", "onMouseDown",
-  "onMouseEnter", "onMouseLeave", "onMouseMove", "onMouseOut", "onMouseOver", "onMouseUp",
-  "onPaste", "onPointerCancel", "onPointerDown", "onPointerEnter", "onPointerLeave",
-  "onPointerMove", "onPointerOut", "onPointerOver", "onPointerUp", "onReset", "onScroll",
-  "onSelect", "onSubmit", "onToggle", "onTouchCancel", "onTouchEnd", "onTouchMove",
-  "onTouchStart", "onTransitionEnd", "onWheel",
+  "onAnimationEnd",
+  "onAnimationIteration",
+  "onAnimationStart",
+  "onBeforeInput",
+  "onBlur",
+  "onChange",
+  "onClick",
+  "onContextMenu",
+  "onCopy",
+  "onCut",
+  "onDblClick",
+  "onDrag",
+  "onDragEnd",
+  "onDragEnter",
+  "onDragExit",
+  "onDragLeave",
+  "onDragOver",
+  "onDragStart",
+  "onDrop",
+  "onError",
+  "onFocus",
+  "onFocusIn",
+  "onFocusOut",
+  "onGotPointerCapture",
+  "onInput",
+  "onInvalid",
+  "onKeyDown",
+  "onKeyPress",
+  "onKeyUp",
+  "onLoad",
+  "onLostPointerCapture",
+  "onMouseDown",
+  "onMouseEnter",
+  "onMouseLeave",
+  "onMouseMove",
+  "onMouseOut",
+  "onMouseOver",
+  "onMouseUp",
+  "onPaste",
+  "onPointerCancel",
+  "onPointerDown",
+  "onPointerEnter",
+  "onPointerLeave",
+  "onPointerMove",
+  "onPointerOut",
+  "onPointerOver",
+  "onPointerUp",
+  "onReset",
+  "onScroll",
+  "onSelect",
+  "onSubmit",
+  "onToggle",
+  "onTouchCancel",
+  "onTouchEnd",
+  "onTouchMove",
+  "onTouchStart",
+  "onTransitionEnd",
+  "onWheel",
 ] as const;
 
 const COMMON_EVENTS_MAP = new Map<string, string>();
@@ -54,14 +102,12 @@ export default {
         properties: {
           ignoreCase: {
             type: "boolean",
-            description:
-              "if true, don't warn on ambiguously named event handlers like `onclick` or `onchange`",
+            description: "if true, don't warn on ambiguously named event handlers like `onclick` or `onchange`",
             default: false,
           },
           warnOnSpread: {
             type: "boolean",
-            description:
-              "if true, warn when spreading event handlers onto JSX. Enable for Solid < v1.6.",
+            description: "if true, warn when spreading event handlers onto JSX. Enable for Solid < v1.6.",
             default: false,
           },
         },
@@ -74,8 +120,7 @@ export default {
       naming:
         "The {{name}} prop is ambiguous. If it is an event handler, change it to {{handlerName}}. If it is an attribute, change it to {{attrName}}.",
       capitalization: "The {{name}} prop should be renamed to {{fixedName}} for readability.",
-      nonstandard:
-        "The {{name}} prop should be renamed to {{fixedName}}, because it's not a standard event handler.",
+      nonstandard: "The {{name}} prop should be renamed to {{fixedName}}, because it's not a standard event handler.",
       "make-handler": "Change the {{name}} prop to {{handlerName}}.",
       "make-attr": "Change the {{name}} prop to {{attrName}}.",
       "spread-handler":
@@ -87,10 +132,7 @@ export default {
     return {
       JSXAttribute(node: any) {
         const openingElement = node.parent;
-        if (
-          openingElement?.name?.type !== "JSXIdentifier" ||
-          !isDOMElementName(openingElement.name.name)
-        ) {
+        if (openingElement?.name?.type !== "JSXIdentifier" || !isDOMElementName(openingElement.name.name)) {
           return;
         }
 
@@ -108,10 +150,7 @@ export default {
           node.value?.type === "JSXExpressionContainer" &&
           node.value.expression.type !== "JSXEmptyExpression" &&
           node.value.expression.type !== "ArrayExpression" &&
-          (staticValue = getStaticValue(
-            node.value.expression,
-            context.sourceCode?.getScope?.(node),
-          )) !== null &&
+          (staticValue = getStaticValue(node.value.expression, context.sourceCode?.getScope?.(node))) !== null &&
           (typeof staticValue.value === "string" || typeof staticValue.value === "number")
         ) {
           context.report({
@@ -176,10 +215,7 @@ export default {
           node.parent.parent.parent?.type === "JSXOpeningElement"
         ) {
           const openingElement = node.parent.parent.parent;
-          if (
-            openingElement.name?.type === "JSXIdentifier" &&
-            isDOMElementName(openingElement.name.name)
-          ) {
+          if (openingElement.name?.type === "JSXIdentifier" && isDOMElementName(openingElement.name.name)) {
             if (node.key?.type === "Identifier" && /^on/.test(node.key.name)) {
               const handlerName = node.key.name;
               context.report({
@@ -188,9 +224,7 @@ export default {
                 data: { name: node.key.name },
                 *fix(fixer: any) {
                   const commaAfter = context.sourceCode.getTokenAfter(node);
-                  yield fixer.remove(
-                    node.parent.properties.length === 1 ? node.parent.parent : node,
-                  );
+                  yield fixer.remove(node.parent.properties.length === 1 ? node.parent.parent : node);
                   if (commaAfter?.value === ",") {
                     yield fixer.remove(commaAfter);
                   }

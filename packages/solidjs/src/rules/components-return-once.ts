@@ -1,8 +1,5 @@
 const getFunctionName = (node: any): string | null => {
-  if (
-    (node.type === "FunctionDeclaration" || node.type === "FunctionExpression") &&
-    node.id != null
-  ) {
+  if ((node.type === "FunctionDeclaration" || node.type === "FunctionExpression") && node.id != null) {
     return node.id.name;
   }
   if (node.parent?.type === "VariableDeclarator" && node.parent.id.type === "Identifier") {
@@ -110,41 +107,30 @@ export default {
               }
 
               if (conditions.length >= 2) {
-                const fallbackStr = !isNothing(fallback)
-                  ? ` fallback={${sourceCode.getText(fallback)}}`
-                  : "";
+                const fallbackStr = !isNothing(fallback) ? ` fallback={${sourceCode.getText(fallback)}}` : "";
                 return fixer.replaceText(
                   argument,
                   `<Switch${fallbackStr}>\n${conditions
                     .map(
                       ({ test, consequent }: any) =>
-                        `<Match when={${sourceCode.getText(test)}}>${putIntoJSX(
-                          consequent
-                        )}</Match>`
+                        `<Match when={${sourceCode.getText(test)}}>${putIntoJSX(consequent)}</Match>`,
                     )
-                    .join("\n")}\n</Switch>`
+                    .join("\n")}\n</Switch>`,
                 );
               }
 
               if (isNothing(consequent)) {
                 return fixer.replaceText(
                   argument,
-                  `<Show when={!(${sourceCode.getText(test)})}>${putIntoJSX(alternate)}</Show>`
+                  `<Show when={!(${sourceCode.getText(test)})}>${putIntoJSX(alternate)}</Show>`,
                 );
               }
 
-              if (
-                isNothing(fallback) ||
-                getLineLength(consequent.loc) >= getLineLength(alternate.loc) * 1.5
-              ) {
-                const fallbackStr = !isNothing(fallback)
-                  ? ` fallback={${sourceCode.getText(fallback)}}`
-                  : "";
+              if (isNothing(fallback) || getLineLength(consequent.loc) >= getLineLength(alternate.loc) * 1.5) {
+                const fallbackStr = !isNothing(fallback) ? ` fallback={${sourceCode.getText(fallback)}}` : "";
                 return fixer.replaceText(
                   argument,
-                  `<Show when={${sourceCode.getText(test)}}${fallbackStr}>${putIntoJSX(
-                    consequent
-                  )}</Show>`
+                  `<Show when={${sourceCode.getText(test)}}${fallbackStr}>${putIntoJSX(consequent)}</Show>`,
                 );
               }
 
@@ -161,7 +147,7 @@ export default {
                 const { left: test, right: consequent } = argument;
                 return fixer.replaceText(
                   argument,
-                  `<Show when={${sourceCode.getText(test)}}>${putIntoJSX(consequent)}</Show>`
+                  `<Show when={${sourceCode.getText(test)}}>${putIntoJSX(consequent)}</Show>`,
                 );
               },
             });

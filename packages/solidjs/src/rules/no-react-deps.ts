@@ -2,9 +2,7 @@ import { trackImports } from "../utils/imports";
 import { trace } from "../utils/trace";
 
 function isFunctionNode(node: any): boolean {
-  return ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(
-    node?.type,
-  );
+  return ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(node?.type);
 }
 
 export default {
@@ -47,11 +45,7 @@ export default {
         ) {
           const [arg0, arg1] = node.arguments.map((arg: any) => trace(arg, context));
 
-          if (
-            isFunctionNode(arg0) &&
-            arg0.params.length === 0 &&
-            arg1.type === "ArrayExpression"
-          ) {
+          if (isFunctionNode(arg0) && arg0.params.length === 0 && arg1.type === "ArrayExpression") {
             context.report({
               node: node.arguments[1],
               messageId: "noUselessDep",

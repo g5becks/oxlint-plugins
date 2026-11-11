@@ -21,7 +21,11 @@ export function isReadonlyArrayType(typeNode: any): boolean {
     return false;
   }
 
-  if (typeNode.type === "TSTypeOperator" && typeNode.operator === "readonly" && typeNode.typeAnnotation?.type === "TSArrayType") {
+  if (
+    typeNode.type === "TSTypeOperator" &&
+    typeNode.operator === "readonly" &&
+    typeNode.typeAnnotation?.type === "TSArrayType"
+  ) {
     return true;
   }
 

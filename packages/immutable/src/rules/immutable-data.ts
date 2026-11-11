@@ -112,7 +112,11 @@ export default {
         context.report({ node, messageId: "generic" });
       },
       UnaryExpression(node: any) {
-        if (node.operator !== "delete" || node.argument?.type !== "MemberExpression" || shouldIgnoreNode(node.argument)) {
+        if (
+          node.operator !== "delete" ||
+          node.argument?.type !== "MemberExpression" ||
+          shouldIgnoreNode(node.argument)
+        ) {
           return;
         }
         context.report({ node, messageId: "generic" });

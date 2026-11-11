@@ -1,14 +1,14 @@
-import { RuleTester } from "eslint"
-import plugin from "../src/index.ts"
+import { RuleTester } from "eslint";
+import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["no-throw-errorset"]
+const rule = (plugin as any).rules["no-throw-errorset"];
 
 const tester = new RuleTester({
   languageOptions: { ecmaVersion: "latest", sourceType: "module" },
-})
+});
 
 const IMPORT = `import { errorSet } from "@takinprofit/errorset";
-const UserError = errorSet("UserError", ["not_found", "invalid"]).init();`
+const UserError = errorSet("UserError", ["not_found", "invalid"]).init();`;
 
 tester.run("no-throw-errorset", rule as any, {
   valid: [
@@ -72,4 +72,4 @@ const getUser = (id) => { return UserError.not_found\`User \${"id"}\`({ id }); }
       errors: [{ messageId: "noThrow" }],
     },
   ],
-})
+});

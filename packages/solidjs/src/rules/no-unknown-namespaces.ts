@@ -45,10 +45,7 @@ export default {
       "JSXAttribute > JSXNamespacedName"(node: any) {
         const explicitlyAllowedNamespaces = context.options?.[0]?.allowedNamespaces;
         const openingElement = node.parent?.parent;
-        if (
-          openingElement?.name?.type === "JSXIdentifier" &&
-          !isDOMElementName(openingElement.name.name)
-        ) {
+        if (openingElement?.name?.type === "JSXIdentifier" && !isDOMElementName(openingElement.name.name)) {
           context.report({
             node,
             messageId: "component",

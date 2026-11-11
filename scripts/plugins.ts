@@ -24,7 +24,11 @@ export type PluginName = (typeof PLUGIN_NAMES)[number];
 export const PLUGINS: Readonly<Record<PluginName, PluginInfo>> = {
   errorset: { name: "errorset", packageName: "oxlint-plugin-errorset", legacyDir: "plugin-errorset" },
   immutable: { name: "immutable", packageName: "oxlint-plugin-immutable", legacyDir: "plugin-functional" },
-  "ts-no-assert": { name: "ts-no-assert", packageName: "oxlint-plugin-ts-no-assert", legacyDir: "plugin-no-type-assertion" },
+  "ts-no-assert": {
+    name: "ts-no-assert",
+    packageName: "oxlint-plugin-ts-no-assert",
+    legacyDir: "plugin-no-type-assertion",
+  },
   query: { name: "query", packageName: "oxlint-plugin-query", legacyDir: "plugin-query" },
   router: { name: "router", packageName: "oxlint-plugin-router", legacyDir: "plugin-router" },
   solidjs: { name: "solidjs", packageName: "oxlint-plugin-solidjs", legacyDir: "plugin-solid" },

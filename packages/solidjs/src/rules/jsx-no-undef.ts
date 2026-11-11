@@ -15,17 +15,10 @@ const formatList = (strings: Array<string>): string => {
 };
 
 function getCommentBefore(node: any, sourceCode: any): any {
-  return sourceCode
-    .getCommentsBefore(node)
-    .find((comment: any) => comment.loc!.end.line >= node.loc!.start.line - 1);
+  return sourceCode.getCommentsBefore(node).find((comment: any) => comment.loc!.end.line >= node.loc!.start.line - 1);
 }
 
-function appendImports(
-  fixer: any,
-  sourceCode: any,
-  importNode: any,
-  identifiers: Array<string>
-): any {
+function appendImports(fixer: any, sourceCode: any, importNode: any, identifiers: Array<string>): any {
   const identifiersString = identifiers.join(", ");
   const reversedSpecifiers = importNode.specifiers.slice().reverse();
   const lastSpecifier = reversedSpecifiers.find((s: any) => s.type === "ImportSpecifier");
@@ -33,7 +26,7 @@ function appendImports(
     return fixer.insertTextAfter(lastSpecifier, `, ${identifiersString}`);
   }
   const otherSpecifier = importNode.specifiers.find(
-    (s: any) => s.type === "ImportDefaultSpecifier" || s.type === "ImportNamespaceSpecifier"
+    (s: any) => s.type === "ImportDefaultSpecifier" || s.type === "ImportNamespaceSpecifier",
   );
   if (otherSpecifier) {
     return fixer.insertTextAfter(otherSpecifier, `, { ${identifiersString} }`);
@@ -43,41 +36,30 @@ function appendImports(
     if (maybeBrace?.value === "{") {
       return fixer.insertTextAfter(maybeBrace, ` ${identifiersString} `);
     } else {
-      return importToken
-        ? fixer.insertTextAfter(importToken, ` { ${identifiersString} } from`)
-        : null;
+      return importToken ? fixer.insertTextAfter(importToken, ` { ${identifiersString} } from`) : null;
     }
   }
   return null;
 }
 
-function insertImports(
-  fixer: any,
-  sourceCode: any,
-  source: string,
-  identifiers: Array<string>
-): any {
+function insertImports(fixer: any, sourceCode: any, source: string, identifiers: Array<string>): any {
   const identifiersString = identifiers.join(", ");
   const programNode = sourceCode.ast;
   const firstImport = programNode.body.find((n: any) => n.type === "ImportDeclaration");
   if (firstImport) {
     return fixer.insertTextBeforeRange(
       (getCommentBefore(firstImport, sourceCode) ?? firstImport).range,
-      `import { ${identifiersString} } from "${source}";\n`
+      `import { ${identifiersString} } from "${source}";\n`,
     );
   }
-  return fixer.insertTextBeforeRange(
-    [0, 0],
-    `import { ${identifiersString} } from "${source}";\n`
-  );
+  return fixer.insertTextBeforeRange([0, 0], `import { ${identifiersString} } from "${source}";\n`);
 }
 
 export default {
   meta: {
     type: "problem" as const,
     docs: {
-      description:
-        "Disallow references to undefined variables in JSX. Handles custom directives.",
+      description: "Disallow references to undefined variables in JSX. Handles custom directives.",
       url: "https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/jsx-no-undef.md",
     },
     fixable: "code" as const,
@@ -87,20 +69,17 @@ export default {
         properties: {
           allowGlobals: {
             type: "boolean",
-            description:
-              "When true, the rule will consider the global scope when checking for defined components.",
+            description: "When true, the rule will consider the global scope when checking for defined components.",
             default: false,
           },
           autoImport: {
             type: "boolean",
-            description:
-              'Automatically import certain components from `"solid-js"` if they are undefined.',
+            description: 'Automatically import certain components from `"solid-js"` if they are undefined.',
             default: true,
           },
           typescriptEnabled: {
             type: "boolean",
-            description:
-              "Adjusts behavior not to conflict with TypeScript's type checking.",
+            description: "Adjusts behavior not to conflict with TypeScript's type checking.",
             default: false,
           },
         },
@@ -117,15 +96,13 @@ export default {
   createOnce(context: any) {
     const missingComponentsSet = new Set<string>();
 
-    function checkIdentifierInJSX(
-      node: any,
-      opts: { isComponent?: boolean; isCustomDirective?: boolean } = {}
-    ) {
+    function checkIdentifierInJSX(node: any, opts: { isComponent?: boolean; isCustomDirective?: boolean } = {}) {
       let scope = context.sourceCode?.getScope?.(node);
       if (!scope) return;
       const sourceCode = context.sourceCode;
       const sourceType = sourceCode.ast.sourceType;
-      const scopeUpperBound = !(context.options?.[0]?.allowGlobals ?? false) && sourceType === "module" ? "module" : "global";
+      const scopeUpperBound =
+        !(context.options?.[0]?.allowGlobals ?? false) && sourceType === "module" ? "module" : "global";
       const variables = [...scope.variables];
 
       if (node.name === "this") return;
@@ -147,7 +124,7 @@ export default {
 
       if (
         opts.isComponent &&
-        (context.options?.[0]?.autoImport !== false) &&
+        context.options?.[0]?.autoImport !== false &&
         AUTO_COMPONENTS.includes(node.name) &&
         !missingComponentsSet.has(node.name)
       ) {
@@ -200,13 +177,13 @@ export default {
       },
       "Program:exit": (programNode: any) => {
         const missingComponents = Array.from(missingComponentsSet.values());
-        if ((context.options?.[0]?.autoImport !== false) && missingComponents.length) {
+        if (context.options?.[0]?.autoImport !== false && missingComponents.length) {
           const importNode = programNode.body.find(
             (n: any) =>
               n.type === "ImportDeclaration" &&
               n.importKind !== "type" &&
               n.source.type === "Literal" &&
-              n.source.value === SOURCE_MODULE
+              n.source.value === SOURCE_MODULE,
           );
           if (importNode) {
             context.report({

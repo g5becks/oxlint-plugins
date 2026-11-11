@@ -1,9 +1,7 @@
 import { isJSXElementOrFragment } from "../utils/jsx";
 
 function isFunctionNode(node: any): boolean {
-  return ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(
-    node?.type,
-  );
+  return ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(node?.type);
 }
 
 function getPropertyName(memberExpr: any): string | null {
@@ -21,8 +19,7 @@ export default {
   meta: {
     type: "problem" as const,
     docs: {
-      description:
-        "Enforce using Solid's `<For />` component for mapping an array to JSX elements.",
+      description: "Enforce using Solid's `<For />` component for mapping an array to JSX elements.",
       recommended: "warn",
     },
     fixable: "code" as const,
@@ -44,15 +41,9 @@ export default {
         node,
         messageId: "preferFor",
         fix: (fixer: any) => {
-          const beforeArray: [number, number] = [
-            jsxExpressionContainerNode.range[0],
-            arrayNode.range[0],
-          ];
+          const beforeArray: [number, number] = [jsxExpressionContainerNode.range[0], arrayNode.range[0]];
           const betweenArrayAndMapFn: [number, number] = [arrayNode.range[1], mapFnNode.range[0]];
-          const afterMapFn: [number, number] = [
-            mapFnNode.range[1],
-            jsxExpressionContainerNode.range[1],
-          ];
+          const afterMapFn: [number, number] = [mapFnNode.range[1], jsxExpressionContainerNode.range[1]];
           return [
             fixer.replaceTextRange(beforeArray, "<For each={"),
             fixer.replaceTextRange(betweenArrayAndMapFn, "}>{"),
