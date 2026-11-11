@@ -1,11 +1,11 @@
 ---
 id: TASK-026
 title: 'Testing: Fix-safety and option-schema suites (OX-24, R16)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T23:17:00Z'
+updated_date: '2026-11-11T23:22:00Z'
 labels:
   - testing
 milestone: m-2
@@ -34,7 +34,7 @@ Audit T5 and R16. Fixes are applied automatically by `oxlint --fix` in consumers
 - [x] #1 Every fixable rule has a fix-safety test whose fixed output type-checks
 - [x] #2 Every rule with options has valid and invalid schema tests in real oxlint 1.70.0 and pinned
 - [x] #3 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -60,4 +60,6 @@ Audit T5 and R16. Fixes are applied automatically by `oxlint --fix` in consumers
 ## Decisions
 - Fix-safety compares TS diagnostics before/after instead of requiring zero (fixtures intentionally contain lint violations and unresolved imports).
 - Suggest instead of autofix for the no-import stable-query-client case rather than auto-adding an import (a React import may come from a global/JSX runtime setup; a suggestion is reviewable).
+
+Verified with scripts/ci-local.sh (6051ec5, PASS); GitHub Actions unavailable (billing lock). All legs pass incl. cli on oxlint floor 1.70.0 and pinned 1.93.0 (schema + fix-safety suites), eslint-compat 9/10, pack.
 <!-- SECTION:NOTES:END -->
