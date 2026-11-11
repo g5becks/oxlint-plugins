@@ -3,11 +3,11 @@ id: TASK-023
 title: >-
   query/router: Run the vendored TanStack upstream tests against the ports
   (OX-21)
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T22:38:00Z'
+updated_date: '2026-11-11T22:47:00Z'
 labels:
   - query
   - router
@@ -42,7 +42,7 @@ Audit T3, R12 and R13. 3,000+ lines of TanStack upstream tests (`_tests_upstream
 - [x] #2 exhaustive-deps reports on the same node as upstream (test)
 - [x] #3 route-param-names has at least five valid and five invalid oxlint-runtime cases; stable-query-client's React-only scope is documented
 - [x] #4 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -76,4 +76,12 @@ Audit T3, R12 and R13. 3,000+ lines of TanStack upstream tests (`_tests_upstream
 `bun run gate` exit 0: unit 275/0 + upstream 1461 pass / 1 skipped, compat 40/0, repo 52/0, CLI 163/0, bench 4/0.
 
 Consumer-visible change: yes.
+
+Verified with scripts/ci-local.sh (5498c62, PASS); GitHub Actions unavailable (billing lock). Unit legs (node 22 floor TAP, node 24 pinned, macOS) each report 275 pass + upstream 1461 pass / 1 skipped. (An earlier ci-local run on d8b15a4 happened after a rejected commit (header > 100 chars) and does not count.)
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+The vendored TanStack Query 5.91.4 suites (1,462 cases) run unmodified against the ports in the unit job via Node module hooks: 1,461 pass, no-void-query-fn suite skipped (not ported; PARITY.md). no-unstable-deps accepts upstream's "React" alias source; exhaustive-deps reports on the options object like upstream 5.107 (test); route-param-names has 9 valid / 6 invalid cases; stable-query-client documented React-only. Changeset: query minor. Verified with scripts/ci-local.sh (5498c62, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
