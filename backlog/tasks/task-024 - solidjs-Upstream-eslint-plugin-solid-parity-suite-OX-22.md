@@ -1,11 +1,11 @@
 ---
 id: TASK-024
 title: 'solidjs: Upstream eslint-plugin-solid parity suite (OX-22)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T22:56:00Z'
+updated_date: '2026-11-11T23:00:00Z'
 labels:
   - solidjs
   - testing
@@ -37,7 +37,7 @@ Audit R11 and T3. On a 111-file corpus, 13 Solid rules match upstream site for s
 - [x] #2 The reactivity divergences are fixed or documented with tests
 - [x] #3 The jsx-uses-vars recommendation is decided, recorded, and reflected in the README and preset
 - [x] #4 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -73,4 +73,12 @@ Measured on oxlint 1.93.0 and 1.70.0 with the built-in no-unused-vars on `import
 - Changeset .changeset/solidjs-upstream-parity.md (solidjs patch: bug fixes + docs).
 
 Consumer-visible change: yes.
+
+Verified with scripts/ci-local.sh (ebed8c2, PASS; 14 legs); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+eslint-plugin-solid 0.14.5's suites run unmodified against the ports in the unit job (465/465 runnable cases; jsx-uses-vars suite skipped per PARITY.md) after fixing an imports fixer crash, static evaluation and style-prop parsing; reactivity differences shown to be 0.14.5 vs 0.19.0 upstream changes (tests + PARITY.md); jsx-uses-vars measured as a no-op under oxlint and documented. Changeset: solidjs patch. Verified with scripts/ci-local.sh (ebed8c2, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
