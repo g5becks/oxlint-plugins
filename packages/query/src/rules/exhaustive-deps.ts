@@ -1,5 +1,5 @@
-import { createTanstackQueryImportTracker } from "../utils/detect-query-imports";
-import { ASTUtils } from "../utils/ast-utils";
+import { createTanstackQueryImportTracker } from "../utils/detect-query-imports.ts";
+import { ASTUtils } from "../utils/ast-utils.ts";
 
 const QUERY_KEY = "queryKey";
 const QUERY_FN = "queryFn";

@@ -1,11 +1,11 @@
-import { RuleTester } from "eslint";
-import plugin from "../src/index";
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
+import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["immutable-data"];
+const rule = ruleOf(plugin, "immutable-data");
 
-const tester = new RuleTester({ languageOptions: { ecmaVersion: "latest", sourceType: "module" } });
+const tester = ruleTester("tsx");
 
-tester.run("immutable-data", rule as any, {
+tester.run("immutable-data", rule, {
   valid: ["const a = { x: 1 }; const b = { ...a, x: 2 };"],
   invalid: [
     { code: "const a = { x: 1 }; a.x = 2;", errors: [{ messageId: "generic" }] },

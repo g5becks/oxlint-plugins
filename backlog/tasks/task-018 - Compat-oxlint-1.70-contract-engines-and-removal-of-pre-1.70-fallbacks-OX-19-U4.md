@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-11-11T16:39:00Z'
+updated_date: '2026-11-11T18:00:00Z'
 labels:
   - compat
   - docs
@@ -39,3 +40,9 @@ Audit U4, U3, P4, H7 and H8. No package declares `peerDependencies`; every READM
 - [ ] #4 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
 - [ ] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Note from TASK-008 (2026-11-11): ts-no-assert's `as const` handling accepts TSTypeReference("const") and TSTypeOperator("const"). Mutation runs showed only the TSTypeReference branch is exercised, in oxlint's RuleTester on 1.47.0, 1.70.0 and 1.93.0 and in typescript-eslint. TASK-008 keeps both branches (its item 3); consider whether the TSTypeOperator branch is a dead fallback here.
+<!-- SECTION:NOTES:END -->

@@ -1,4 +1,4 @@
-import { getEnclosingFunction } from "../utils/tree";
+import { getEnclosingFunction } from "../utils/tree.ts";
 
 type RuleOptions = [{ allowInAsyncFunctions?: boolean }?];
 

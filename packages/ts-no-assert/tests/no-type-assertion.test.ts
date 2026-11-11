@@ -1,32 +1,16 @@
-import { RuleTester } from "eslint";
-import parser from "@typescript-eslint/parser";
-import plugin from "../src/index";
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
+import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["no-type-assertion"];
+const rule = ruleOf(plugin, "no-type-assertion");
 
 // Tester for plain TypeScript (.ts) — angle-bracket assertions are valid syntax here
-const tsTester = new RuleTester({
-  languageOptions: {
-    parser: parser as any,
-    ecmaVersion: "latest",
-    sourceType: "module",
-  },
-});
+const tsTester = ruleTester("ts");
 
 // Tester for TypeScript + JSX (.tsx) — angle-bracket assertions are syntactically
 // illegal in JSX files (conflicts with JSX tags), so only `as` and `!` are tested here
-const tsxTester = new RuleTester({
-  languageOptions: {
-    parser: parser as any,
-    ecmaVersion: "latest",
-    sourceType: "module",
-    parserOptions: {
-      ecmaFeatures: { jsx: true },
-    },
-  },
-});
+const tsxTester = ruleTester("tsx");
 
-tsTester.run("no-type-assertion (.ts)", rule as any, {
+tsTester.run("no-type-assertion (.ts)", rule, {
   valid: [
     // as const and as unknown are always allowed
     { code: "const foo = 42 as const" },
@@ -91,7 +75,7 @@ tsTester.run("no-type-assertion (.ts)", rule as any, {
   ],
 });
 
-tsxTester.run("no-type-assertion (.tsx)", rule as any, {
+tsxTester.run("no-type-assertion (.tsx)", rule, {
   valid: [
     // as const and as unknown still allowed inside JSX
     { code: "const foo = 42 as const" },

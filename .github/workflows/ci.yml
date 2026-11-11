@@ -45,10 +45,17 @@ jobs:
       - run: bun run test:repo
 
   unit:
+    # Unit tests run on Node (oxlint's RuleTester refuses Bun) with the RuleTester of the
+    # oxlint floor and of the pinned oxlint.
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - { os: ubuntu-latest, node: "22", oxlint: floor }
+          - { os: ubuntu-latest, node: "22", oxlint: pinned }
+          - { os: ubuntu-latest, node: "24", oxlint: floor }
+          - { os: ubuntu-latest, node: "24", oxlint: pinned }
+          - { os: macos-latest, node: "24", oxlint: pinned }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -57,8 +64,14 @@ jobs:
           bun-version: ${{ env.BUN_VERSION }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ matrix.node }}
       - run: bun install --frozen-lockfile
+      - name: RuleTester from the oxlint floor
+        if: matrix.oxlint == 'floor'
+        run: |
+          npm install --no-audit --no-fund --prefix "$RUNNER_TEMP/oxlint" "oxlint@$OXLINT_FLOOR"
+          echo "OXLINT_RULE_TESTER=$RUNNER_TEMP/oxlint/node_modules/oxlint/dist/plugins-dev.js" >> "$GITHUB_ENV"
+      - run: node --version
       - run: bun run test:unit
 
   cli:

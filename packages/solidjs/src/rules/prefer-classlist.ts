@@ -1,4 +1,4 @@
-import { jsxHasProp, jsxPropName } from "../utils/jsx";
+import { jsxHasProp, jsxPropName } from "../utils/jsx.ts";
 
 export default {
   meta: {

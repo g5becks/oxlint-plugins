@@ -1,16 +1,11 @@
-import { RuleTester } from "eslint";
-import plugin from "../src/index";
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
+import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["create-route-property-order"];
+const rule = ruleOf(plugin, "create-route-property-order");
 
-const tester = new RuleTester({
-  languageOptions: {
-    ecmaVersion: "latest",
-    sourceType: "module",
-  },
-});
+const tester = ruleTester("tsx");
 
-tester.run("create-route-property-order", rule as any, {
+tester.run("create-route-property-order", rule, {
   valid: [
     {
       code: "import { createRoute } from '@tanstack/react-router'; createRoute({ search: {}, loaderDeps: {} });",

@@ -1,4 +1,4 @@
-import { jsxPropName } from "../utils/jsx";
+import { jsxPropName } from "../utils/jsx.ts";
 
 function isHtmlLike(str: string): boolean {
   return /<[a-z][\s\S]*>/i.test(str.trim());

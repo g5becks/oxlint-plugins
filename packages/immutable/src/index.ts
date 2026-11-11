@@ -1,12 +1,12 @@
 import { eslintCompatPlugin } from "@oxlint/plugins";
-import immutableData from "./rules/immutable-data";
-import noLet from "./rules/no-let";
-import noPromiseReject from "./rules/no-promise-reject";
-import noThrowStatements from "./rules/no-throw-statements";
-import preferImmutableTypes from "./rules/prefer-immutable-types";
-import preferPropertySignatures from "./rules/prefer-property-signatures";
-import readonlyType from "./rules/readonly-type";
-import typeDeclarationImmutability from "./rules/type-declaration-immutability";
+import immutableData from "./rules/immutable-data.ts";
+import noLet from "./rules/no-let.ts";
+import noPromiseReject from "./rules/no-promise-reject.ts";
+import noThrowStatements from "./rules/no-throw-statements.ts";
+import preferImmutableTypes from "./rules/prefer-immutable-types.ts";
+import preferPropertySignatures from "./rules/prefer-property-signatures.ts";
+import readonlyType from "./rules/readonly-type.ts";
+import typeDeclarationImmutability from "./rules/type-declaration-immutability.ts";
 
 const plugin = {
   meta: { name: "oxlint-plugin-immutable" },

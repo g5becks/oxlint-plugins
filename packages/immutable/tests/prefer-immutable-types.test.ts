@@ -1,18 +1,11 @@
-import { RuleTester } from "eslint";
-import parser from "@typescript-eslint/parser";
-import plugin from "../src/index";
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
+import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["prefer-immutable-types"];
+const rule = ruleOf(plugin, "prefer-immutable-types");
 
-const tester = new RuleTester({
-  languageOptions: {
-    parser: parser as any,
-    ecmaVersion: "latest",
-    sourceType: "module",
-  },
-});
+const tester = ruleTester("ts");
 
-tester.run("prefer-immutable-types", rule as any, {
+tester.run("prefer-immutable-types", rule, {
   valid: ["function x(a: ReadonlyArray<string>): ReadonlyArray<string> { return a }"],
   invalid: [
     {

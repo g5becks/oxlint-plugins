@@ -1,5 +1,5 @@
-import { pathAsFirstArgFunctions, pathAsPropertyFunctions, VALID_PARAM_NAME_REGEX } from "../utils/constants";
-import { createTanstackRouterImportTracker } from "../utils/detect-router-imports";
+import { pathAsFirstArgFunctions, pathAsPropertyFunctions, VALID_PARAM_NAME_REGEX } from "../utils/constants.ts";
+import { createTanstackRouterImportTracker } from "../utils/detect-router-imports.ts";
 
 type ExtractedParam = {
   fullParam: string;

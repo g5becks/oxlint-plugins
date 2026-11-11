@@ -1,4 +1,4 @@
-import { isJSXElementOrFragment } from "../utils/jsx";
+import { isJSXElementOrFragment } from "../utils/jsx.ts";
 
 function isFunctionNode(node: any): boolean {
   return ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(node?.type);

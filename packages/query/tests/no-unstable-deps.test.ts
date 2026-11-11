@@ -1,11 +1,11 @@
-import { RuleTester } from "eslint";
-import plugin from "../src/index";
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
+import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["no-unstable-deps"];
+const rule = ruleOf(plugin, "no-unstable-deps");
 
-const tester = new RuleTester({ languageOptions: { ecmaVersion: "latest", sourceType: "module" } });
+const tester = ruleTester("tsx");
 
-tester.run("no-unstable-deps", rule as any, {
+tester.run("no-unstable-deps", rule, {
   valid: [
     {
       code: "import { useQuery } from '@tanstack/react-query'; import React, { useEffect } from 'React'; const { data } = useQuery({ queryKey: ['x'], queryFn: () => 1 }); useEffect(() => {}, [data]);",

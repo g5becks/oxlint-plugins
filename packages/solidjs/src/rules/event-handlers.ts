@@ -1,4 +1,4 @@
-import { isDOMElementName } from "../utils/jsx";
+import { isDOMElementName } from "../utils/jsx.ts";
 
 const COMMON_EVENTS = [
   "onAnimationEnd",

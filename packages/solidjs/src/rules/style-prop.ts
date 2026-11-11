@@ -1,4 +1,4 @@
-import { jsxPropName } from "../utils/jsx";
+import { jsxPropName } from "../utils/jsx.ts";
 
 function toKebabCase(str: string): string {
   return str.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);

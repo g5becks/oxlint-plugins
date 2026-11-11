@@ -1,16 +1,14 @@
-import { RuleTester } from "eslint";
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
 import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["no-unguarded-data-access"];
+const rule = ruleOf(plugin, "no-unguarded-data-access");
 
-const tester = new RuleTester({
-  languageOptions: { ecmaVersion: "latest", sourceType: "module" },
-});
+const tester = ruleTester("tsx");
 
 const IMPORT = `import { errorSet, isErr } from "@takinprofit/errorset";
 const UserError = errorSet("UserError", ["not_found", "suspended"]).init();`;
 
-tester.run("no-unguarded-data-access", rule as any, {
+tester.run("no-unguarded-data-access", rule, {
   valid: [
     // No errorset import
     {

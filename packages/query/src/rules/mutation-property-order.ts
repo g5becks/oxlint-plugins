@@ -1,5 +1,5 @@
-import { createPropertyOrderRule } from "../utils/create-property-order-rule";
-import { mutationFunctions, mutationSortRules } from "../utils/constants";
+import { createPropertyOrderRule } from "../utils/create-property-order-rule.ts";
+import { mutationFunctions, mutationSortRules } from "../utils/constants.ts";
 
 export default createPropertyOrderRule(
   {

@@ -3,10 +3,9 @@ function isAllowedTypeAnnotation(typeAnnotation: any): boolean {
   if (typeAnnotation.type === "TSUnknownKeyword") {
     return true;
   }
-  // `as const` and `<const>` are:
-  //   - TSTypeOperator with operator "const" in the oxlint runtime parser
-  //   - TSTypeReference with typeName.name "const" in @typescript-eslint/parser (used in tests)
-  // Accept both so the rule works identically in both environments.
+  // `as const` and `<const>`: both oxlint (verified with the RuleTester of 1.47, 1.70 and 1.93)
+  // and @typescript-eslint/parser produce a TSTypeReference named `const`. A TSTypeOperator
+  // `const` shape is also accepted defensively; no tested runtime produces it.
   if (typeAnnotation.type === "TSTypeOperator" && typeAnnotation.operator === "const") {
     return true;
   }

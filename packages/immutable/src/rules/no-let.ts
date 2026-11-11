@@ -1,4 +1,4 @@
-import { isInForLoopInitializer } from "../utils/tree";
+import { isInForLoopInitializer } from "../utils/tree.ts";
 
 type RuleOptions = [{ allowInForLoopInit?: boolean }?];
 

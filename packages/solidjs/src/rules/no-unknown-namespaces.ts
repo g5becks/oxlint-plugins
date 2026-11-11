@@ -1,4 +1,4 @@
-import { isDOMElementName } from "../utils/jsx";
+import { isDOMElementName } from "../utils/jsx.ts";
 
 const knownNamespaces = ["on", "oncapture", "use", "prop", "attr", "bool"];
 const styleNamespaces = ["style", "class"];

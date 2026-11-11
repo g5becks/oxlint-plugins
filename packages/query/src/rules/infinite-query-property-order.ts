@@ -1,5 +1,5 @@
-import { createPropertyOrderRule } from "../utils/create-property-order-rule";
-import { infiniteQueryFunctions, infiniteQuerySortRules } from "../utils/constants";
+import { createPropertyOrderRule } from "../utils/create-property-order-rule.ts";
+import { infiniteQueryFunctions, infiniteQuerySortRules } from "../utils/constants.ts";
 
 export default createPropertyOrderRule(
   {

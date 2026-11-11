@@ -1,4 +1,4 @@
-import { isJSXElementOrFragment } from "../utils/jsx";
+import { isJSXElementOrFragment } from "../utils/jsx.ts";
 
 const EXPENSIVE_TYPES = ["JSXElement", "JSXFragment", "Identifier"];
 

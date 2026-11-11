@@ -1,4 +1,4 @@
-import { isDOMElementName } from "../utils/jsx";
+import { isDOMElementName } from "../utils/jsx.ts";
 
 const AUTO_COMPONENTS = ["Show", "For", "Index", "Switch", "Match"];
 const SOURCE_MODULE = "solid-js";

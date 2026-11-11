@@ -1,5 +1,5 @@
-import { shouldIgnorePattern } from "../utils/ignore";
-import { isShallowReadonly } from "../utils/immutability";
+import { shouldIgnorePattern } from "../utils/ignore.ts";
+import { isShallowReadonly } from "../utils/immutability.ts";
 
 type CategoryOption = {
   enforcement?: "ReadonlyShallow";

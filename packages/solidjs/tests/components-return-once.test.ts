@@ -1,21 +1,11 @@
-import { RuleTester } from "eslint";
-import parser from "@typescript-eslint/parser";
-import plugin from "../src/index";
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
+import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["components-return-once"];
+const rule = ruleOf(plugin, "components-return-once");
 
-const tester = new RuleTester({
-  languageOptions: {
-    parser: parser as any,
-    ecmaVersion: "latest",
-    sourceType: "module",
-    parserOptions: {
-      ecmaFeatures: { jsx: true },
-    },
-  },
-});
+const tester = ruleTester("tsx");
 
-tester.run("components-return-once", rule as any, {
+tester.run("components-return-once", rule, {
   valid: [
     {
       code: "import { Show, createSignal } from 'solid-js'; const [count] = createSignal(1); const App = () => <Show when={count()}>ok</Show>;",

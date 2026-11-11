@@ -1,11 +1,11 @@
-import { RuleTester } from "eslint";
-import plugin from "../src/index";
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
+import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["infinite-query-property-order"];
+const rule = ruleOf(plugin, "infinite-query-property-order");
 
-const tester = new RuleTester({ languageOptions: { ecmaVersion: "latest", sourceType: "module" } });
+const tester = ruleTester("tsx");
 
-tester.run("infinite-query-property-order", rule as any, {
+tester.run("infinite-query-property-order", rule, {
   valid: [
     {
       code: "import { useInfiniteQuery } from '@tanstack/react-query'; useInfiniteQuery({ queryFn: () => 1, getNextPageParam: () => 2 });",

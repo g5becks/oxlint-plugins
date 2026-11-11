@@ -1,5 +1,5 @@
-import { shouldIgnorePattern } from "../utils/ignore";
-import { hasReadonlyModifier, isReadonlyArrayType } from "../utils/immutability";
+import { shouldIgnorePattern } from "../utils/ignore.ts";
+import { hasReadonlyModifier, isReadonlyArrayType } from "../utils/immutability.ts";
 
 type RuleOptions = [
   {

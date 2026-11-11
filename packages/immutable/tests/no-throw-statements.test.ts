@@ -1,11 +1,11 @@
-import { RuleTester } from "eslint";
-import plugin from "../src/index";
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
+import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["no-throw-statements"];
+const rule = ruleOf(plugin, "no-throw-statements");
 
-const tester = new RuleTester({ languageOptions: { ecmaVersion: "latest", sourceType: "module" } });
+const tester = ruleTester("tsx");
 
-tester.run("no-throw-statements", rule as any, {
+tester.run("no-throw-statements", rule, {
   valid: [{ code: "function x() { return 1; }" }],
   invalid: [{ code: "function x() { throw new Error('x'); }", errors: [{ messageId: "generic" }] }],
 });

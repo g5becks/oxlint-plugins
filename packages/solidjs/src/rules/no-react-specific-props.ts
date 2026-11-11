@@ -1,4 +1,4 @@
-import { isDOMElementName, jsxGetProp, jsxHasProp } from "../utils/jsx";
+import { isDOMElementName, jsxGetProp, jsxHasProp } from "../utils/jsx.ts";
 
 const reactSpecificProps = [
   { from: "className", to: "class" },

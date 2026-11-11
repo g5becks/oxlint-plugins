@@ -1,18 +1,11 @@
-import { RuleTester } from "eslint";
-import parser from "@typescript-eslint/parser";
-import plugin from "../src/index";
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
+import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["readonly-type"];
+const rule = ruleOf(plugin, "readonly-type");
 
-const tester = new RuleTester({
-  languageOptions: {
-    parser: parser as any,
-    ecmaVersion: "latest",
-    sourceType: "module",
-  },
-});
+const tester = ruleTester("ts");
 
-tester.run("readonly-type", rule as any, {
+tester.run("readonly-type", rule, {
   valid: ["type T = { readonly name: string }"],
   invalid: [
     {

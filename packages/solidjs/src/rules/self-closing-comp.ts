@@ -1,4 +1,4 @@
-import { isDOMElementName } from "../utils/jsx";
+import { isDOMElementName } from "../utils/jsx.ts";
 
 const voidDOMElementRegex = /^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/;
 

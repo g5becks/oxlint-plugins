@@ -1,16 +1,14 @@
-import { RuleTester } from "eslint";
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
 import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["no-throw-errorset"];
+const rule = ruleOf(plugin, "no-throw-errorset");
 
-const tester = new RuleTester({
-  languageOptions: { ecmaVersion: "latest", sourceType: "module" },
-});
+const tester = ruleTester("tsx");
 
 const IMPORT = `import { errorSet } from "@takinprofit/errorset";
 const UserError = errorSet("UserError", ["not_found", "invalid"]).init();`;
 
-tester.run("no-throw-errorset", rule as any, {
+tester.run("no-throw-errorset", rule, {
   valid: [
     // No errorset import — ignore
     {

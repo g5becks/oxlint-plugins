@@ -1,4 +1,4 @@
-import { isIgnoredViaIdentifierPattern } from "../utils/ignore";
+import { isIgnoredViaIdentifierPattern } from "../utils/ignore.ts";
 
 type RuleOptions = [
   {

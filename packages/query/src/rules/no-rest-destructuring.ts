@@ -1,5 +1,5 @@
-import { createTanstackQueryImportTracker } from "../utils/detect-query-imports";
-import { queryHooks } from "../utils/constants";
+import { createTanstackQueryImportTracker } from "../utils/detect-query-imports.ts";
+import { queryHooks } from "../utils/constants.ts";
 
 const queryHookSet = new Set<string>(queryHooks);
 

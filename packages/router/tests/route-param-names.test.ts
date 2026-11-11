@@ -1,16 +1,11 @@
-import { RuleTester } from "eslint";
-import plugin from "../src/index";
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
+import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["route-param-names"];
+const rule = ruleOf(plugin, "route-param-names");
 
-const tester = new RuleTester({
-  languageOptions: {
-    ecmaVersion: "latest",
-    sourceType: "module",
-  },
-});
+const tester = ruleTester("tsx");
 
-tester.run("route-param-names", rule as any, {
+tester.run("route-param-names", rule, {
   valid: [
     {
       code: "import { createFileRoute } from '@tanstack/react-router'; createFileRoute('/users/$userId')({ component: Users });",

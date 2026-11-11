@@ -9,7 +9,7 @@
     "prepare": "lefthook install",
     "build": "bun scripts/build.ts",
     "test": "bun run test:unit && bun run test:compat && bun run test:cli",
-    "test:unit": "bun test ./packages/*/tests/*.test.ts",
+    "test:unit": "node --test \"packages/*/tests/*.test.ts\"",
     "test:compat": "bun test ./tests/integration/*.test.ts ./tests/eslint-compat/*.test.ts",
     "test:cli": "bun test ./tests/cli/*.cli.test.ts",
     "test:bench": "bun test ./tests/bench/*.test.ts",
@@ -20,7 +20,13 @@
     "test:repo": "bun test ./tests/repo/*.test.ts",
     "test:pack": "bun scripts/pack-smoke.ts",
     "gate": "bun run lint && bun run format:check && bun run check && bun run build && bun run test:unit && bun run test:compat && bun run test:repo && bun run test:cli && bun run test:bench",
-    "release:prepare": "bun scripts/release-prepare.ts"
+    "release:prepare": "bun scripts/release-prepare.ts",
+    "test:unit:errorset": "node --test \"packages/errorset/tests/*.test.ts\"",
+    "test:unit:immutable": "node --test \"packages/immutable/tests/*.test.ts\"",
+    "test:unit:ts-no-assert": "node --test \"packages/ts-no-assert/tests/*.test.ts\"",
+    "test:unit:query": "node --test \"packages/query/tests/*.test.ts\"",
+    "test:unit:router": "node --test \"packages/router/tests/*.test.ts\"",
+    "test:unit:solidjs": "node --test \"packages/solidjs/tests/*.test.ts\""
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",

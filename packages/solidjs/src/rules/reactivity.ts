@@ -1,7 +1,7 @@
-import { trackImports } from "../utils/imports";
-import { isDOMElementName, isJSXElementOrFragment } from "../utils/jsx";
-import { trace } from "../utils/trace";
-import { findParent } from "../utils/traverse";
+import { trackImports } from "../utils/imports.ts";
+import { isDOMElementName, isJSXElementOrFragment } from "../utils/jsx.ts";
+import { trace } from "../utils/trace.ts";
+import { findParent } from "../utils/traverse.ts";
 
 // ---- Inlined helpers ----
 

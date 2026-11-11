@@ -1,16 +1,14 @@
-import { RuleTester } from "eslint";
+import { ruleOf, ruleTester } from "../../../tests/helpers/rule-tester.ts";
 import plugin from "../src/index.ts";
 
-const rule = (plugin as any).rules["prefer-guard-over-manual-kind-check"];
+const rule = ruleOf(plugin, "prefer-guard-over-manual-kind-check");
 
-const tester = new RuleTester({
-  languageOptions: { ecmaVersion: "latest", sourceType: "module" },
-});
+const tester = ruleTester("tsx");
 
 const IMPORT = `import { errorSet, isErr } from "@takinprofit/errorset";
 const UserError = errorSet("UserError", ["not_found", "suspended"]).init();`;
 
-tester.run("prefer-guard-over-manual-kind-check", rule as any, {
+tester.run("prefer-guard-over-manual-kind-check", rule, {
   valid: [
     // No errorset import
     {

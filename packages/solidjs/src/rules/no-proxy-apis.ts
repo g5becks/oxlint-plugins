@@ -1,5 +1,5 @@
-import { trackImports } from "../utils/imports";
-import { trace } from "../utils/trace";
+import { trackImports } from "../utils/imports.ts";
+import { trace } from "../utils/trace.ts";
 
 function isFunctionNode(node: any): boolean {
   return ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(node?.type);

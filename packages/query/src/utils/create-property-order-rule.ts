@@ -1,5 +1,5 @@
-import { createTanstackQueryImportTracker } from "./detect-query-imports";
-import { sortDataByOrder } from "./sort-data-by-order";
+import { createTanstackQueryImportTracker } from "./detect-query-imports.ts";
+import { sortDataByOrder } from "./sort-data-by-order.ts";
 
 type RuleMeta = {
   type: "problem" | "suggestion" | "layout";

@@ -1,6 +1,6 @@
-import { createRouteFunctions, createRouteFunctionsIndirect, sortRules } from "../utils/constants";
-import { createTanstackRouterImportTracker } from "../utils/detect-router-imports";
-import { sortDataByOrder } from "../utils/sort-data-by-order";
+import { createRouteFunctions, createRouteFunctionsIndirect, sortRules } from "../utils/constants.ts";
+import { createTanstackRouterImportTracker } from "../utils/detect-router-imports.ts";
+import { sortDataByOrder } from "../utils/sort-data-by-order.ts";
 
 const createRouteFunctionSet = new Set<string>(createRouteFunctions);
 

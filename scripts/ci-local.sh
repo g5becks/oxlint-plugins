@@ -4,7 +4,7 @@
 #
 # Runs every ci.yml job against a clean clone of a git ref (default: HEAD):
 #   check          linux: actionlint, frozen install, lint, format check, typecheck, build, repo tests
-#   unit           linux + macOS (host)
+#   unit           linux Node 22 + 24 x RuleTester {floor, pinned} + macOS (host, pinned)
 #   cli            oxlint floor (1.70.0, linux), pinned (linux + macOS), latest (linux, advisory):
 #                  CLI suite + bench, via OXLINT_BIN for non-pinned versions
 #   eslint-compat  linux
@@ -35,9 +35,11 @@ LOGS="$WORK/logs"
 # Keep in sync with ci.yml `env:`.
 BUN_VERSION="1.4.4"
 NODE_IMAGE="node:24-bookworm-slim"
+NODE22_IMAGE="node:22-bookworm-slim"
 OXLINT_FLOOR="1.70.0"
 ACTIONLINT_VERSION="1.7.12"
 IMAGE="oxlint-plugins-ci:node24-bun$BUN_VERSION"
+IMAGE22="oxlint-plugins-ci:node22-bun$BUN_VERSION"
 
 rm -rf "$WORK"
 mkdir -p "$LOGS"
@@ -53,6 +55,8 @@ docker info >/dev/null 2>&1 || { echo "Docker is not reachable (start it with: c
 echo "▶ building $IMAGE"
 docker build -q -t "$IMAGE" --build-arg "NODE_IMAGE=$NODE_IMAGE" --build-arg "BUN_VERSION=$BUN_VERSION" \
   "$REPO/scripts/ci-local" >"$LOGS/image.log" 2>&1 || { cat "$LOGS/image.log"; echo "image build failed"; exit 1; }
+docker build -q -t "$IMAGE22" --build-arg "NODE_IMAGE=$NODE22_IMAGE" --build-arg "BUN_VERSION=$BUN_VERSION" \
+  "$REPO/scripts/ci-local" >>"$LOGS/image.log" 2>&1 || { cat "$LOGS/image.log"; echo "image build failed"; exit 1; }
 
 OXLINT_PINNED="$(git -C "$REPO" show "$SHA:package.json" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).devDependencies.oxlint))')"
 
@@ -112,7 +116,7 @@ linux() { # name log required|advisory steps...
   local name="$1" log="$2" kind="$3"; shift 3
   local dir="$WORK/$log"; clone "$dir"
   echo "▶ $name"
-  if docker run --rm -e CI=true -v "$dir:/w" -w /w "$IMAGE" bash -c "set -euo pipefail; $VERSIONS; $*" \
+  if docker run --rm -e CI=true -v "$dir:/w" -w /w "${LINUX_IMAGE:-$IMAGE}" bash -c "set -euo pipefail; $VERSIONS; $*" \
        >"$LOGS/$log.log" 2>&1; then
     record "$name" pass "$kind"
   else
@@ -150,8 +154,17 @@ linux "check (linux)" check required \
   "$INSTALL; bun run lint; bun run format:check; bun run check; bun run build; bun run test:repo"
 
 # unit
-linux "unit (linux)" unit-linux required "$INSTALL; bun run test:unit"
-macos "unit (macos)" unit-macos required "$INSTALL; bun run test:unit"
+rule_tester_floor() { # steps that point OXLINT_RULE_TESTER at the floor's RuleTester
+  echo "npm install --no-audit --no-fund --silent --prefix /tmp/oxlint oxlint@$OXLINT_FLOOR && export OXLINT_RULE_TESTER=/tmp/oxlint/node_modules/oxlint/dist/plugins-dev.js"
+}
+for node in 22 24; do
+  img="$IMAGE"; [[ "$node" == 22 ]] && img="$IMAGE22"
+  LINUX_IMAGE="$img" linux "unit (linux, node $node, oxlint floor $OXLINT_FLOOR)" "unit-node$node-floor" required \
+    "$INSTALL; $(rule_tester_floor); bun run test:unit"
+  LINUX_IMAGE="$img" linux "unit (linux, node $node, oxlint pinned)" "unit-node$node-pinned" required \
+    "$INSTALL; bun run test:unit"
+done
+macos "unit (macos, oxlint pinned)" unit-macos required "$INSTALL; bun run test:unit"
 
 # cli
 linux "cli (linux, oxlint floor $OXLINT_FLOOR)" cli-floor required "$INSTALL; $(with_oxlint "$OXLINT_FLOOR"); $CLI_STEPS"

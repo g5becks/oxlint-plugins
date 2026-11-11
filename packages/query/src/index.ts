@@ -1,10 +1,10 @@
 import { eslintCompatPlugin } from "@oxlint/plugins";
-import exhaustiveDeps from "./rules/exhaustive-deps";
-import infiniteQueryPropertyOrder from "./rules/infinite-query-property-order";
-import mutationPropertyOrder from "./rules/mutation-property-order";
-import noRestDestructuring from "./rules/no-rest-destructuring";
-import noUnstableDeps from "./rules/no-unstable-deps";
-import stableQueryClient from "./rules/stable-query-client";
+import exhaustiveDeps from "./rules/exhaustive-deps.ts";
+import infiniteQueryPropertyOrder from "./rules/infinite-query-property-order.ts";
+import mutationPropertyOrder from "./rules/mutation-property-order.ts";
+import noRestDestructuring from "./rules/no-rest-destructuring.ts";
+import noUnstableDeps from "./rules/no-unstable-deps.ts";
+import stableQueryClient from "./rules/stable-query-client.ts";
 
 const plugin = {
   meta: { name: "oxlint-plugin-query" },

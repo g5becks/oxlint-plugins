@@ -24,7 +24,7 @@ version), TypeScript 5.9.3 for typescript-eslint plus TypeScript 7 (`typescript-
 | `bun run build` | Bundle each plugin to `packages/<name>/dist/index.js` (`bun scripts/build.ts [name...]`) |
 | `bun run check` | `tsc -b` on TypeScript 7 (all packages, tests and scripts) |
 | `bun run lint` / `bun run format` / `bun run format:check` | oxlint repo lint; Biome formatting |
-| `bun run test:unit` | Unit tests per rule (`packages/*/tests`) |
+| `bun run test:unit` | Unit tests per rule (`packages/*/tests`) in oxlint's `RuleTester` under `node --test`; `bun run test:unit:<name>` for one package |
 | `bun run test:compat` | ESLint compatibility and integration tests (`tests/integration`, `tests/eslint-compat`) |
 | `bun run test:cli` | Real-oxlint suite: bundles each plugin into a temp dir and lints fixtures (`tests/cli`) |
 | `bun run test:bench` | Bench smoke (exact counts asserted, timings only logged) |
@@ -34,6 +34,18 @@ version), TypeScript 5.9.3 for typescript-eslint plus TypeScript 7 (`typescript-
 | `bash scripts/ci-local.sh [ref]` | Local mirror of `.github/workflows/ci.yml` (see below) |
 
 ### Test layout
+
+- **Unit tests** (`packages/<name>/tests/*.test.ts`) use oxlint's own `RuleTester`
+  (`oxlint/plugins-dev`, via `tests/helpers/rule-tester.ts`) under `node --test`, loading the
+  `.ts` sources through Node type stripping. That's why relative imports in `src/` carry `.ts`
+  extensions. `OXLINT_RULE_TESTER=<oxlint>/dist/plugins-dev.js` runs them against another
+  oxlint version's RuleTester (CI uses the 1.70.0 floor).
+- **ESLint compatibility** (`tests/eslint-compat`, `bun test`) is the only place ESLint's
+  `RuleTester`/`Linter` and typescript-eslint are used: every plugin in an ESLint 9 flat config.
+- **State isolation**: oxlint's RuleTester calls `createOnce` once per case, so cross-file state
+  leaks can't show up there. `tests/cli/helpers/state-isolation.ts` (`lintSequence`) lints a
+  sequence of files with one rule instance in one oxlint process (`--threads 1`); use it for
+  regression tests of per-file state.
 
 - `tests/cli/fixtures/<plugin>/<rule>.ts(x)`: fixtures. New suites mark expected reports with a
   `// report` comment and compare against `markedLines()`.

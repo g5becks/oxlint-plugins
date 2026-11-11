@@ -9,6 +9,7 @@ import {
   ruleFixture,
   ruleCode,
 } from "./helpers/cli-runner";
+import { lintSequence, reportedFiles } from "./helpers/state-isolation.ts";
 
 const PLUGIN = "solidjs" as const;
 const CODE = (rule: string) => ruleCode(PLUGIN, rule);
@@ -431,8 +432,10 @@ describe("no-unknown-namespaces", () => {
 
 // ── jsx-no-undef: per-file state (audit R9) ──────────
 describe("jsx-no-undef state isolation", () => {
-  const dir = "tests/cli/fixtures/solidjs/jsx-no-undef-leak";
-  const files = ["a.tsx", "b1.tsx", "b2.tsx", "b3.tsx", "b4.tsx", "b5.tsx"].map((f) => `${dir}/${f}`);
+  const clean = (i: number) => ({
+    name: `b${i}.tsx`,
+    code: `import { Show } from "solid-js";\n\nexport const B${i} = () => <Show when={true}>b${i}</Show>;\n`,
+  });
 
   test.failing("TASK-009: only the file missing the import is reported", async () => {
     const leakConfig = await writeOxlintConfig({
@@ -440,9 +443,11 @@ describe("jsx-no-undef state isolation", () => {
       rules: { "solidjs/jsx-no-undef": "error" },
     });
     try {
-      const result = await runOxlint({ configPath: leakConfig, files, extraArgs: ["--threads", "1"] });
-      const reported = [...new Set(result.diagnostics.map((d) => d.filename.split("/").pop()))];
-      expect(reported).toEqual(["a.tsx"]);
+      const result = await lintSequence(leakConfig, [
+        { name: "a.tsx", code: "export const A = () => <Show when={true}>x</Show>;\n" },
+        ...[1, 2, 3, 4, 5].map(clean),
+      ]);
+      expect(reportedFiles(result)).toEqual(["a.tsx"]);
     } finally {
       await cleanupConfig(leakConfig);
     }

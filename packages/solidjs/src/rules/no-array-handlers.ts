@@ -1,5 +1,5 @@
-import { isDOMElementName } from "../utils/jsx";
-import { trace } from "../utils/trace";
+import { isDOMElementName } from "../utils/jsx.ts";
+import { trace } from "../utils/trace.ts";
 
 export default {
   meta: {

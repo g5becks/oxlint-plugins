@@ -1,5 +1,5 @@
 import { eslintCompatPlugin } from "@oxlint/plugins";
-import noTypeAssertion from "./rules/no-type-assertion";
+import noTypeAssertion from "./rules/no-type-assertion.ts";
 
 const plugin = {
   meta: { name: "oxlint-plugin-ts-no-assert" },

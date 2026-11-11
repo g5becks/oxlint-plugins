@@ -1,4 +1,4 @@
-import { createTanstackQueryImportTracker } from "../utils/detect-query-imports";
+import { createTanstackQueryImportTracker } from "../utils/detect-query-imports.ts";
 
 const reactHookNames = ["useEffect", "useCallback", "useMemo"];
 const useQueryHookNames = [

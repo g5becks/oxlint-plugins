@@ -1,6 +1,6 @@
 import { eslintCompatPlugin } from "@oxlint/plugins";
-import createRoutePropertyOrder from "./rules/create-route-property-order";
-import routeParamNames from "./rules/route-param-names";
+import createRoutePropertyOrder from "./rules/create-route-property-order.ts";
+import routeParamNames from "./rules/route-param-names.ts";
 
 const plugin = {
   meta: { name: "oxlint-plugin-router" },
