@@ -1,4 +1,3 @@
-import { PLUGINS } from "../../scripts/plugins.ts";
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import {
   buildPlugin,
@@ -8,10 +7,11 @@ import {
   cleanupConfig,
   fixture,
   ruleFixture,
+  ruleCode,
 } from "./helpers/cli-runner";
 
-const PLUGIN = "query";
-const CODE = (rule: string) => `${PLUGINS[PLUGIN].packageName}(${rule})`;
+const PLUGIN = "query" as const;
+const CODE = (rule: string) => ruleCode(PLUGIN, rule);
 
 let configPath: string;
 
@@ -66,6 +66,7 @@ describe("exhaustive-deps", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 
@@ -97,6 +98,7 @@ describe("infinite-query-property-order", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 
@@ -131,6 +133,7 @@ describe("mutation-property-order", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 
@@ -165,6 +168,7 @@ describe("no-rest-destructuring", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -189,6 +193,7 @@ describe("no-unstable-deps", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -213,6 +218,7 @@ describe("stable-query-client", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 

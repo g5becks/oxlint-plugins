@@ -13,7 +13,7 @@ let configPath: string;
 beforeAll(async () => {
   await buildAllPlugins();
   configPath = await writeOxlintConfig({
-    plugins: ["router", "query", "immutable", "solidjs"],
+    plugins: ["router", "query", "immutable", "solidjs", "ts-no-assert", "errorset"],
     rules: {
       "router/route-param-names": "error",
       "router/create-route-property-order": "error",
@@ -26,6 +26,10 @@ beforeAll(async () => {
       "solidjs/no-react-specific-props": "error",
       "solidjs/no-innerhtml": "error",
       "solidjs/no-destructure": "error",
+      "solidjs/reactivity": "error",
+      "ts-no-assert/no-type-assertion": "error",
+      "errorset/no-throw-errorset": "error",
+      "errorset/no-unguarded-data-access": "error",
     },
   });
 });
@@ -54,6 +58,7 @@ describe("benchmarks", () => {
       files: [benchFixture("large-mixed.ts")],
     });
     expect(result.exitCode).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
     console.log(`  Cold start: ${result.durationMs.toFixed(0)}ms (${result.numberOfRules} rules)`);
   });
 
@@ -66,6 +71,7 @@ describe("benchmarks", () => {
         files: [benchFixture("large-mixed.ts")],
       });
       expect(result.exitCode).toBe(0);
+      expect(result.diagnostics).toHaveLength(0);
       durations.push(result.durationMs);
     }
 
@@ -86,7 +92,9 @@ describe("benchmarks", () => {
         fixture("solidjs-valid.tsx"),
       ],
     });
-    expect(result.numberOfFiles).toBeGreaterThanOrEqual(6);
+    expect(result.exitCode).toBe(0);
+    expect(result.numberOfFiles).toBe(6);
+    expect(result.diagnostics).toHaveLength(0);
     console.log(
       `  Multi-file: ${result.durationMs.toFixed(0)}ms, ${result.numberOfFiles} files, ${result.diagnostics.length} diagnostics`,
     );
@@ -103,6 +111,7 @@ describe("benchmarks", () => {
         "solidjs/no-destructure": "error",
         "solidjs/self-closing-comp": "warn",
         "solidjs/prefer-for": "warn",
+        "solidjs/reactivity": "warn",
       },
     });
 
@@ -110,8 +119,11 @@ describe("benchmarks", () => {
       configPath: solidConfig,
       files: [benchFixture("large-solid.tsx")],
     });
+    expect(result.exitCode).toBe(0);
+    expect(result.numberOfFiles).toBe(1);
+    expect(result.diagnostics).toHaveLength(0);
     console.log(
-      `  Solid (7 rules, ~200 lines): ${result.durationMs.toFixed(0)}ms, ${result.diagnostics.length} diagnostics`,
+      `  Solid (8 rules incl. reactivity, ~200 lines): ${result.durationMs.toFixed(0)}ms, ${result.diagnostics.length} diagnostics`,
     );
     await cleanupConfig(solidConfig);
   });

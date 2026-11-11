@@ -1,4 +1,3 @@
-import { PLUGINS } from "../../scripts/plugins.ts";
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { buildAllPlugins, writeOxlintConfig, runOxlint, cleanupConfig, fixture } from "./helpers/cli-runner";
 
@@ -44,10 +43,10 @@ describe("all plugins loaded together", () => {
     expect(result.exitCode).toBe(1);
 
     const pluginCodes = new Set(result.diagnostics.map((d) => d.code.split("(")[0]));
-    expect(pluginCodes.has(PLUGINS.router.packageName)).toBe(true);
-    expect(pluginCodes.has(PLUGINS.query.packageName)).toBe(true);
-    expect(pluginCodes.has(PLUGINS.immutable.packageName)).toBe(true);
-    expect(pluginCodes.has(PLUGINS.solidjs.packageName)).toBe(true);
+    expect(pluginCodes.has("router")).toBe(true);
+    expect(pluginCodes.has("query")).toBe(true);
+    expect(pluginCodes.has("immutable")).toBe(true);
+    expect(pluginCodes.has("solidjs")).toBe(true);
   });
 
   test("valid files across all plugins produce zero diagnostics", async () => {

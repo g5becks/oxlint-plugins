@@ -1,4 +1,3 @@
-import { PLUGINS } from "../../scripts/plugins.ts";
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import {
   buildPlugin,
@@ -8,10 +7,11 @@ import {
   cleanupConfig,
   fixture,
   ruleFixture,
+  ruleCode,
 } from "./helpers/cli-runner";
 
-const PLUGIN = "solidjs";
-const CODE = (rule: string) => `${PLUGINS[PLUGIN].packageName}(${rule})`;
+const PLUGIN = "solidjs" as const;
+const CODE = (rule: string) => ruleCode(PLUGIN, rule);
 const EXT = "tsx";
 
 let configPath: string;
@@ -73,6 +73,7 @@ describe("jsx-no-duplicate-props", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -90,6 +91,7 @@ describe("jsx-no-script-url", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -107,6 +109,7 @@ describe("jsx-no-undef", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -124,6 +127,7 @@ describe("no-react-specific-props", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 
@@ -150,6 +154,7 @@ describe("self-closing-comp", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 
@@ -173,6 +178,7 @@ describe("no-proxy-apis", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -190,6 +196,7 @@ describe("no-array-handlers", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -207,6 +214,7 @@ describe("no-react-deps", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 
@@ -230,6 +238,7 @@ describe("imports", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -247,6 +256,7 @@ describe("prefer-for", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -264,6 +274,7 @@ describe("no-destructure", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 
@@ -287,6 +298,7 @@ describe("components-return-once", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -304,6 +316,7 @@ describe("prefer-show", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -321,6 +334,7 @@ describe("event-handlers", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -338,6 +352,7 @@ describe("prefer-classlist", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -355,6 +370,7 @@ describe("style-prop", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -372,6 +388,7 @@ describe("reactivity", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -389,6 +406,7 @@ describe("no-innerhtml", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -406,6 +424,27 @@ describe("no-unknown-namespaces", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE, EXT)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
+  });
+});
+
+// ── jsx-no-undef: per-file state (audit R9) ──────────
+describe("jsx-no-undef state isolation", () => {
+  const dir = "tests/cli/fixtures/solidjs/jsx-no-undef-leak";
+  const files = ["a.tsx", "b1.tsx", "b2.tsx", "b3.tsx", "b4.tsx", "b5.tsx"].map((f) => `${dir}/${f}`);
+
+  test.failing("TASK-009: only the file missing the import is reported", async () => {
+    const leakConfig = await writeOxlintConfig({
+      plugins: ["solidjs"],
+      rules: { "solidjs/jsx-no-undef": "error" },
+    });
+    try {
+      const result = await runOxlint({ configPath: leakConfig, files, extraArgs: ["--threads", "1"] });
+      const reported = [...new Set(result.diagnostics.map((d) => d.filename.split("/").pop()))];
+      expect(reported).toEqual(["a.tsx"]);
+    } finally {
+      await cleanupConfig(leakConfig);
+    }
   });
 });

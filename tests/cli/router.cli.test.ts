@@ -1,4 +1,3 @@
-import { PLUGINS } from "../../scripts/plugins.ts";
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import {
   buildPlugin,
@@ -8,10 +7,11 @@ import {
   cleanupConfig,
   fixture,
   ruleFixture,
+  ruleCode,
 } from "./helpers/cli-runner";
 
-const PLUGIN = "router";
-const CODE = (rule: string) => `${PLUGINS[PLUGIN].packageName}(${rule})`;
+const PLUGIN = "router" as const;
+const CODE = (rule: string) => ruleCode(PLUGIN, rule);
 
 let configPath: string;
 
@@ -71,6 +71,7 @@ describe("route-param-names", () => {
       files: [ruleFixture(PLUGIN, RULE)],
     });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -104,6 +105,7 @@ describe("create-route-property-order", () => {
       files: [ruleFixture(PLUGIN, RULE)],
     });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 

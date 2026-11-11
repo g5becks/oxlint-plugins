@@ -1,4 +1,3 @@
-import { PLUGINS } from "../../scripts/plugins.ts";
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import {
   buildPlugin,
@@ -7,10 +6,11 @@ import {
   runOxlintWithFix,
   cleanupConfig,
   ruleFixture,
+  ruleCode,
 } from "./helpers/cli-runner";
 
-const PLUGIN = "immutable";
-const CODE = (rule: string) => `${PLUGINS[PLUGIN].packageName}(${rule})`;
+const PLUGIN = "immutable" as const;
+const CODE = (rule: string) => ruleCode(PLUGIN, rule);
 
 let configPath: string;
 let configPathWithOptions: string;
@@ -66,6 +66,7 @@ describe("no-let", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 
@@ -96,6 +97,7 @@ describe("no-throw-statements", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 
@@ -126,6 +128,7 @@ describe("no-promise-reject", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -150,6 +153,7 @@ describe("readonly-type", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 
@@ -182,6 +186,7 @@ describe("prefer-property-signatures", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 
@@ -205,6 +210,7 @@ describe("prefer-immutable-types", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -229,6 +235,7 @@ describe("type-declaration-immutability", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
@@ -253,6 +260,7 @@ describe("immutable-data", () => {
   test("all diagnostics are errors", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
+    expect(diags.length).toBeGreaterThan(0);
     for (const d of diags) expect(d.severity).toBe("error");
   });
 });
