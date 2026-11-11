@@ -1,11 +1,11 @@
 ---
 id: TASK-012
 title: 'errorset: Settings-driven detection of re-exported error sets (OX-14, R1)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T20:16:00Z'
+updated_date: '2026-11-11T20:21:00Z'
 labels:
   - errorset
 milestone: m-1
@@ -42,7 +42,7 @@ Audit R1 (High). `createErrorsetImportTracker` (`detect-errorset-imports.ts:6,39
 - [x] #3 Tests cover aliased imports, type-only imports (not guards), the guardPattern and invalid settings
 - [x] #4 The README documents the settings with an example
 - [x] #5 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #6 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #6 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -80,4 +80,12 @@ Audit R1 (High). `createErrorsetImportTracker` (`detect-errorset-imports.ts:6,39
 - `bun run gate` exit 0: unit 153/0, compat 34/0, repo 18/0, CLI 125/0, bench 4/0. No test.failing markers remain in the repo.
 
 Consumer-visible change: yes (new settings).
+
+Verified with scripts/ci-local.sh (5403c0c, PASS); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+settings.errorset.modules/guardPattern make all five errorset rules recognize re-exported sets: the Appendix A probe goes from 0 to 3 of 3; default behavior unchanged; type-only and namespace imports excluded; invalid settings ignored; README documents it. Changeset: errorset minor. Verified with scripts/ci-local.sh (5403c0c, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
