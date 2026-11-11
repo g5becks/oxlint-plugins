@@ -1,11 +1,11 @@
 ---
 id: TASK-008
 title: 'Testing: Move unit tests to oxlint''s RuleTester on Node (OX-10)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T18:03:00Z'
+updated_date: '2026-11-11T18:07:00Z'
 labels:
   - testing
 milestone: m-1
@@ -42,7 +42,7 @@ Audit T1 and R14. Every unit test runs under ESLint's `RuleTester` with typescri
 - [x] #3 Unit tests pass with the RuleTester from oxlint 1.70.0 and from the pinned oxlint
 - [x] #4 ts-no-assert accepts as const in both ASTs, each tested in its own runtime
 - [x] #5 The state-isolation harness exists and its approach is recorded
-- [ ] #6 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #6 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -86,4 +86,13 @@ The task (and audit R14) say oxlint parses `as const` as TSTypeOperator. Mutatio
 - `bun run gate` exit 0: unit 129/0, compat 32/0 (19 + 13 new), repo 14/0, CLI 121/0 (incl. harness self-test and 3 test.failing markers), bench 4/0; check exit 0 on TS 7.0.2; lint/format clean.
 
 Consumer-visible change: none (bundles byte-identical; only a source comment changed in ts-no-assert).
+
+## ci-local (b4d5093)
+Verified with scripts/ci-local.sh (b4d5093, PASS); GitHub Actions unavailable (billing lock). 13 legs pass: check x2; unit linux node v22.23.4 floor 129/0 and pinned 129/0 (TAP), node v24.22.2 floor 129/0 and pinned 129/0, macOS node v26.13.0 pinned 129/0; cli floor/pinned/macOS/latest[advisory]; eslint-compat; pack.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Unit tests (129 cases, per-rule counts unchanged) now run natively in oxlint's RuleTester under node --test, passing with the 1.70.0 and pinned RuleTester on Node 22/24 and macOS; ESLint covered by a flat-config compat suite; CLI-based state-isolation harness with self-test; as-const finding recorded. Verified with scripts/ci-local.sh (b4d5093, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
