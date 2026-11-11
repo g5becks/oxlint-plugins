@@ -26,3 +26,54 @@ export function appendImports(fixer: any, sourceCode: any, importNode: any, iden
   }
   return null;
 }
+
+function getCommentBefore(node: any, sourceCode: any): any {
+  return sourceCode.getCommentsBefore(node).find((comment: any) => comment.loc!.end.line >= node.loc!.start.line - 1);
+}
+
+/** Insert `import { a, b } from "<source>";` before the first import (ported from eslint-plugin-solid). */
+export function insertImports(fixer: any, sourceCode: any, source: string, identifiers: Array<string>): any {
+  const identifiersString = identifiers.join(", ");
+  const programNode = sourceCode.ast;
+  const firstImport = programNode.body.find((n: any) => n.type === "ImportDeclaration");
+  if (firstImport) {
+    return fixer.insertTextBeforeRange(
+      (getCommentBefore(firstImport, sourceCode) ?? firstImport).range,
+      `import { ${identifiersString} } from "${source}";\n`,
+    );
+  }
+  return fixer.insertTextBeforeRange([0, 0], `import { ${identifiersString} } from "${source}";\n`);
+}
+
+/** Local names bound at module level (imports and top-level declarations). */
+function moduleBindings(sourceCode: any): Set<string> {
+  const names = new Set<string>();
+  for (const node of sourceCode.ast.body ?? []) {
+    if (node.type === "ImportDeclaration") {
+      for (const s of node.specifiers ?? []) if (s.local?.name) names.add(s.local.name);
+      continue;
+    }
+    const decl = node.type === "ExportNamedDeclaration" ? node.declaration : node;
+    if (decl?.id?.name) names.add(decl.id.name);
+    for (const d of decl?.declarations ?? []) if (d.id?.type === "Identifier") names.add(d.id.name);
+  }
+  return names;
+}
+
+/**
+ * Fix(es) that make the Solid components a fix introduces (`Show`, `Switch`, `Match`) available:
+ * nothing when they are already bound at module level, otherwise an added `solid-js` import.
+ * Keeps `oxlint --fix` output valid (TASK-026 fix safety).
+ */
+export function ensureSolidImports(fixer: any, sourceCode: any, names: Array<string>): Array<any> {
+  const bound = moduleBindings(sourceCode);
+  const missing = names.filter((n) => !bound.has(n));
+  if (missing.length === 0) return [];
+  const solidImport = (sourceCode.ast.body ?? []).find(
+    (n: any) => n.type === "ImportDeclaration" && n.source?.value === "solid-js" && n.importKind !== "type",
+  );
+  const fix = solidImport
+    ? appendImports(fixer, sourceCode, solidImport, missing)
+    : insertImports(fixer, sourceCode, "solid-js", missing);
+  return fix ? [fix] : [];
+}

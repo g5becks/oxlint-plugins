@@ -1,4 +1,4 @@
-import { appendImports } from "../utils/fix-imports.ts";
+import { appendImports, insertImports } from "../utils/fix-imports.ts";
 import { isDOMElementName } from "../utils/jsx.ts";
 
 const AUTO_COMPONENTS = ["Show", "For", "Index", "Switch", "Match"];
@@ -14,23 +14,6 @@ const formatList = (strings: Array<string>): string => {
     .map((s) => `'${s}'`)
     .join(", ")}, and '${strings[last]}'`;
 };
-
-function getCommentBefore(node: any, sourceCode: any): any {
-  return sourceCode.getCommentsBefore(node).find((comment: any) => comment.loc!.end.line >= node.loc!.start.line - 1);
-}
-
-function insertImports(fixer: any, sourceCode: any, source: string, identifiers: Array<string>): any {
-  const identifiersString = identifiers.join(", ");
-  const programNode = sourceCode.ast;
-  const firstImport = programNode.body.find((n: any) => n.type === "ImportDeclaration");
-  if (firstImport) {
-    return fixer.insertTextBeforeRange(
-      (getCommentBefore(firstImport, sourceCode) ?? firstImport).range,
-      `import { ${identifiersString} } from "${source}";\n`,
-    );
-  }
-  return fixer.insertTextBeforeRange([0, 0], `import { ${identifiersString} } from "${source}";\n`);
-}
 
 export default {
   meta: {

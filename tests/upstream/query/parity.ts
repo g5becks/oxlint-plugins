@@ -10,6 +10,18 @@ export interface Divergence {
 
 export const DIVERGENCES: Divergence[] = [
   { suite: "no-void-query-fn", kind: "suite", match: -1, parity: "query-no-void-query-fn" },
+  // No React import in these cases: the port suggests `React.useState` instead of autofixing.
+  ...[
+    "QueryClient is not stable when it is not wrapped in React.useState in component",
+    "QueryClient is not stable when it is not wrapped in React.useState in custom hook",
+    "preserve QueryClient options",
+    "preserve QueryClient variable declarator name",
+  ].map((match) => ({
+    suite: "stable-query-client",
+    kind: "invalid" as const,
+    match,
+    parity: "query-stable-query-client-no-react-import",
+  })),
 ];
 
 export function skipReason(

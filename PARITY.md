@@ -42,9 +42,21 @@ Not a divergence, a scope note: `stable-query-client` only checks `QueryClient` 
 React components (`@tanstack/react-query`), as upstream does. It is a no-op for Solid, Vue and
 other adapters.
 
+### query-stable-query-client-no-react-import
+
+4 upstream cases skipped (`stable-query-client`: "QueryClient is not stable when it is not wrapped
+in React.useState in component", "... in custom hook", "preserve QueryClient options", "preserve
+QueryClient variable declarator name"). In a file that imports neither `useState` nor a React
+namespace from `react`, upstream autofixes to `React.useState(() => new QueryClient())`, which
+references an undefined `React` unless one is global, so `oxlint --fix` would produce code that
+doesn't type-check (found by the fix-safety suite, TASK-026). The port reports the same problem and
+offers that rewrite as a suggestion; with `import { useState }` (also aliased) or a `React` /
+`* as R` import it autofixes using the local name, as upstream does.
+
 ## Solid
 
-All 465 runnable upstream cases pass. Fixed in the port while bringing the suites up (TASK-024):
+All 465 runnable upstream cases pass except the 3 listed under
+[solid-components-return-once-imports](#solid-components-return-once-imports) (462 pass). Fixed in the port while bringing the suites up (TASK-024):
 `imports` crashed on `import "solid-js"` / `import {} from "solid-js"` when fixing (now uses
 upstream's `appendImports`); static values are now evaluated like upstream's `getStaticValue`
 (string concatenation, unary minus, `const` resolution), which fixes `jsx-no-script-url` on
@@ -81,3 +93,11 @@ Not skipped. The audit compared the port with eslint-plugin-solid 0.19.0 and fou
 
 Moving the port to 0.19.0 behavior would mean porting 0.15–0.19's reactivity changes (1,600+ lines
 of upstream diff); not done here.
+
+### solid-components-return-once-imports
+
+3 upstream cases skipped (`components-return-once` invalid cases 5, 6 and 7, matched by their
+code). Upstream's fixes rewrite early returns to `<Show>`, `<Switch>` and `<Match>` without
+importing them, so the fixed file references undefined components. The port's fixes also add the
+missing names to the `solid-js` import (or a new one), so the expected `output` differs only by
+that import line. Found by the fix-safety suite (TASK-026).

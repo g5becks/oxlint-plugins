@@ -12,6 +12,28 @@ export interface Divergence {
 
 export const DIVERGENCES: Divergence[] = [
   { suite: "jsx-uses-vars", kind: "suite", match: -1, parity: "solid-jsx-uses-vars-suite" },
+  // The port's fix also adds the missing `import { Show } / { Switch, Match } from "solid-js"`.
+  {
+    suite: "components-return-once",
+    kind: "invalid",
+    match: 5,
+    code: "No, really big!",
+    parity: "solid-components-return-once-imports",
+  },
+  {
+    suite: "components-return-once",
+    kind: "invalid",
+    match: 6,
+    code: "props.cond1",
+    parity: "solid-components-return-once-imports",
+  },
+  {
+    suite: "components-return-once",
+    kind: "invalid",
+    match: 7,
+    code: "!!props.cond &&",
+    parity: "solid-components-return-once-imports",
+  },
 ];
 
 export function skipReason(

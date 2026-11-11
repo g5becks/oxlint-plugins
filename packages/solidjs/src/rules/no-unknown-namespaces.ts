@@ -21,7 +21,6 @@ export default {
             description: "an array of additional namespace names to allow",
             type: "array",
             items: { type: "string" },
-            default: [],
             minItems: 1,
             uniqueItems: true,
           },

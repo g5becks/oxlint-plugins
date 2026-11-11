@@ -41,9 +41,27 @@ jsTester.run("query/stable-query-client", (queryPlugin as any).rules["stable-que
   valid: [{ code: "import { QueryClient } from '@tanstack/react-query'; const client = new QueryClient();" }],
   invalid: [
     {
+      // No React import: suggestion only (TASK-026, PARITY.md#query-stable-query-client-no-react-import).
       code: "import { QueryClient } from '@tanstack/react-query'; function App() { const client = new QueryClient(); return client; }",
+      output: null,
+      errors: [
+        {
+          messageId: "unstable",
+          suggestions: [
+            {
+              messageId: "fixTo",
+              data: { result: "React.useState(() => ...)" },
+              output:
+                "import { QueryClient } from '@tanstack/react-query'; function App() { const [client] = React.useState(() => new QueryClient()); return client; }",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      code: "import { useState } from 'react'; import { QueryClient } from '@tanstack/react-query'; function App() { const client = new QueryClient(); return client; }",
       output:
-        "import { QueryClient } from '@tanstack/react-query'; function App() { const [client] = React.useState(() => new QueryClient()); return client; }",
+        "import { useState } from 'react'; import { QueryClient } from '@tanstack/react-query'; function App() { const [client] = useState(() => new QueryClient()); return client; }",
       errors: [{ messageId: "unstable" }],
     },
   ],

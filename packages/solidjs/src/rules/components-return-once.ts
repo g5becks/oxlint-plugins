@@ -1,3 +1,4 @@
+import { ensureSolidImports } from "../utils/fix-imports.ts";
 const getFunctionName = (node: any): string | null => {
   if ((node.type === "FunctionDeclaration" || node.type === "FunctionExpression") && node.id != null) {
     return node.id.name;
@@ -108,30 +109,39 @@ export default {
 
               if (conditions.length >= 2) {
                 const fallbackStr = !isNothing(fallback) ? ` fallback={${sourceCode.getText(fallback)}}` : "";
-                return fixer.replaceText(
-                  argument,
-                  `<Switch${fallbackStr}>\n${conditions
-                    .map(
-                      ({ test, consequent }: any) =>
-                        `<Match when={${sourceCode.getText(test)}}>${putIntoJSX(consequent)}</Match>`,
-                    )
-                    .join("\n")}\n</Switch>`,
-                );
+                return [
+                  ...ensureSolidImports(fixer, sourceCode, ["Switch", "Match"]),
+                  fixer.replaceText(
+                    argument,
+                    `<Switch${fallbackStr}>\n${conditions
+                      .map(
+                        ({ test, consequent }: any) =>
+                          `<Match when={${sourceCode.getText(test)}}>${putIntoJSX(consequent)}</Match>`,
+                      )
+                      .join("\n")}\n</Switch>`,
+                  ),
+                ];
               }
 
               if (isNothing(consequent)) {
-                return fixer.replaceText(
-                  argument,
-                  `<Show when={!(${sourceCode.getText(test)})}>${putIntoJSX(alternate)}</Show>`,
-                );
+                return [
+                  ...ensureSolidImports(fixer, sourceCode, ["Show"]),
+                  fixer.replaceText(
+                    argument,
+                    `<Show when={!(${sourceCode.getText(test)})}>${putIntoJSX(alternate)}</Show>`,
+                  ),
+                ];
               }
 
               if (isNothing(fallback) || getLineLength(consequent.loc) >= getLineLength(alternate.loc) * 1.5) {
                 const fallbackStr = !isNothing(fallback) ? ` fallback={${sourceCode.getText(fallback)}}` : "";
-                return fixer.replaceText(
-                  argument,
-                  `<Show when={${sourceCode.getText(test)}}${fallbackStr}>${putIntoJSX(consequent)}</Show>`,
-                );
+                return [
+                  ...ensureSolidImports(fixer, sourceCode, ["Show"]),
+                  fixer.replaceText(
+                    argument,
+                    `<Show when={${sourceCode.getText(test)}}${fallbackStr}>${putIntoJSX(consequent)}</Show>`,
+                  ),
+                ];
               }
 
               return fixer.replaceText(argument, `<>${putIntoJSX(argument)}</>`);
@@ -145,10 +155,13 @@ export default {
               messageId: "noConditionalReturn",
               fix: (fixer: any) => {
                 const { left: test, right: consequent } = argument;
-                return fixer.replaceText(
-                  argument,
-                  `<Show when={${sourceCode.getText(test)}}>${putIntoJSX(consequent)}</Show>`,
-                );
+                return [
+                  ...ensureSolidImports(fixer, sourceCode, ["Show"]),
+                  fixer.replaceText(
+                    argument,
+                    `<Show when={${sourceCode.getText(test)}}>${putIntoJSX(consequent)}</Show>`,
+                  ),
+                ];
               },
             });
           } else {

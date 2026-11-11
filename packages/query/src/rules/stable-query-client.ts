@@ -82,38 +82,33 @@ export default {
 
         const parent = node.parent;
 
-        context.report({
-          node: parent,
-          messageId: "unstable",
-          fix: (() => {
-            if (parent.id?.type !== "Identifier") {
-              return;
-            }
+        // Determine the correct useState call based on what's imported in the file:
+        // 1. `import { useState } from "react"` -> the local name
+        // 2. `import React from "react"` / `import * as React from "react"` -> `<namespace>.useState`
+        // 3. no react import -> `React.useState`, which only works with a global `React`: offered as a
+        //    suggestion, never an autofix, so `oxlint --fix` can't introduce an undefined reference
+        //    (upstream autofixes this case too; see PARITY.md#query-stable-query-client-no-react-import).
+        const useStateCall =
+          useStateLocalName ?? (reactNamespaceName != null ? `${reactNamespaceName}.useState` : null);
+        const fixWith = (call: string) =>
+          parent.id?.type === "Identifier"
+            ? (fixer: any) =>
+                fixer.replaceTextRange(
+                  [parent.range[0], parent.range[1]],
+                  `[${parent.id.name}] = ${call}(() => ${sourceCode.getText(node)})`,
+                )
+            : undefined;
 
-            const nodeText = sourceCode.getText(node);
-            const variableName = parent.id.name;
-
-            // Determine the correct useState call based on what's imported in the file:
-            // 1. `import { useState } from "react"` → use the local name directly
-            // 2. `import React from "react"` or `import * as React from "react"` → use `namespace.useState`
-            // 3. No react import detected → fall back to `React.useState` (global React or forgetting the import)
-            let useStateCall: string;
-            if (useStateLocalName != null) {
-              useStateCall = useStateLocalName;
-            } else if (reactNamespaceName != null) {
-              useStateCall = `${reactNamespaceName}.useState`;
-            } else {
-              useStateCall = "React.useState";
-            }
-
-            return (fixer: any) => {
-              return fixer.replaceTextRange(
-                [parent.range[0], parent.range[1]],
-                `[${variableName}] = ${useStateCall}(() => ${nodeText})`,
-              );
-            };
-          })(),
-        });
+        if (useStateCall != null) {
+          context.report({ node: parent, messageId: "unstable", fix: fixWith(useStateCall) });
+        } else {
+          const fix = fixWith("React.useState");
+          context.report({
+            node: parent,
+            messageId: "unstable",
+            suggest: fix ? [{ messageId: "fixTo", data: { result: "React.useState(() => ...)" }, fix }] : [],
+          });
+        }
       },
     };
   },

@@ -2,7 +2,7 @@ import { shouldIgnorePattern } from "../utils/ignore.ts";
 import { isShallowReadonly } from "../utils/immutability.ts";
 
 type CategoryOption = {
-  enforcement?: "ReadonlyShallow";
+  enforcement?: "ReadonlyShallow" | "None" | false;
   ignoreNamePattern?: string | Array<string>;
 };
 
@@ -13,6 +13,20 @@ type RuleOptions = [
     variables?: CategoryOption;
   }?,
 ];
+
+/**
+ * Options per category. Only ReadonlyShallow is implemented (no type information), so
+ * `enforcement` accepts "ReadonlyShallow", or "None" / false to turn the category off (upstream's
+ * spellings); upstream-only levels and keys are rejected rather than silently ignored.
+ */
+const CATEGORY_SCHEMA = {
+  type: "object",
+  properties: {
+    enforcement: { enum: ["ReadonlyShallow", "None", false] },
+    ignoreNamePattern: { anyOf: [{ type: "string" }, { type: "array", items: { type: "string" } }] },
+  },
+  additionalProperties: false,
+};
 
 function getCategoryOption(option: any, key: "parameters" | "returnTypes" | "variables"): CategoryOption {
   const value = option?.[key] ?? {};
@@ -57,9 +71,9 @@ export default {
       {
         type: "object",
         properties: {
-          parameters: { type: "object" },
-          returnTypes: { type: "object" },
-          variables: { type: "object" },
+          parameters: CATEGORY_SCHEMA,
+          returnTypes: CATEGORY_SCHEMA,
+          variables: CATEGORY_SCHEMA,
         },
         additionalProperties: false,
       },
