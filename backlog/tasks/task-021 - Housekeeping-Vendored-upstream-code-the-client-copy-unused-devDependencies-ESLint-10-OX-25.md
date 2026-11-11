@@ -3,11 +3,11 @@ id: TASK-021
 title: >-
   Housekeeping: Vendored upstream code, the client/ copy, unused
   devDependencies, ESLint 10 (OX-25)
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T22:21:00Z'
+updated_date: '2026-11-11T22:25:00Z'
 labels:
   - toolchain
   - testing
@@ -39,7 +39,7 @@ Audit H9, H10 and H12. `client/` is an 80-file copy of the agentx client that no
 - [x] #1 client/ is gone; its lintable sources live under tests/fixtures/corpus/ and are used by at least one test or script
 - [x] #2 Vendored code lives under vendor/<package>@<version>/ with provenance READMEs; the followed upstream versions are recorded with evidence
 - [x] #3 Unused devDependencies are removed (list in notes); ESLint 9 and 10 compat legs run in ci.yml and ci-local
-- [ ] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -73,4 +73,12 @@ Consumer-visible change: none.
 
 ## ci-local on 71f0769: FAIL (fixed forward)
 Both eslint-compat legs failed: "error: .only is disabled in CI environments" (ci-local sets CI=true; Bun rejects even a reference to `it.only`, which tests/helpers/eslint.ts assigned to RuleTester.itOnly). Fix: drop the itOnly assignment. Locally with CI=true: test:compat 40/0, test:compat:eslint10 40/0.
+
+Verified with scripts/ci-local.sh (2e2fb81, PASS; 14 legs incl. eslint-compat on ESLint 9 and 10); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Vendored code moved to vendor/@tanstack/eslint-plugin-query@5.91.4 and vendor/eslint-plugin-solid@0.14.5 (pristine, provenance + evidence), client/ became tests/fixtures/corpus (used by a CLI test and determinism script), six unused devDependencies removed, compat suites run on ESLint 9 and 10 in ci.yml and ci-local. Verified with scripts/ci-local.sh (2e2fb81, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
