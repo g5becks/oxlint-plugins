@@ -3,9 +3,11 @@ id: TASK-007
 title: >-
   Release: Tags, changesets, changelogs, package metadata and release tooling
   (OX-06)
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-11-11T16:39:00Z'
+updated_date: '2026-11-11T17:53:00Z'
 labels:
   - release
   - docs
@@ -43,3 +45,15 @@ Audit H3, H5 and H14. The published bundles differ from builds of the repo; ther
 - [ ] #5 release.yml passes actionlint; CONTRIBUTING.md and AGENTS.md document setup, tests, tasks and releases
 - [ ] #6 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Retroactive local annotated tags for every published version that a commit set (H3 comparison in each message); pre-history versions untagged (maintainer decision).
+2. Changesets 3.0.3: independent versions, baseBranch main, access public, commit false; backfilled CHANGELOG.md per package; changesets for this task's metadata and TASK-001's compat layer upgrade.
+3. package.json metadata (repository+directory, homepage, bugs, license, files incl. CHANGELOG/LICENSE, exports ./package.json); MIT LICENSE files.
+4. scripts/release-prepare.ts (+ --dry-run), root gate script, pack-smoke subset mode.
+5. release.yml (tag -> trusted publishing, skip published), actionlint.
+6. CONTRIBUTING.md, AGENTS.md, CLAUDE.md pointer; Colima requirement moved to CONTRIBUTING.
+7. Dry run + ci-local.
+<!-- SECTION:PLAN:END -->

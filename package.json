@@ -18,10 +18,13 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "test:repo": "bun test ./tests/repo/*.test.ts",
-    "test:pack": "bun scripts/pack-smoke.ts"
+    "test:pack": "bun scripts/pack-smoke.ts",
+    "gate": "bun run lint && bun run format:check && bun run check && bun run build && bun run test:unit && bun run test:compat && bun run test:repo && bun run test:cli && bun run test:bench",
+    "release:prepare": "bun scripts/release-prepare.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",
+    "@changesets/cli": "3.0.3",
     "@oxlint/plugins": "1.93.0",
     "@types/bun": "1.4.4",
     "@typescript-eslint/parser": "8.72.2",
@@ -37,5 +40,6 @@
     "style-to-object": "1.0.14",
     "typescript": "5.9.3",
     "typescript-7": "npm:typescript@7.0.2"
-  }
+  },
+  "version": ""
 }

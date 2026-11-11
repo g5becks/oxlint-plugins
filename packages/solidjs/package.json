@@ -4,15 +4,27 @@
   "type": "module",
   "description": "SolidJS lint rules ported from eslint-plugin-solid to Oxlint's JS plugin API. Also compatible with ESLint flat config. Published as oxlint-plugin-solidjs.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/g5becks/oxlint-plugins.git",
+    "directory": "packages/solidjs"
+  },
+  "homepage": "https://github.com/g5becks/oxlint-plugins/tree/main/packages/solidjs#readme",
+  "bugs": {
+    "url": "https://github.com/g5becks/oxlint-plugins/issues"
+  },
   "main": "./dist/index.js",
   "exports": {
     ".": {
       "import": "./dist/index.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "keywords": [
     "oxlint",
@@ -24,10 +36,6 @@
     "reactivity",
     "lint"
   ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/takinprofit/biome-plugins"
-  },
   "engines": {
     "node": ">=18.0.0"
   }

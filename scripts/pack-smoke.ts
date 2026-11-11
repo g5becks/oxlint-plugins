@@ -8,7 +8,7 @@
  *
  *   bun scripts/pack-smoke.ts                          # pack from packages/*, pinned oxlint
  *   bun scripts/pack-smoke.ts --oxlint 1.70.0,1.93.0
- *   bun scripts/pack-smoke.ts --tarballs <dir>         # verify existing *.tgz (release)
+ *   bun scripts/pack-smoke.ts --tarballs <dir>         # verify the *.tgz in <dir> (release; may be a subset)
  *
  * Packages must be built first (`bun run build`) unless --tarballs is given.
  * Needs Node and npm on PATH (oxlint runs JS plugins on Node).
@@ -45,7 +45,8 @@ let failed = false;
 
 try {
   // 1. Tarballs: given, or packed now from the built packages.
-  let tarballDir = arg("--tarballs");
+  const given = arg("--tarballs");
+  let tarballDir = given;
   if (!tarballDir) {
     tarballDir = join(work, "tarballs");
     for (const name of PLUGIN_NAMES) {
@@ -59,16 +60,25 @@ try {
   const byPlugin = new Map<PluginName, string>();
   for (const name of PLUGIN_NAMES) {
     const tgz = tarballs.find((f) => f.startsWith(`${PLUGINS[name].packageName}-`) && /-\d+\.\d+\.\d+.*\.tgz$/.test(f));
-    if (!tgz) throw new Error(`no tarball for ${PLUGINS[name].packageName} in ${tarballDir}`);
-    byPlugin.set(name, join(tarballDir, tgz));
+    if (tgz) {
+      byPlugin.set(name, join(tarballDir, tgz));
+    } else if (!given) {
+      throw new Error(`no tarball for ${PLUGINS[name].packageName} in ${tarballDir}`);
+    }
   }
+  // A release may ship only some packages; verify the tarballs that are there.
+  if (byPlugin.size === 0) throw new Error(`no package tarballs in ${tarballDir}`);
 
   // 2. Tarball contents: dist bundle, manifest, README; no sources.
   for (const [name, tgz] of byPlugin) {
     const files = (await $`tar -tzf ${tgz}`.text()).split("\n").filter(Boolean);
-    const missing = ["package/package.json", "package/README.md", "package/dist/index.js"].filter(
-      (f) => !files.includes(f),
-    );
+    const missing = [
+      "package/package.json",
+      "package/README.md",
+      "package/CHANGELOG.md",
+      "package/LICENSE",
+      "package/dist/index.js",
+    ].filter((f) => !files.includes(f));
     const extra = files.filter((f) => !/^package\/(package\.json|README\.md|CHANGELOG\.md|LICENSE|dist\/.+)$/.test(f));
     const ok = missing.length === 0 && extra.length === 0;
     console.log(`${ok ? "ok  " : "FAIL"} contents ${name}${ok ? "" : ` missing=${missing} unexpected=${extra}`}`);
@@ -89,7 +99,7 @@ try {
       .replace(/^Version:\s*/, "")
       .trim();
 
-    for (const name of PLUGIN_NAMES) {
+    for (const name of byPlugin.keys()) {
       const { rule, fixture } = SMOKE[name];
       const ext = fixture.endsWith(".tsx") ? "tsx" : "ts";
       const dir = join(consumer, `lint-${name}`);

@@ -20,12 +20,8 @@
 #          DOCKER_HOST   auto-detected for Colima when unset or unreachable
 # Exit:    0 if every required leg passed, 1 otherwise. Logs: $CI_LOCAL_DIR/<sha>/logs/
 #
-# Requirements: Docker via Colima, and the Colima VM must allow overcommit
-# (vm.overcommit_memory=1). oxlint's JS-plugin allocator pool reserves a large block of
-# address space per thread; heuristic overcommit (mode 0) refuses it on a 6 GiB VM without
-# swap and oxlint aborts (oxc_allocator fixed_size.rs, exit 134). Real memory use is small.
-#   colima ssh -- sudo sysctl -w vm.overcommit_memory=1
-#   ~/.config/colima/default/colima.yaml:  provision: [{ mode: system, script: sysctl -w vm.overcommit_memory=1 }]
+# Requirements: Docker via Colima with vm.overcommit_memory=1 in the VM (see CONTRIBUTING.md, "Colima
+# requirement"): oxlint's JS-plugin allocator reserves a large block of address space per thread.
 # A preflight runs a no-op JS plugin in the CI image first and stops with this fix if it fails.
 set -euo pipefail
 
