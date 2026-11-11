@@ -1,9 +1,11 @@
 ---
 id: TASK-006
 title: 'CI: Workflow with an oxlint version matrix plus scripts/ci-local.sh (OX-05)'
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-11-11T16:39:00Z'
+updated_date: '2026-11-11T17:09:00Z'
 labels:
   - ci
 milestone: m-0
@@ -42,3 +44,12 @@ Audit T6 and U4. There is no CI. JS plugins are explicitly outside oxlint's semv
 - [ ] #4 Linux legs run on Node plus Bun (versions recorded in the log)
 - [ ] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. .github/workflows/ci.yml: check (actionlint, install, lint, format, typecheck, build, repo tests), unit (ubuntu+macOS), cli matrix {floor 1.70.0, pinned (ubuntu+macOS), latest (advisory except schedule)} with CLI + bench, eslint-compat, pack; weekly cron; contents: read; SHA-pinned actions (verified via gh api).
+2. scripts/pack-smoke.ts: pack (or take release tarballs), check tarball contents, install into a consumer per oxlint version, load each plugin by package name, lint one fixture per plugin.
+3. scripts/ci-local.sh mirroring every leg (clean clones; Linux in Docker on node:24 + Bun 1.4.4 image from scripts/ci-local/Dockerfile; macOS on host); logs under oxlint-plugins-release/ci-local/<sha>/logs; RESULT line.
+4. Validate with actionlint 1.7.12 and run ci-local on HEAD.
+<!-- SECTION:PLAN:END -->

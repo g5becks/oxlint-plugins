@@ -17,7 +17,8 @@
     "lint": "oxlint --deny-warnings packages scripts tests",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "test:repo": "bun test ./tests/repo/*.test.ts"
+    "test:repo": "bun test ./tests/repo/*.test.ts",
+    "test:pack": "bun scripts/pack-smoke.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",
