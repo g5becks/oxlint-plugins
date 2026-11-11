@@ -1,11 +1,11 @@
 ---
 id: TASK-025
 title: 'Testing: Upstream parity harness in CI (OX-23)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T23:04:00Z'
+updated_date: '2026-11-11T23:08:00Z'
 labels:
   - testing
   - ci
@@ -33,7 +33,7 @@ Audit T5 (the method behind R7, R11 and R12). Nothing compares the ports with th
 <!-- AC:BEGIN -->
 - [x] #1 scripts/parity.ts reports per-rule recall and precision against pinned upstream plugins on the corpus
 - [x] #2 An advisory parity job runs in ci.yml and ci-local; the first report and proposed thresholds are in the notes
-- [ ] #3 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #3 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -72,4 +72,12 @@ TASK-037 immutable/prefer-immutable-types precision; TASK-038 immutable/readonly
 `bun run gate` exit 0 (unit 277/0, upstream 1461+465 pass, compat 40/0, repo 52/0, CLI 164/0, bench 4/0).
 
 Consumer-visible change: none (tooling).
+
+Verified with scripts/ci-local.sh (6cdef78, PASS; 15 legs incl. the advisory parity leg, whose Linux report matches the local one exactly); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+scripts/parity.ts compares pinned upstream ESLint plugins with the ports on the corpus (per-rule/per-plugin recall and precision, site diff, crash-isolated); advisory job in ci.yml and ci-local; first report and proposed thresholds in notes; follow-ups TASK-037..039 for the immutable and no-proxy-apis gaps. Verified with scripts/ci-local.sh (6cdef78, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
