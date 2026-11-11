@@ -59,7 +59,7 @@ describe("exhaustive-deps", () => {
   test("reports correct lines", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([19, 30]);
   });
 
@@ -90,7 +90,7 @@ describe("infinite-query-property-order", () => {
   test("reports correct lines", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([17, 27]);
   });
 
@@ -124,7 +124,7 @@ describe("mutation-property-order", () => {
   test("reports correct lines", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([17, 26]);
   });
 
@@ -158,7 +158,7 @@ describe("no-rest-destructuring", () => {
   test("reports correct lines", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([16, 37]);
   });
 
@@ -182,7 +182,7 @@ describe("no-unstable-deps", () => {
   test("reports correct lines", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([29, 42]);
   });
 
@@ -206,7 +206,7 @@ describe("stable-query-client", () => {
   test("reports correct lines", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([10, 16]);
   });
 

@@ -35,13 +35,13 @@ const isSource = (source: string): source is Source => sourceRegex.test(source);
 
 export default {
   meta: {
-    type: "suggestion",
+    type: "suggestion" as const,
     docs: {
       description:
         'Enforce consistent imports from "solid-js", "solid-js/web", and "solid-js/store".',
       recommended: "error",
     },
-    fixable: "code",
+    fixable: "code" as const,
     schema: [],
     messages: {
       "prefer-source": 'Prefer importing {{name}} from "{{source}}".',

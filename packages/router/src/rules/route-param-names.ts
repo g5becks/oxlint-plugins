@@ -86,7 +86,7 @@ const pathAsPropertySet = new Set<string>(pathAsPropertyFunctions);
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description: "Ensure route param names are valid JavaScript identifiers",
       recommended: "error",

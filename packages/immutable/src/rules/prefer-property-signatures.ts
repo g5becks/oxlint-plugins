@@ -17,7 +17,7 @@ type RuleOptions = [{ ignoreIfReadonlyWrapped?: boolean }?];
 
 export default {
   meta: {
-    type: "suggestion",
+    type: "suggestion" as const,
     docs: {
       description: "Prefer property signatures over method signatures.",
       recommended: "error",
@@ -31,7 +31,7 @@ export default {
         additionalProperties: false,
       },
     ],
-    fixable: "code",
+    fixable: "code" as const,
     messages: {
       generic: "Use a property signature instead of a method signature.",
     },

@@ -7,13 +7,13 @@ const reactSpecificProps = [
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description:
         "Disallow usage of React-specific `className`/`htmlFor` props, which were deprecated in v1.4.0.",
       recommended: "error",
     },
-    fixable: "code",
+    fixable: "code" as const,
     schema: [],
     messages: {
       prefer: "Prefer the `{{ to }}` prop over the deprecated `{{ from }}` prop.",

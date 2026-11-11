@@ -13,7 +13,7 @@ function isPropsByName(name: string): boolean {
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description:
         "Disallow usage of APIs that use ES6 Proxies, only to target environments that don't support them.",

@@ -104,7 +104,7 @@ function dereferenceVariablesAndTypeAssertions(queryKeyNode: any, context: any):
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description: "Exhaustive deps rule for useQuery",
       recommended: "error",
@@ -114,7 +114,7 @@ export default {
       fixTo: "Fix to {{result}}",
     },
     hasSuggestions: true,
-    fixable: "code",
+    fixable: "code" as const,
     schema: [],
   },
   defaultOptions: [],

@@ -5,7 +5,7 @@ export default createPropertyOrderRule(
   {
     name: "mutation-property-order",
     meta: {
-      type: "problem",
+      type: "problem" as const,
       docs: {
         description: "Ensure correct order of inference-sensitive properties in useMutation()",
         recommended: "error",
@@ -15,7 +15,7 @@ export default createPropertyOrderRule(
       },
       schema: [],
       hasSuggestions: true,
-      fixable: "code",
+      fixable: "code" as const,
     },
     defaultOptions: [],
   },

@@ -4,7 +4,7 @@ type RuleOptions = [{ allowInForLoopInit?: boolean }?];
 
 export default {
   meta: {
-    type: "suggestion",
+    type: "suggestion" as const,
     docs: {
       description: "Disallow mutable variables declared with let.",
       recommended: "error",

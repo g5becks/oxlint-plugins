@@ -9,12 +9,12 @@ function isFunctionNode(node: any): boolean {
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description: "Disallow usage of dependency arrays in `createEffect` and `createMemo`.",
       recommended: "error",
     },
-    fixable: "code",
+    fixable: "code" as const,
     schema: [],
     messages: {
       noUselessDep:

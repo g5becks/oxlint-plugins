@@ -1,6 +1,6 @@
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description: "Prevent variables used in JSX from being marked as unused.",
       recommended: "error",

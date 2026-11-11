@@ -3,7 +3,7 @@ import { ASTUtils } from "../utils/ast-utils";
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description: "Makes sure that QueryClient is stable",
       recommended: "error",
@@ -16,7 +16,7 @@ export default {
       fixTo: "Fix to {{result}}",
     },
     hasSuggestions: true,
-    fixable: "code",
+    fixable: "code" as const,
     schema: [],
   },
   defaultOptions: [],

@@ -4,7 +4,7 @@ type RuleOptions = [{ allowInAsyncFunctions?: boolean }?];
 
 export default {
   meta: {
-    type: "suggestion",
+    type: "suggestion" as const,
     docs: {
       description: "Disallow throw statements.",
       recommended: "error",

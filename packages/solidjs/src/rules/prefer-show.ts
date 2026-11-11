@@ -4,13 +4,13 @@ const EXPENSIVE_TYPES = ["JSXElement", "JSXFragment", "Identifier"];
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description:
         "Enforce using Solid's `<Show />` component for conditionally showing content. Solid's compiler covers this case, so it's a stylistic rule only.",
       recommended: "warn",
     },
-    fixable: "code",
+    fixable: "code" as const,
     schema: [],
     messages: {
       preferShowAnd: "Use Solid's `<Show />` component for conditionally showing content.",

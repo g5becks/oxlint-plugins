@@ -61,7 +61,7 @@ describe("route-param-names", () => {
       files: [ruleFixture(PLUGIN, RULE)],
     });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([20, 25, 31]);
   });
 
@@ -94,7 +94,7 @@ describe("create-route-property-order", () => {
       files: [ruleFixture(PLUGIN, RULE)],
     });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([15, 23]);
   });
 
@@ -112,8 +112,8 @@ describe("create-route-property-order", () => {
       configPath,
       files: [ruleFixture(PLUGIN, RULE)],
     });
-    const fixedContent = result.fixedFiles["create-route-property-order.ts"];
-    expect(fixedContent).toBeDefined();
+    const fixedContent = result.fixedFiles["create-route-property-order.ts"] ?? "";
+    expect(result.fixedFiles["create-route-property-order.ts"]).toBeDefined();
     // After fix, re-running should produce fewer or no diagnostics for this rule
     // The fix reorders properties, so "loaderDeps" should come before "loader"
     const loaderDepsIdx = fixedContent.indexOf("loaderDeps");

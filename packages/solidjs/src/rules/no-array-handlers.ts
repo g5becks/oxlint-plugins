@@ -3,7 +3,7 @@ import { trace } from "../utils/trace";
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description: "Disallow usage of type-unsafe event handlers.",
       recommended: "warn",

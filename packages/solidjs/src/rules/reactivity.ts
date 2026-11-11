@@ -258,7 +258,7 @@ const getReturnedVar = (id: any, context: any): any => {
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description:
         "Enforce that reactivity (props, signals, memos, etc.) is properly used, so changes in those values will be tracked and update the view as expected.",

@@ -26,12 +26,12 @@ function childrenIsMultilineSpaces(node: any): boolean {
 
 export default {
   meta: {
-    type: "layout",
+    type: "layout" as const,
     docs: {
       description: "Disallow extra closing tags for components without children.",
       recommended: "error",
     },
-    fixable: "code",
+    fixable: "code" as const,
     schema: [
       {
         type: "object",

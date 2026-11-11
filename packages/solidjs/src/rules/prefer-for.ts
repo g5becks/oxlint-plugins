@@ -19,13 +19,13 @@ function getPropertyName(memberExpr: any): string | null {
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description:
         "Enforce using Solid's `<For />` component for mapping an array to JSX elements.",
       recommended: "warn",
     },
-    fixable: "code",
+    fixable: "code" as const,
     schema: [],
     messages: {
       preferFor:

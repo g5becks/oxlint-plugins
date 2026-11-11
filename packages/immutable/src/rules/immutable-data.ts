@@ -49,7 +49,7 @@ function getMutatorName(node: any): string | null {
 
 export default {
   meta: {
-    type: "suggestion",
+    type: "suggestion" as const,
     docs: {
       description: "Disallow mutating existing data structures.",
       recommended: "error",

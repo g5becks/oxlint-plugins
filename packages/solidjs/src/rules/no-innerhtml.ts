@@ -15,13 +15,13 @@ function getStringIfConstant(node: any): string | null {
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description:
         "Disallow usage of the innerHTML attribute, which can often lead to security vulnerabilities.",
       recommended: "error",
     },
-    fixable: "code",
+    fixable: "code" as const,
     hasSuggestions: true,
     schema: [
       {

@@ -59,7 +59,7 @@ describe("no-let", () => {
   test("reports correct lines", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([8, 11, 14]);
   });
 
@@ -89,7 +89,7 @@ describe("no-throw-statements", () => {
   test("reports correct lines", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([12, 18, 23]);
   });
 
@@ -119,7 +119,7 @@ describe("no-promise-reject", () => {
   test("reports correct lines", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([7, 10]);
   });
 
@@ -143,7 +143,7 @@ describe("readonly-type", () => {
   test("reports correct lines", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([11, 17, 18, 24]);
   });
 
@@ -175,7 +175,7 @@ describe("prefer-property-signatures", () => {
   test("reports correct lines", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([11, 12, 17, 18]);
   });
 
@@ -222,7 +222,7 @@ describe("type-declaration-immutability", () => {
   test("reports correct lines", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([15, 21, 27]);
   });
 
@@ -246,7 +246,7 @@ describe("immutable-data", () => {
   test("reports correct lines", async () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
-    const lines = diags.map((d) => d.labels[0]?.span.line).sort((a, b) => a - b);
+    const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
     expect(lines).toEqual([11, 15, 19, 23]);
   });
 

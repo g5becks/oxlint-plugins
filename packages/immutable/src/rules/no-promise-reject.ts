@@ -1,6 +1,6 @@
 export default {
   meta: {
-    type: "suggestion",
+    type: "suggestion" as const,
     docs: {
       description: "Disallow Promise.reject and reject callbacks.",
       recommended: false,

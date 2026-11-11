@@ -51,7 +51,7 @@ function shouldCheckName(name: string | undefined, identifiers?: string | Array<
 
 export default {
   meta: {
-    type: "suggestion",
+    type: "suggestion" as const,
     docs: {
       description: "Enforce ReadonlyShallow immutability on type declarations.",
       recommended: "error",

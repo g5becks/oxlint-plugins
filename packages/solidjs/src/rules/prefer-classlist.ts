@@ -2,13 +2,13 @@ import { jsxHasProp, jsxPropName } from "../utils/jsx";
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description:
         "Enforce using the classlist prop over importing a classnames helper. The classlist prop accepts an object `{ [class: string]: boolean }` just like classnames.",
       recommended: "warn",
     },
-    fixable: "code",
+    fixable: "code" as const,
     deprecated: true,
     schema: [
       {

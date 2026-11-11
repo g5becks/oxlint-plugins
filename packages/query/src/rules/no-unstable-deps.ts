@@ -14,7 +14,7 @@ const allHookNameSet = new Set(allHookNames);
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description: "Disallow putting the result of query hooks directly in a React hook dependency array",
       recommended: "error",

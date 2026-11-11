@@ -2,7 +2,7 @@ import { jsxGetAllProps } from "../utils/jsx";
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description: "Disallow passing the same prop twice in JSX.",
       recommended: "error",

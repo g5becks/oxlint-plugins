@@ -2,12 +2,12 @@ import { createTanstackQueryImportTracker } from "./detect-query-imports";
 import { sortDataByOrder } from "./sort-data-by-order";
 
 type RuleMeta = {
-  type: string;
+  type: "problem" | "suggestion" | "layout";
   docs: { description: string; recommended: string };
   messages: Record<string, string>;
   schema: Array<any>;
   hasSuggestions?: boolean;
-  fixable?: string;
+  fixable?: "code" | "whitespace";
 };
 
 type RuleDefinition = {
@@ -70,7 +70,7 @@ export function createPropertyOrderRule<TFunc extends string, TProp extends stri
             return { name: `_property_${index}`, property };
           });
 
-          const sortedProperties = sortDataByOrder(properties, orderRules as any, "name");
+          const sortedProperties = sortDataByOrder<{ name: string; property: any }, "name">(properties, orderRules as any, "name");
           if (sortedProperties == null) {
             return;
           }

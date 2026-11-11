@@ -37,13 +37,14 @@ afterAll(async () => {
 function median(values: number[]): number {
   const sorted = values.slice().sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  const at = (i: number): number => sorted[i] ?? Number.NaN;
+  return sorted.length % 2 ? at(mid) : (at(mid - 1) + at(mid)) / 2;
 }
 
 function p95(values: number[]): number {
   const sorted = values.slice().sort((a, b) => a - b);
   const index = Math.ceil(sorted.length * 0.95) - 1;
-  return sorted[Math.min(index, sorted.length - 1)];
+  return sorted[Math.min(index, sorted.length - 1)] ?? Number.NaN;
 }
 
 describe("benchmarks", () => {

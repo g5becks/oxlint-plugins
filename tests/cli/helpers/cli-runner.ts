@@ -6,7 +6,6 @@ import { PLUGIN_NAMES, type PluginName, entryPoint } from "../../../scripts/plug
 
 const ROOT = join(import.meta.dir, "..", "..", "..");
 
-export type { PluginName };
 
 export interface Diagnostic {
   message: string;
@@ -212,4 +211,3 @@ export async function runOxlintWithFix(options: RunWithFixOptions): Promise<Oxli
 }
 
 export { PLUGIN_NAMES, ROOT };
-export type { PluginName };

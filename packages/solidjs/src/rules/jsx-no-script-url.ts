@@ -19,7 +19,7 @@ function getStaticStringValue(node: any, scope: any): string | null {
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description: "Disallow javascript: URLs.",
       recommended: "error",

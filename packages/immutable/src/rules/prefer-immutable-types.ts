@@ -48,7 +48,7 @@ function reportIfNotShallowReadonly(
 
 export default {
   meta: {
-    type: "suggestion",
+    type: "suggestion" as const,
     docs: {
       description: "Require shallow readonly types for parameters, return types, and variables.",
       recommended: "error",

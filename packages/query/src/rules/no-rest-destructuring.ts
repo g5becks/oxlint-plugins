@@ -12,7 +12,7 @@ function isObjectRestDestructuring(node: any): boolean {
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description: "Disallows rest destructuring in queries",
       recommended: "warn",

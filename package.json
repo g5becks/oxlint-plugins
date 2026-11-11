@@ -12,7 +12,7 @@
     "test:compat": "bun test ./tests/integration/*.test.ts ./tests/eslint-compat/*.test.ts",
     "test:cli": "bun test ./tests/cli/*.cli.test.ts",
     "test:bench": "bun test ./tests/bench/*.test.ts",
-    "check": "tsc -b --pretty false"
+    "check": "node node_modules/typescript-7/bin/tsc -b --pretty false"
   },
   "devDependencies": {
     "@oxlint/plugins": "1.93.0",
@@ -27,6 +27,7 @@
     "known-css-properties": "0.30.0",
     "oxlint": "1.93.0",
     "style-to-object": "1.0.14",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "typescript-7": "npm:typescript@7.0.2"
   }
 }

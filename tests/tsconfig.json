@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true
+  },
+  "include": [
+    "**/*.ts",
+    "../scripts/**/*.ts",
+    "../packages/*/src/**/*.ts"
+  ],
+  "exclude": [
+    "**/fixtures/**",
+    "../packages/*/src/upstream/**"
+  ]
+}

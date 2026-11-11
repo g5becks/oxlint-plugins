@@ -27,13 +27,13 @@ const getLineLength = (loc: any) => loc.end.line - loc.start.line + 1;
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description:
         "Disallow early returns in components. Solid components only run once, and so conditionals should be inside JSX.",
       url: "https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/components-return-once.md",
     },
-    fixable: "code",
+    fixable: "code" as const,
     schema: [],
     messages: {
       noEarlyReturn:
@@ -55,7 +55,13 @@ export default {
       return node.type === "JSXElement" || node.type === "JSXFragment" ? text : `{${text}}`;
     };
 
-    const currentFunction = () => functionStack[functionStack.length - 1];
+    const currentFunction = () => {
+      const fn = functionStack[functionStack.length - 1];
+      if (!fn) {
+        throw new Error("function stack is empty");
+      }
+      return fn;
+    };
 
     const onFunctionEnter = (node: any) => {
       let lastReturn: any = undefined;

@@ -40,13 +40,13 @@ function getStaticValue(node: any, scope: any): { value: unknown } | null {
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description:
         "Enforce naming DOM element event handlers consistently and prevent Solid's analysis from misunderstanding whether a prop should be an event handler.",
       recommended: "error",
     },
-    fixable: "code",
+    fixable: "code" as const,
     hasSuggestions: true,
     schema: [
       {

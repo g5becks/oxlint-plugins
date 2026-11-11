@@ -14,7 +14,18 @@ tester.run("exhaustive-deps", rule as any, {
   invalid: [
     {
       code: "import { useQuery } from '@tanstack/react-query'; function Component(){ const id = 1; useQuery({ queryKey: ['entity'], queryFn: () => api.getEntity(id) }); }",
-      errors: [{ messageId: "missingDeps", suggestions: 1 }],
+      errors: [
+        {
+          messageId: "missingDeps",
+          suggestions: [
+            {
+              messageId: "fixTo",
+              output:
+                "import { useQuery } from '@tanstack/react-query'; function Component(){ const id = 1; useQuery({ queryKey: ['entity', id], queryFn: () => api.getEntity(id) }); }",
+            },
+          ],
+        },
+      ],
     },
   ],
 });

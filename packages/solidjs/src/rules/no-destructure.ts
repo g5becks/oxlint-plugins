@@ -36,13 +36,13 @@ const getPropertyInfo = (prop: any): PropertyInfo | null => {
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description:
         "Disallow destructuring props. In Solid, props must be used with property accesses (`props.foo`) to preserve reactivity. This rule only tracks destructuring in the parameter list.",
       url: "https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/no-destructure.md",
     },
-    fixable: "code",
+    fixable: "code" as const,
     schema: [],
     messages: {
       noDestructure:
@@ -52,7 +52,13 @@ export default {
   defaultOptions: [],
   createOnce(context: any) {
     const functionStack: Array<{ hasJSX: boolean }> = [];
-    const currentFunction = () => functionStack[functionStack.length - 1];
+    const currentFunction = () => {
+      const fn = functionStack[functionStack.length - 1];
+      if (!fn) {
+        throw new Error("function stack is empty");
+      }
+      return fn;
+    };
 
     const onFunctionEnter = () => {
       functionStack.push({ hasJSX: false });

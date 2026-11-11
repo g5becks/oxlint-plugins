@@ -10,7 +10,7 @@ function isCreateRouteFunction(name: string): boolean {
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description: "Ensure correct order of inference sensitive properties for createRoute functions",
       recommended: "error",
@@ -20,7 +20,7 @@ export default {
     },
     schema: [],
     hasSuggestions: true,
-    fixable: "code",
+    fixable: "code" as const,
   },
   defaultOptions: [],
   createOnce(context: any) {

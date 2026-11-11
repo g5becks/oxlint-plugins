@@ -161,7 +161,7 @@ function getExternalRefs(params: { scopeManager: any; sourceCode: any; node: any
 
   const externalRefs = references.filter((x: any) => x.variable.resolved == null || !localRefIds.has(x.text));
 
-  return uniqueBy(externalRefs, (x) => x.text).map((x: any) => x.variable);
+  return uniqueBy(externalRefs, (x: any) => x.text).map((x: any) => x.variable);
 }
 
 function mapKeyNodeToText(node: any, sourceCode: any): string {

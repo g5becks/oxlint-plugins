@@ -1,12 +1,12 @@
 export default {
   meta: {
-    type: "suggestion",
+    type: "suggestion" as const,
     docs: {
       description: "Require readonly modifier on type literal properties.",
       recommended: "error",
     },
     schema: [],
-    fixable: "code",
+    fixable: "code" as const,
     messages: {
       missingReadonly: "Property should have a readonly modifier.",
     },

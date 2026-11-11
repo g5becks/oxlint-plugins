@@ -2,7 +2,7 @@ import { eslintCompatPlugin } from "@oxlint/plugins";
 import createRoutePropertyOrder from "./rules/create-route-property-order";
 import routeParamNames from "./rules/route-param-names";
 
-const plugin = eslintCompatPlugin({
+const plugin = {
   meta: { name: "oxlint-plugin-router" },
   rules: {
     "create-route-property-order": createRoutePropertyOrder,
@@ -16,6 +16,10 @@ const plugin = eslintCompatPlugin({
       },
     },
   },
-});
+};
+
+// eslintCompatPlugin converts the rules in place and returns the same object.
+// Passing a variable (not a literal) keeps `configs`, which its `Plugin` type omits.
+eslintCompatPlugin(plugin);
 
 export default plugin;

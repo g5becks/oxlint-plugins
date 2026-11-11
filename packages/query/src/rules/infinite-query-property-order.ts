@@ -5,7 +5,7 @@ export default createPropertyOrderRule(
   {
     name: "infinite-query-property-order",
     meta: {
-      type: "problem",
+      type: "problem" as const,
       docs: {
         description: "Ensure correct order of inference sensitive properties for infinite queries",
         recommended: "error",
@@ -15,7 +15,7 @@ export default createPropertyOrderRule(
       },
       schema: [],
       hasSuggestions: true,
-      fixable: "code",
+      fixable: "code" as const,
     },
     defaultOptions: [],
   },

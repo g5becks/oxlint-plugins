@@ -42,7 +42,11 @@ export function sortDataByOrder<T, TKey extends keyof T>(
   const inOrderIterator = sortedArray.values();
   const result = data.map((item) => {
     if (getSubsetIndex(item[key], orderSets) !== null) {
-      const sortedItem = inOrderIterator.next().value;
+      const next = inOrderIterator.next();
+      if (next.done) {
+        throw new Error("sortDataByOrder: sorted subset exhausted");
+      }
+      const sortedItem = next.value;
       if (sortedItem[key] !== item[key]) {
         wasResorted = true;
       }

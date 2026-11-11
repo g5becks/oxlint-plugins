@@ -22,7 +22,7 @@ function isAllowedTypeAnnotation(typeAnnotation: any): boolean {
 
 export default {
   meta: {
-    type: "suggestion",
+    type: "suggestion" as const,
     docs: {
       description: "Disallow type assertions in TypeScript code.",
       recommended: "error",

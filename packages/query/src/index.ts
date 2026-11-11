@@ -6,7 +6,7 @@ import noRestDestructuring from "./rules/no-rest-destructuring";
 import noUnstableDeps from "./rules/no-unstable-deps";
 import stableQueryClient from "./rules/stable-query-client";
 
-const plugin = eslintCompatPlugin({
+const plugin = {
   meta: { name: "oxlint-plugin-query" },
   rules: {
     "exhaustive-deps": exhaustiveDeps,
@@ -28,6 +28,10 @@ const plugin = eslintCompatPlugin({
       },
     },
   },
-});
+};
+
+// eslintCompatPlugin converts the rules in place and returns the same object.
+// Passing a variable (not a literal) keeps `configs`, which its `Plugin` type omits.
+eslintCompatPlugin(plugin);
 
 export default plugin;

@@ -7,7 +7,7 @@ status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T16:50:00Z'
+updated_date: '2026-11-11T16:55:00Z'
 labels:
   - toolchain
   - testing
@@ -74,6 +74,9 @@ Audit H15 and T4. Directory names differ from package names (`plugin-functional`
 - `git grep -nE "oxlint-plugin-solid\b|oxlint-plugin-functional|(^|[^-])plugin-functional|plugin-no-type-assertion|(^|[^-])\bplugin-solid\b"` outside scripts/plugins.ts and historical docs (.clavix/, audit, backlog/): only the upstream name `eslint-plugin-no-type-assertion` in ts-no-assert README/package.json description (a legitimate upstream reference).
 
 Consumer-visible change: none (package names, meta.name and bundle code unchanged).
+
+## Correction (recorded during TASK-003)
+The "none of the 15 previously passing tests regressed" check above compared `(pass)` lines from bun test output, but Bun prints no `(pass)` lines by default, so that comparison was vacuous. Re-verified properly in TASK-003 with `bun test --reporter=junit` on temporary worktrees of 5452151 (TASK-001) and 818a1de (TASK-002): all 15 TASK-001 passes still pass at TASK-002 (comm on normalized test names: empty). The claim holds.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

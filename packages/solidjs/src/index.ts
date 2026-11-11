@@ -20,7 +20,7 @@ import reactivity from "./rules/reactivity";
 import selfClosingComp from "./rules/self-closing-comp";
 import styleProp from "./rules/style-prop";
 
-const plugin = eslintCompatPlugin({
+const plugin = {
   meta: { name: "oxlint-plugin-solidjs" },
   rules: {
     "components-return-once": componentsReturnOnce,
@@ -70,6 +70,10 @@ const plugin = eslintCompatPlugin({
       },
     },
   },
-});
+};
+
+// eslintCompatPlugin converts the rules in place and returns the same object.
+// Passing a variable (not a literal) keeps `configs`, which its `Plugin` type omits.
+eslintCompatPlugin(plugin);
 
 export default plugin;

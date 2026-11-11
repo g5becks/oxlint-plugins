@@ -191,14 +191,14 @@ const lengthPercentageRegex = /\b(?:width|height|margin|padding|border-width|fon
 
 export default {
   meta: {
-    type: "problem",
+    type: "problem" as const,
     docs: {
       description:
         "Require CSS properties in the `style` prop to be valid and kebab-cased (ex. 'font-size'), not camel-cased (ex. 'fontSize') like in React, " +
         "and that property values with dimensions are strings, not numbers with implicit 'px' units.",
       url: "https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/style-prop.md",
     },
-    fixable: "code",
+    fixable: "code" as const,
     schema: [
       {
         type: "object",
