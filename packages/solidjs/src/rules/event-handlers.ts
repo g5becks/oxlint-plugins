@@ -216,7 +216,7 @@ export default {
         ) {
           const openingElement = node.parent.parent.parent;
           if (openingElement.name?.type === "JSXIdentifier" && isDOMElementName(openingElement.name.name)) {
-            if (node.key?.type === "Identifier" && /^on/.test(node.key.name)) {
+            if (node.key?.type === "Identifier" && node.key.name.startsWith("on")) {
               const handlerName = node.key.name;
               context.report({
                 node,

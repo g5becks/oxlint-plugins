@@ -1,0 +1,23 @@
+# Git hooks, installed by `bun install` (the root `prepare` script runs `lefthook install`).
+pre-commit:
+  parallel: true
+  jobs:
+    - name: format
+      glob: "*.{ts,tsx,js,mjs,cjs,json,jsonc}"
+      run: node_modules/.bin/biome format --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      stage_fixed: true
+    - name: lint
+      glob: "*.{ts,tsx,js,mjs,cjs}"
+      run: node_modules/.bin/oxlint --deny-warnings --no-error-on-unmatched-pattern {staged_files}
+
+pre-push:
+  jobs:
+    - name: typecheck
+      run: bun run check
+    - name: unit
+      run: bun run test:unit
+
+commit-msg:
+  jobs:
+    - name: conventional-commit
+      run: bun scripts/check-commit-msg.ts {1}

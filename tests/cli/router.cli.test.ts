@@ -119,7 +119,6 @@ describe("create-route-property-order", () => {
     // After fix, re-running should produce fewer or no diagnostics for this rule
     // The fix reorders properties, so "loaderDeps" should come before "loader"
     const loaderDepsIdx = fixedContent.indexOf("loaderDeps");
-    const loaderIdx = fixedContent.indexOf("loader:");
     // In at least one of the fixed cases, loaderDeps should precede loader
     expect(loaderDepsIdx).toBeGreaterThan(-1);
   });

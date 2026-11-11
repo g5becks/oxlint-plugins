@@ -1,4 +1,7 @@
+// Control characters are intentional: browsers ignore leading C0 controls and embedded
+// tab/CR/LF in URLs, so they must be matched to catch `javascript:` (same as upstream).
 const isJavaScriptProtocol =
+  // oxlint-disable-next-line no-control-regex
   /^[\u0000-\u001F ]*j[\r\n\t]*a[\r\n\t]*v[\r\n\t]*a[\r\n\t]*s[\r\n\t]*c[\r\n\t]*r[\r\n\t]*i[\r\n\t]*p[\r\n\t]*t[\r\n\t]*:/i;
 
 function getStaticStringValue(node: any, scope: any): string | null {

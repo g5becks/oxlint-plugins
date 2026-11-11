@@ -1,16 +1,14 @@
 {
-  "$schema": "https://oxc.rs/schemas/oxlint.json",
-  "jsPlugins": [
-    "./packages/router/dist/index.js",
-    "./packages/query/dist/index.js",
-    "./packages/immutable/dist/index.js",
-    "./packages/solidjs/dist/index.js",
-    "./packages/ts-no-assert/dist/index.js"
-  ],
-  "rules": {
-    "oxlint-plugin-router/route-param-names": "error",
-    "oxlint-plugin-query/stable-query-client": "error",
-    "oxlint-plugin-immutable/no-let": "error",
-    "oxlint-plugin-solidjs/jsx-no-duplicate-props": "warn"
-  }
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import"],
+  "categories": { "correctness": "error" },
+  "ignorePatterns": [
+    "**/upstream/**",
+    "**/fixtures/**",
+    "**/dist/**",
+    "client/**",
+    "backlog/**",
+    ".clavix/**",
+    "node_modules/**"
+  ]
 }

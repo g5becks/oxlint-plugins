@@ -6,13 +6,18 @@
     "packages/*"
   ],
   "scripts": {
+    "prepare": "lefthook install",
     "build": "bun scripts/build.ts",
     "test": "bun run test:unit && bun run test:compat && bun run test:cli",
     "test:unit": "bun test ./packages/*/tests/*.test.ts",
     "test:compat": "bun test ./tests/integration/*.test.ts ./tests/eslint-compat/*.test.ts",
     "test:cli": "bun test ./tests/cli/*.cli.test.ts",
     "test:bench": "bun test ./tests/bench/*.test.ts",
-    "check": "node node_modules/typescript-7/bin/tsc -b --pretty false"
+    "check": "node node_modules/typescript-7/bin/tsc -b --pretty false",
+    "lint": "oxlint --deny-warnings packages scripts tests",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "test:repo": "bun test ./tests/repo/*.test.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",
@@ -26,6 +31,7 @@
     "is-html": "2.0.0",
     "kebab-case": "1.0.2",
     "known-css-properties": "0.30.0",
+    "lefthook": "2.2.2",
     "oxlint": "1.93.0",
     "style-to-object": "1.0.14",
     "typescript": "5.9.3",
