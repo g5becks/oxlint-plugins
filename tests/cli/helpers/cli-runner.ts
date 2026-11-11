@@ -2,11 +2,11 @@ import { join } from "node:path";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { oxlintBin } from "../../helpers/oxlint-bin.ts";
+import { PLUGIN_NAMES, type PluginName, entryPoint } from "../../../scripts/plugins.ts";
 
 const ROOT = join(import.meta.dir, "..", "..", "..");
 
-const PLUGIN_NAMES = ["router", "query", "functional", "solid"] as const;
-type PluginName = (typeof PLUGIN_NAMES)[number];
+export type { PluginName };
 
 export interface Diagnostic {
   message: string;
@@ -26,21 +26,20 @@ export interface OxlintResult {
 
 /** Bundle a single plugin to dist/ using Bun.build() */
 export async function buildPlugin(name: PluginName): Promise<string> {
-  const entryPoint = join(ROOT, "packages", `plugin-${name}`, "src", "index.ts");
-  const outdir = join(ROOT, "dist", `plugin-${name}`);
+  const outdir = join(ROOT, "dist", name);
   const result = await Bun.build({
-    entrypoints: [entryPoint],
+    entrypoints: [entryPoint(name)],
     outdir,
     target: "node",
     format: "esm",
   });
   if (!result.success) {
-    throw new Error(`Failed to build plugin-${name}: ${result.logs.join("\n")}`);
+    throw new Error(`Failed to build ${name}: ${result.logs.join("\n")}`);
   }
   return join(outdir, "index.js");
 }
 
-/** Bundle all 4 plugins and return their output paths */
+/** Bundle every plugin in the name map and return their output paths */
 export async function buildAllPlugins(): Promise<Record<PluginName, string>> {
   const results = await Promise.all(PLUGIN_NAMES.map(async (name) => [name, await buildPlugin(name)] as const));
   return Object.fromEntries(results) as Record<PluginName, string>;
@@ -57,7 +56,7 @@ export async function writeOxlintConfig(config: OxlintConfig): Promise<string> {
   const configPath = join(tmpDir, ".oxlintrc.json");
 
   const jsPlugins = config.plugins.map(
-    (name) => join(ROOT, "dist", `plugin-${name}`, "index.js"),
+    (name) => join(ROOT, "dist", name, "index.js"),
   );
 
   const prefixedRules: Record<string, string | [string, ...unknown[]]> = {};

@@ -20,29 +20,29 @@
         "typescript": "5.9.3",
       },
     },
-    "packages/plugin-errorset": {
+    "packages/errorset": {
       "name": "oxlint-plugin-errorset",
       "version": "0.1.1",
     },
-    "packages/plugin-functional": {
+    "packages/immutable": {
       "name": "oxlint-plugin-immutable",
       "version": "0.1.1",
     },
-    "packages/plugin-no-type-assertion": {
-      "name": "oxlint-plugin-ts-no-assert",
-      "version": "0.1.2",
-    },
-    "packages/plugin-query": {
+    "packages/query": {
       "name": "oxlint-plugin-query",
       "version": "0.1.1",
     },
-    "packages/plugin-router": {
+    "packages/router": {
       "name": "oxlint-plugin-router",
       "version": "0.1.1",
     },
-    "packages/plugin-solid": {
+    "packages/solidjs": {
       "name": "oxlint-plugin-solidjs",
       "version": "0.1.1",
+    },
+    "packages/ts-no-assert": {
+      "name": "oxlint-plugin-ts-no-assert",
+      "version": "0.1.2",
     },
   },
   "packages": {
@@ -270,17 +270,17 @@
 
     "oxlint": ["oxlint@1.93.0", "", { "optionalDependencies": { "@oxlint/binding-android-arm-eabi": "1.93.0", "@oxlint/binding-android-arm64": "1.93.0", "@oxlint/binding-darwin-arm64": "1.93.0", "@oxlint/binding-darwin-x64": "1.93.0", "@oxlint/binding-freebsd-x64": "1.93.0", "@oxlint/binding-linux-arm-gnueabihf": "1.93.0", "@oxlint/binding-linux-arm-musleabihf": "1.93.0", "@oxlint/binding-linux-arm64-gnu": "1.93.0", "@oxlint/binding-linux-arm64-musl": "1.93.0", "@oxlint/binding-linux-ppc64-gnu": "1.93.0", "@oxlint/binding-linux-riscv64-gnu": "1.93.0", "@oxlint/binding-linux-riscv64-musl": "1.93.0", "@oxlint/binding-linux-s390x-gnu": "1.93.0", "@oxlint/binding-linux-x64-gnu": "1.93.0", "@oxlint/binding-linux-x64-musl": "1.93.0", "@oxlint/binding-openharmony-arm64": "1.93.0", "@oxlint/binding-win32-arm64-msvc": "1.93.0", "@oxlint/binding-win32-ia32-msvc": "1.93.0", "@oxlint/binding-win32-x64-msvc": "1.93.0" }, "peerDependencies": { "oxlint-tsgolint": ">=7.0.2005", "vite-plus": "*" }, "optionalPeers": ["oxlint-tsgolint", "vite-plus"], "bin": { "oxlint": "bin/oxlint" } }, "sha512-19JMsQFX+YvEbcUTFQxjTwhvs0Ibg0D6CFneSLgpwnACWcY/6LjhpGpkPodh0T5aIT1pjMTLlYaeBFzaVgugTA=="],
 
-    "oxlint-plugin-errorset": ["oxlint-plugin-errorset@workspace:packages/plugin-errorset"],
+    "oxlint-plugin-errorset": ["oxlint-plugin-errorset@workspace:packages/errorset"],
 
-    "oxlint-plugin-immutable": ["oxlint-plugin-immutable@workspace:packages/plugin-functional"],
+    "oxlint-plugin-immutable": ["oxlint-plugin-immutable@workspace:packages/immutable"],
 
-    "oxlint-plugin-query": ["oxlint-plugin-query@workspace:packages/plugin-query"],
+    "oxlint-plugin-query": ["oxlint-plugin-query@workspace:packages/query"],
 
-    "oxlint-plugin-router": ["oxlint-plugin-router@workspace:packages/plugin-router"],
+    "oxlint-plugin-router": ["oxlint-plugin-router@workspace:packages/router"],
 
-    "oxlint-plugin-solidjs": ["oxlint-plugin-solidjs@workspace:packages/plugin-solid"],
+    "oxlint-plugin-solidjs": ["oxlint-plugin-solidjs@workspace:packages/solidjs"],
 
-    "oxlint-plugin-ts-no-assert": ["oxlint-plugin-ts-no-assert@workspace:packages/plugin-no-type-assertion"],
+    "oxlint-plugin-ts-no-assert": ["oxlint-plugin-ts-no-assert@workspace:packages/ts-no-assert"],
 
     "p-limit": ["p-limit@3.1.0", "", { "dependencies": { "yocto-queue": "^0.1.0" } }, "sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ=="],
 

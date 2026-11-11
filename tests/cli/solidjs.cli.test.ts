@@ -1,3 +1,4 @@
+import { PLUGINS } from "../../scripts/plugins.ts";
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import {
   buildPlugin,
@@ -9,36 +10,36 @@ import {
   ruleFixture,
 } from "./helpers/cli-runner";
 
-const PLUGIN = "solid";
-const CODE = (rule: string) => `oxlint-plugin-${PLUGIN}(${rule})`;
+const PLUGIN = "solidjs";
+const CODE = (rule: string) => `${PLUGINS[PLUGIN].packageName}(${rule})`;
 const EXT = "tsx";
 
 let configPath: string;
 
 beforeAll(async () => {
-  await buildPlugin("solid");
+  await buildPlugin("solidjs");
   configPath = await writeOxlintConfig({
-    plugins: ["solid"],
+    plugins: ["solidjs"],
     rules: {
-      "oxlint-plugin-solid/jsx-no-duplicate-props": "error",
-      "oxlint-plugin-solid/jsx-no-script-url": "error",
-      "oxlint-plugin-solid/jsx-no-undef": "error",
-      "oxlint-plugin-solid/no-react-specific-props": "error",
-      "oxlint-plugin-solid/self-closing-comp": "error",
-      "oxlint-plugin-solid/no-proxy-apis": "error",
-      "oxlint-plugin-solid/no-array-handlers": "error",
-      "oxlint-plugin-solid/no-react-deps": "error",
-      "oxlint-plugin-solid/imports": "error",
-      "oxlint-plugin-solid/prefer-for": "error",
-      "oxlint-plugin-solid/no-destructure": "error",
-      "oxlint-plugin-solid/components-return-once": "error",
-      "oxlint-plugin-solid/prefer-show": "error",
-      "oxlint-plugin-solid/event-handlers": "error",
-      "oxlint-plugin-solid/prefer-classlist": "error",
-      "oxlint-plugin-solid/style-prop": "error",
-      "oxlint-plugin-solid/reactivity": "error",
-      "oxlint-plugin-solid/no-innerhtml": "error",
-      "oxlint-plugin-solid/no-unknown-namespaces": "error",
+      "solidjs/jsx-no-duplicate-props": "error",
+      "solidjs/jsx-no-script-url": "error",
+      "solidjs/jsx-no-undef": "error",
+      "solidjs/no-react-specific-props": "error",
+      "solidjs/self-closing-comp": "error",
+      "solidjs/no-proxy-apis": "error",
+      "solidjs/no-array-handlers": "error",
+      "solidjs/no-react-deps": "error",
+      "solidjs/imports": "error",
+      "solidjs/prefer-for": "error",
+      "solidjs/no-destructure": "error",
+      "solidjs/components-return-once": "error",
+      "solidjs/prefer-show": "error",
+      "solidjs/event-handlers": "error",
+      "solidjs/prefer-classlist": "error",
+      "solidjs/style-prop": "error",
+      "solidjs/reactivity": "error",
+      "solidjs/no-innerhtml": "error",
+      "solidjs/no-unknown-namespaces": "error",
     },
   });
 });
@@ -48,11 +49,11 @@ afterAll(async () => {
 });
 
 // ── Legacy smoke tests ────────────────────────────────
-describe("plugin-solid CLI (legacy)", () => {
+describe("solidjs CLI (legacy)", () => {
   test("valid fixture produces zero diagnostics", async () => {
     const result = await runOxlint({
       configPath,
-      files: [fixture("solid-valid.tsx")],
+      files: [fixture("solidjs-valid.tsx")],
     });
     expect(result.exitCode).toBe(0);
     expect(result.diagnostics).toHaveLength(0);

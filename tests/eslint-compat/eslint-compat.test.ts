@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 import { RuleTester } from "eslint";
-import functionalPlugin from "../../packages/plugin-functional/src/index";
-import queryPlugin from "../../packages/plugin-query/src/index";
-import routerPlugin from "../../packages/plugin-router/src/index";
-import solidPlugin from "../../packages/plugin-solid/src/index";
+import functionalPlugin from "../../packages/immutable/src/index";
+import queryPlugin from "../../packages/query/src/index";
+import routerPlugin from "../../packages/router/src/index";
+import solidPlugin from "../../packages/solidjs/src/index";
 
 const pluginEntries = [
   ["router", routerPlugin],

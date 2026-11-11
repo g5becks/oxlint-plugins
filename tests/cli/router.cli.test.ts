@@ -1,3 +1,4 @@
+import { PLUGINS } from "../../scripts/plugins.ts";
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import {
   buildPlugin,
@@ -10,7 +11,7 @@ import {
 } from "./helpers/cli-runner";
 
 const PLUGIN = "router";
-const CODE = (rule: string) => `oxlint-plugin-${PLUGIN}(${rule})`;
+const CODE = (rule: string) => `${PLUGINS[PLUGIN].packageName}(${rule})`;
 
 let configPath: string;
 
@@ -19,8 +20,8 @@ beforeAll(async () => {
   configPath = await writeOxlintConfig({
     plugins: ["router"],
     rules: {
-      "oxlint-plugin-router/route-param-names": "error",
-      "oxlint-plugin-router/create-route-property-order": "error",
+      "router/route-param-names": "error",
+      "router/create-route-property-order": "error",
     },
   });
 });
@@ -30,7 +31,7 @@ afterAll(async () => {
 });
 
 // ── Legacy smoke tests (old fixtures) ─────────────────
-describe("plugin-router CLI (legacy)", () => {
+describe("router CLI (legacy)", () => {
   test("valid fixture produces zero diagnostics", async () => {
     const result = await runOxlint({
       configPath,

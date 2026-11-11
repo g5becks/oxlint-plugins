@@ -1,3 +1,4 @@
+import { PLUGINS } from "../../scripts/plugins.ts";
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import {
   buildPlugin,
@@ -10,7 +11,7 @@ import {
 } from "./helpers/cli-runner";
 
 const PLUGIN = "query";
-const CODE = (rule: string) => `oxlint-plugin-${PLUGIN}(${rule})`;
+const CODE = (rule: string) => `${PLUGINS[PLUGIN].packageName}(${rule})`;
 
 let configPath: string;
 
@@ -19,12 +20,12 @@ beforeAll(async () => {
   configPath = await writeOxlintConfig({
     plugins: ["query"],
     rules: {
-      "oxlint-plugin-query/exhaustive-deps": "error",
-      "oxlint-plugin-query/infinite-query-property-order": "error",
-      "oxlint-plugin-query/mutation-property-order": "error",
-      "oxlint-plugin-query/no-rest-destructuring": "error",
-      "oxlint-plugin-query/no-unstable-deps": "error",
-      "oxlint-plugin-query/stable-query-client": "error",
+      "query/exhaustive-deps": "error",
+      "query/infinite-query-property-order": "error",
+      "query/mutation-property-order": "error",
+      "query/no-rest-destructuring": "error",
+      "query/no-unstable-deps": "error",
+      "query/stable-query-client": "error",
     },
   });
 });
@@ -34,7 +35,7 @@ afterAll(async () => {
 });
 
 // ── Legacy smoke tests ────────────────────────────────
-describe("plugin-query CLI (legacy)", () => {
+describe("query CLI (legacy)", () => {
   test("valid fixture produces zero diagnostics", async () => {
     const result = await runOxlint({
       configPath,

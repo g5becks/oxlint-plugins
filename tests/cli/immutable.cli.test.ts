@@ -1,3 +1,4 @@
+import { PLUGINS } from "../../scripts/plugins.ts";
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import {
   buildPlugin,
@@ -8,32 +9,32 @@ import {
   ruleFixture,
 } from "./helpers/cli-runner";
 
-const PLUGIN = "functional";
-const CODE = (rule: string) => `oxlint-plugin-${PLUGIN}(${rule})`;
+const PLUGIN = "immutable";
+const CODE = (rule: string) => `${PLUGINS[PLUGIN].packageName}(${rule})`;
 
 let configPath: string;
 let configPathWithOptions: string;
 
 beforeAll(async () => {
-  await buildPlugin("functional");
+  await buildPlugin("immutable");
   configPath = await writeOxlintConfig({
-    plugins: ["functional"],
+    plugins: ["immutable"],
     rules: {
-      "oxlint-plugin-functional/no-let": "error",
-      "oxlint-plugin-functional/no-throw-statements": "error",
-      "oxlint-plugin-functional/no-promise-reject": "error",
-      "oxlint-plugin-functional/readonly-type": "error",
-      "oxlint-plugin-functional/prefer-property-signatures": "error",
-      "oxlint-plugin-functional/prefer-immutable-types": "error",
-      "oxlint-plugin-functional/type-declaration-immutability": "error",
-      "oxlint-plugin-functional/immutable-data": "error",
+      "immutable/no-let": "error",
+      "immutable/no-throw-statements": "error",
+      "immutable/no-promise-reject": "error",
+      "immutable/readonly-type": "error",
+      "immutable/prefer-property-signatures": "error",
+      "immutable/prefer-immutable-types": "error",
+      "immutable/type-declaration-immutability": "error",
+      "immutable/immutable-data": "error",
     },
   });
   configPathWithOptions = await writeOxlintConfig({
-    plugins: ["functional"],
+    plugins: ["immutable"],
     rules: {
-      "oxlint-plugin-functional/no-let": ["error", { allowInForLoopInit: true }],
-      "oxlint-plugin-functional/no-throw-statements": ["error", { allowInAsyncFunctions: true }],
+      "immutable/no-let": ["error", { allowInForLoopInit: true }],
+      "immutable/no-throw-statements": ["error", { allowInAsyncFunctions: true }],
     },
   });
 });

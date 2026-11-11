@@ -6,11 +6,11 @@
     "src/components/ui/charts.tsx"
   ],
   "jsPlugins": [
-    "../packages/plugin-router/dist/index.js",
-    "../packages/plugin-query/dist/index.js",
-    "../packages/plugin-functional/dist/index.js",
-    "../packages/plugin-solid/dist/index.js",
-    "../packages/plugin-no-type-assertion/dist/index.js"
+    "../packages/router/dist/index.js",
+    "../packages/query/dist/index.js",
+    "../packages/immutable/dist/index.js",
+    "../packages/solidjs/dist/index.js",
+    "../packages/ts-no-assert/dist/index.js"
   ],
   "rules": {
     "typescript/no-explicit-any": "error",

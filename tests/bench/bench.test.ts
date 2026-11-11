@@ -13,19 +13,19 @@ let configPath: string;
 beforeAll(async () => {
   await buildAllPlugins();
   configPath = await writeOxlintConfig({
-    plugins: ["router", "query", "functional", "solid"],
+    plugins: ["router", "query", "immutable", "solidjs"],
     rules: {
-      "oxlint-plugin-router/route-param-names": "error",
-      "oxlint-plugin-router/create-route-property-order": "error",
-      "oxlint-plugin-query/stable-query-client": "error",
-      "oxlint-plugin-query/no-rest-destructuring": "error",
-      "oxlint-plugin-functional/no-let": "error",
-      "oxlint-plugin-functional/no-throw-statements": "error",
-      "oxlint-plugin-functional/no-promise-reject": "error",
-      "oxlint-plugin-solid/jsx-no-script-url": "error",
-      "oxlint-plugin-solid/no-react-specific-props": "error",
-      "oxlint-plugin-solid/no-innerhtml": "error",
-      "oxlint-plugin-solid/no-destructure": "error",
+      "router/route-param-names": "error",
+      "router/create-route-property-order": "error",
+      "query/stable-query-client": "error",
+      "query/no-rest-destructuring": "error",
+      "immutable/no-let": "error",
+      "immutable/no-throw-statements": "error",
+      "immutable/no-promise-reject": "error",
+      "solidjs/jsx-no-script-url": "error",
+      "solidjs/no-react-specific-props": "error",
+      "solidjs/no-innerhtml": "error",
+      "solidjs/no-destructure": "error",
     },
   });
 });
@@ -81,8 +81,8 @@ describe("benchmarks", () => {
         benchFixture("large-solid.tsx"),
         fixture("router-valid.ts"),
         fixture("query-valid.ts"),
-        fixture("functional-valid.ts"),
-        fixture("solid-valid.tsx"),
+        fixture("immutable-valid.ts"),
+        fixture("solidjs-valid.tsx"),
       ],
     });
     expect(result.numberOfFiles).toBeGreaterThanOrEqual(6);
@@ -93,15 +93,15 @@ describe("benchmarks", () => {
 
   test("large solid fixture with all solid rules", async () => {
     const solidConfig = await writeOxlintConfig({
-      plugins: ["solid"],
+      plugins: ["solidjs"],
       rules: {
-        "oxlint-plugin-solid/jsx-no-duplicate-props": "error",
-        "oxlint-plugin-solid/jsx-no-script-url": "error",
-        "oxlint-plugin-solid/no-react-specific-props": "error",
-        "oxlint-plugin-solid/no-innerhtml": "error",
-        "oxlint-plugin-solid/no-destructure": "error",
-        "oxlint-plugin-solid/self-closing-comp": "warn",
-        "oxlint-plugin-solid/prefer-for": "warn",
+        "solidjs/jsx-no-duplicate-props": "error",
+        "solidjs/jsx-no-script-url": "error",
+        "solidjs/no-react-specific-props": "error",
+        "solidjs/no-innerhtml": "error",
+        "solidjs/no-destructure": "error",
+        "solidjs/self-closing-comp": "warn",
+        "solidjs/prefer-for": "warn",
       },
     });
 

@@ -20,10 +20,10 @@
     "noPropertyAccessFromIndexSignature": false
   },
   "references": [
-    { "path": "packages/plugin-router" },
-    { "path": "packages/plugin-query" },
-    { "path": "packages/plugin-functional" },
-    { "path": "packages/plugin-solid" },
-    { "path": "packages/plugin-no-type-assertion" }
+    { "path": "packages/router" },
+    { "path": "packages/query" },
+    { "path": "packages/immutable" },
+    { "path": "packages/solidjs" },
+    { "path": "packages/ts-no-assert" }
   ]
 }
