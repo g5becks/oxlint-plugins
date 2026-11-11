@@ -3,11 +3,11 @@ id: TASK-022
 title: >-
   immutable/type-declaration-immutability: Syntactic coverage of mutable shapes
   (OX-20, R7)
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T22:28:00Z'
+updated_date: '2026-11-11T22:32:00Z'
 labels:
   - immutable
   - bug
@@ -44,7 +44,7 @@ Commit the 22-case probe first as tests. Document the limits where type informat
 - [x] #2 The 22-case probe matches upstream on at least 21 of 22; readonly x: T[] is accepted
 - [x] #3 The README documents what the rule can't see without type information
 - [x] #4 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -73,4 +73,12 @@ Commit the 22-case probe first as tests. Document the limits where type informat
 - `bun run gate` exit 0: unit 262/0, compat 40/0, repo 52/0, CLI 163/0, bench 4/0.
 
 Consumer-visible change: yes (more reports; one false positive removed).
+
+Verified with scripts/ci-local.sh (5684a6b, PASS); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+type-declaration-immutability now checks unions, arrays/tuples, mapped types, index signatures and well-known mutable references with ReadonlyShallow semantics; the rebuilt 22-case probe (expected results from upstream eslint-plugin-functional 10.0.1, run for real) passes 22/22 (was 13). README documents limits. Changeset: immutable minor. Verified with scripts/ci-local.sh (5684a6b, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
