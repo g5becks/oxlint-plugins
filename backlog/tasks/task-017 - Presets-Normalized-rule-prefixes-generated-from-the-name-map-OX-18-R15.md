@@ -1,11 +1,11 @@
 ---
 id: TASK-017
 title: 'Presets: Normalized rule prefixes generated from the name map (OX-18, R15)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T20:56:00Z'
+updated_date: '2026-11-11T21:00:00Z'
 labels:
   - release
   - compat
@@ -38,7 +38,7 @@ Audit R15 (High). All 39 `configs.recommended` entries use prefixes that match n
 - [x] #2 Each preset loads into oxlint 1.70.0 and the pinned version with no config errors and the expected diagnostics (tests)
 - [x] #3 Each preset works in an ESLint 9 flat config with the plugin registered under its normalized name (test)
 - [x] #4 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -73,4 +73,12 @@ All six READMEs: rule keys in examples use normalized prefixes; ESLint examples 
 `bun run gate` exit 0: check, lint, unit 225/0, compat 40/0, repo 36/0, CLI 162/0, bench 4/0.
 
 Consumer-visible change: yes (breaking for three presets).
+
+Verified with scripts/ci-local.sh (78916e7, PASS); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Recommended presets are generated as <normalized>/<rule> from the name map (via generated plugin-meta.ts) and tested in oxlint 1.70.0 + pinned (load, severities, reports) and in ESLint 9 flat config; READMEs updated. Breaking changeset for immutable/ts-no-assert/solidjs, docs patch for the others. Verified with scripts/ci-local.sh (78916e7, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
