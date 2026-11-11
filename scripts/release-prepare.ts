@@ -167,7 +167,16 @@ try {
   });
   await Bun.write(join(out, "SHA512SUMS"), `${sums.join("\n")}\n`);
 
+  // Migration guide for this major.minor (docs/migration-<x.y>.md), linked at the tag.
+  const minor = release.split(".").slice(0, 2).join(".");
+  const guidePath = `docs/migration-${minor}.md`;
+  const hasGuide = existsSync(join(root, guidePath));
+  const guideLink = (tag: string) =>
+    `https://github.com/g5becks/oxlint-plugins/blob/${encodeURIComponent(tag)}/${guidePath}`;
+  const guideLine = (tag: string) => (hasGuide ? `Migration guide: ${guideLink(tag)}\n\n` : "");
+
   const notes = [`# Release ${release}`, "", `Release commit: \`${commit}\``, ""];
+  if (hasGuide && tags[0]) notes.push(`Migration guide: ${guideLink(tags[0])}`, "");
   for (const n of released) {
     const changelog = await Bun.file(join(root, "packages", n, "CHANGELOG.md")).text();
     notes.push(`## ${PLUGINS[n].packageName}@${after[n]}`, "", changelogSection(changelog, after[n]), "");
@@ -177,7 +186,7 @@ try {
     const changelog = await Bun.file(join(root, "packages", n, "CHANGELOG.md")).text();
     await Bun.write(
       join(out, `NOTES-${PLUGINS[n].packageName}@${after[n]}.md`),
-      `${changelogSection(changelog, after[n])}\n`,
+      `${guideLine(`${PLUGINS[n].packageName}@${after[n]}`)}${changelogSection(changelog, after[n])}\n`,
     );
   }
 

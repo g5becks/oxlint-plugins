@@ -1,9 +1,11 @@
 ---
 id: TASK-020
 title: 'Release prep: 0.2.0 of all six packages (maintainer publishes)'
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-11-11T16:39:00Z'
+updated_date: '2026-11-11T21:16:00Z'
 labels:
   - release
 milestone: m-1
@@ -37,3 +39,24 @@ Release prep for 0.2.0 of all six packages, together (audit section 6). Breaking
 - [ ] #3 Six tarballs with SHA512SUMS and RELEASE_NOTES.md exist under /Users/takinprofit/Dev/oxlint-plugins-release/0.2.0/, each verified by the pack job on oxlint 1.70.0 and the pinned version
 - [ ] #4 The release PR is merged without squashing; publish commands, SHA-512 values and tag details are in the notes
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Preconditions: TASK-001..019 Done; no test.failing/todo markers; changesets bump all six to 0.2.0.
+2. Pack job: verify each tarball's own recommended preset loads and lints (oxlint 1.70.0 + pinned); release notes link the migration guide at the tag.
+3. Dry run, then release-prepare 0.2.0 on release/0.2.0 (version, gate, release commit, local tags, ci-local on the release commit, pack + verify, SHA512SUMS, notes).
+4. ci-local on the branch head; push branch; PR with changelog sections + task IDs; comment both ci-local tables; merge with --merge; main ff; tags ancestors of main; notes; never push tags or publish.
+<!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Preconditions (2026-11-11)
+- TASK-001..019: all Done (task view loop). `git grep -nE "test\.failing|todo: \"TASK"` over tests/ and packages/ (excluding fixtures): none.
+- `changeset status`: minor for all six -> errorset 0.1.1, immutable 0.1.1, query 0.1.1, router 0.1.1, solidjs 0.1.1, ts-no-assert 0.1.2 all -> 0.2.0.
+
+## Release tooling changes (this commit)
+- scripts/pack-smoke.ts: for every tarball and oxlint version, also reads the installed package's `configs.recommended` with Node and lints the fixture with exactly that preset: no stderr/config errors, only preset rules report, the smoke rule reports. Local run on oxlint 1.70.0 and 1.93.0: PASS for all six presets (errorset 5 rules, immutable 5, ts-no-assert 1, query 6, router 2, solidjs 20).
+- scripts/release-prepare.ts: when docs/migration-<major.minor>.md exists, RELEASE_NOTES.md and each NOTES-<tag>.md start with "Migration guide: https://github.com/g5becks/oxlint-plugins/blob/<url-encoded tag>/docs/migration-0.2.md".
+<!-- SECTION:NOTES:END -->

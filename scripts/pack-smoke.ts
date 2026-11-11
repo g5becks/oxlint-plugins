@@ -4,7 +4,9 @@
  * For each oxlint version: create a temp consumer, `npm install` that exact
  * oxlint plus every package tarball, load each plugin through `jsPlugins` by
  * package name, and lint one fixture with one rule. A plugin passes when it
- * loads without errors and reports exactly the expected diagnostic code.
+ * loads without errors and reports exactly the expected diagnostic code, and when its own
+ * `configs.recommended` preset (read from the installed package) loads into oxlint without
+ * config errors and reports only preset rules, including that rule.
  *
  *   bun scripts/pack-smoke.ts                          # pack from packages/*, pinned oxlint
  *   bun scripts/pack-smoke.ts --oxlint 1.70.0,1.93.0
@@ -124,6 +126,52 @@ try {
         `${ok ? "ok  " : "FAIL"} oxlint ${actual} ${name}: ${codes.length} x ${ok ? expected : codes.join(", ")}`,
       );
       if (!ok) failed = true;
+
+      // The package's own `configs.recommended`, read from the installed tarball, must load into
+      // oxlint as is (no config errors), report only preset rules, and include the smoke rule.
+      const presetJson =
+        await $`node --input-type=module -e ${`const m = await import(${JSON.stringify(PLUGINS[name].packageName)}); console.log(JSON.stringify(m.default.configs.recommended.rules));`}`
+          .cwd(consumer)
+          .nothrow()
+          .quiet();
+      let preset: Record<string, unknown> = {};
+      try {
+        preset = JSON.parse(presetJson.stdout.toString());
+      } catch {
+        preset = {};
+      }
+      const presetDir = join(consumer, `preset-${name}`);
+      await Bun.write(join(presetDir, `fixture.${ext}`), Bun.file(join(REPO_ROOT, fixture)));
+      await Bun.write(
+        join(presetDir, ".oxlintrc.json"),
+        JSON.stringify({ jsPlugins: [PLUGINS[name].packageName], rules: preset }),
+      );
+      const presetRes = await $`../node_modules/.bin/oxlint -c .oxlintrc.json --format json -A all fixture.${ext}`
+        .cwd(presetDir)
+        .nothrow()
+        .quiet();
+      let presetCodes: string[] = [];
+      let presetParsed = true;
+      try {
+        presetCodes = (JSON.parse(presetRes.stdout.toString()).diagnostics ?? []).map((d: { code: string }) => d.code);
+      } catch {
+        presetParsed = false;
+      }
+      const presetRules = Object.keys(preset);
+      const presetOk =
+        presetParsed &&
+        presetRules.length > 0 &&
+        presetRes.stderr.toString() === "" &&
+        presetCodes.includes(expected) &&
+        presetCodes.every((c) => presetRules.includes(c.replace(/^([^(]+)\((.+)\)$/, "$1/$2")));
+      console.log(
+        `${presetOk ? "ok  " : "FAIL"} oxlint ${actual} ${name} recommended preset (${presetRules.length} rules): ${
+          presetOk
+            ? `${presetCodes.length} diagnostics incl. ${expected}`
+            : `${presetRes.stderr.toString().slice(0, 300)} ${presetCodes.join(", ")}`
+        }`,
+      );
+      if (!presetOk) failed = true;
     }
   }
 } finally {
