@@ -26,12 +26,12 @@ Add the plugin to `jsPlugins` and enable the rules you want:
 {
   "jsPlugins": ["./node_modules/oxlint-plugin-query/dist/index.js"],
   "rules": {
-    "oxlint-plugin-query/exhaustive-deps": "error",
-    "oxlint-plugin-query/no-rest-destructuring": "warn",
-    "oxlint-plugin-query/stable-query-client": "error",
-    "oxlint-plugin-query/no-unstable-deps": "error",
-    "oxlint-plugin-query/infinite-query-property-order": "error",
-    "oxlint-plugin-query/mutation-property-order": "error"
+    "query/exhaustive-deps": "error",
+    "query/no-rest-destructuring": "warn",
+    "query/stable-query-client": "error",
+    "query/no-unstable-deps": "error",
+    "query/infinite-query-property-order": "error",
+    "query/mutation-property-order": "error"
   }
 }
 ```

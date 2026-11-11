@@ -1,4 +1,5 @@
 import { eslintCompatPlugin } from "@oxlint/plugins";
+import { PACKAGE_NAME, presetRules } from "./plugin-meta.ts";
 import immutableData from "./rules/immutable-data.ts";
 import noLet from "./rules/no-let.ts";
 import noPromiseReject from "./rules/no-promise-reject.ts";
@@ -9,7 +10,7 @@ import readonlyType from "./rules/readonly-type.ts";
 import typeDeclarationImmutability from "./rules/type-declaration-immutability.ts";
 
 const plugin = {
-  meta: { name: "oxlint-plugin-immutable" },
+  meta: { name: PACKAGE_NAME },
   rules: {
     "no-let": noLet,
     "no-throw-statements": noThrowStatements,
@@ -22,13 +23,13 @@ const plugin = {
   },
   configs: {
     recommended: {
-      rules: {
-        "functional/no-let": "error",
-        "functional/no-throw-statements": "error",
-        "functional/prefer-property-signatures": "error",
-        "functional/prefer-immutable-types": ["error", { parameters: { enforcement: "ReadonlyShallow" } }],
-        "functional/type-declaration-immutability": ["error", { ignoreInterfaces: false }],
-      },
+      rules: presetRules({
+        "no-let": "error",
+        "no-throw-statements": "error",
+        "prefer-property-signatures": "error",
+        "prefer-immutable-types": ["error", { parameters: { enforcement: "ReadonlyShallow" } }],
+        "type-declaration-immutability": ["error", { ignoreInterfaces: false }],
+      }),
     },
   },
 };

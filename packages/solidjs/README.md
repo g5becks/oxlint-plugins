@@ -26,10 +26,10 @@ Add the plugin to `jsPlugins` and enable the rules you want:
 {
   "jsPlugins": ["./node_modules/oxlint-plugin-solidjs/dist/index.js"],
   "rules": {
-    "oxlint-plugin-solidjs/reactivity": "warn",
-    "oxlint-plugin-solidjs/no-destructure": "error",
-    "oxlint-plugin-solidjs/jsx-no-duplicate-props": "error",
-    "oxlint-plugin-solidjs/prefer-for": "error"
+    "solidjs/reactivity": "warn",
+    "solidjs/no-destructure": "error",
+    "solidjs/jsx-no-duplicate-props": "error",
+    "solidjs/prefer-for": "error"
   }
 }
 ```
@@ -44,7 +44,7 @@ import solidPlugin from "oxlint-plugin-solidjs/dist/index.js";
 
 export default [
   {
-    plugins: { solid: solidPlugin },
+    plugins: { solidjs: solidPlugin },
     rules: solidPlugin.configs.recommended.rules,
   },
 ];

@@ -41,29 +41,18 @@ Add the plugin to `jsPlugins` in your `.oxlintrc.json` and enable whichever rule
 {
   "jsPlugins": ["./node_modules/oxlint-plugin-errorset/dist/index.js"],
   "rules": {
-    "oxlint-plugin-errorset/no-throw-errorset": "error",
-    "oxlint-plugin-errorset/no-catch-errorset": "error",
-    "oxlint-plugin-errorset/no-new-error-in-errorset-fn": "warn",
-    "oxlint-plugin-errorset/prefer-guard-over-manual-kind-check": "warn",
-    "oxlint-plugin-errorset/no-unguarded-data-access": "warn"
+    "errorset/no-throw-errorset": "error",
+    "errorset/no-catch-errorset": "error",
+    "errorset/no-new-error-in-errorset-fn": "warn",
+    "errorset/prefer-guard-over-manual-kind-check": "warn",
+    "errorset/no-unguarded-data-access": "warn"
   }
 }
 ```
 
-Or use the bundled `recommended` config which enables all rules at their default severities:
-
-```json
-{
-  "jsPlugins": ["./node_modules/oxlint-plugin-errorset/dist/index.js"],
-  "rules": {
-    "oxlint-plugin-errorset/no-throw-errorset": "error",
-    "oxlint-plugin-errorset/no-catch-errorset": "error",
-    "oxlint-plugin-errorset/no-new-error-in-errorset-fn": "warn",
-    "oxlint-plugin-errorset/prefer-guard-over-manual-kind-check": "warn",
-    "oxlint-plugin-errorset/no-unguarded-data-access": "warn"
-  }
-}
-```
+The plugin also exports a `recommended` preset (`configs.recommended`) with exactly these rules and
+severities. Oxlint can't load a JS plugin's preset directly, so list the rules as above; in
+ESLint, spread the preset (below). Preset keys use the plugin's normalized name (`errorset/...`).
 
 ## Usage with ESLint
 

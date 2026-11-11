@@ -26,10 +26,10 @@ Add the plugin to `jsPlugins` and enable the rules you want:
 {
   "jsPlugins": ["./node_modules/oxlint-plugin-immutable/dist/index.js"],
   "rules": {
-    "oxlint-plugin-immutable/no-let": "error",
-    "oxlint-plugin-immutable/no-throw-statements": "error",
-    "oxlint-plugin-immutable/type-declaration-immutability": "error",
-    "oxlint-plugin-immutable/immutable-data": "error"
+    "immutable/no-let": "error",
+    "immutable/no-throw-statements": "error",
+    "immutable/type-declaration-immutability": "error",
+    "immutable/immutable-data": "error"
   }
 }
 ```
@@ -42,7 +42,7 @@ import immutablePlugin from "oxlint-plugin-immutable/dist/index.js";
 
 export default [
   {
-    plugins: { functional: immutablePlugin },
+    plugins: { immutable: immutablePlugin },
     rules: immutablePlugin.configs.recommended.rules,
   },
 ];

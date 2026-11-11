@@ -1,4 +1,5 @@
 import { eslintCompatPlugin } from "@oxlint/plugins";
+import { PACKAGE_NAME, presetRules } from "./plugin-meta.ts";
 import exhaustiveDeps from "./rules/exhaustive-deps.ts";
 import infiniteQueryPropertyOrder from "./rules/infinite-query-property-order.ts";
 import mutationPropertyOrder from "./rules/mutation-property-order.ts";
@@ -7,7 +8,7 @@ import noUnstableDeps from "./rules/no-unstable-deps.ts";
 import stableQueryClient from "./rules/stable-query-client.ts";
 
 const plugin = {
-  meta: { name: "oxlint-plugin-query" },
+  meta: { name: PACKAGE_NAME },
   rules: {
     "exhaustive-deps": exhaustiveDeps,
     "no-rest-destructuring": noRestDestructuring,
@@ -18,14 +19,14 @@ const plugin = {
   },
   configs: {
     recommended: {
-      rules: {
-        "query/exhaustive-deps": "error",
-        "query/no-rest-destructuring": "warn",
-        "query/stable-query-client": "error",
-        "query/no-unstable-deps": "error",
-        "query/infinite-query-property-order": "error",
-        "query/mutation-property-order": "error",
-      },
+      rules: presetRules({
+        "exhaustive-deps": "error",
+        "no-rest-destructuring": "warn",
+        "stable-query-client": "error",
+        "no-unstable-deps": "error",
+        "infinite-query-property-order": "error",
+        "mutation-property-order": "error",
+      }),
     },
   },
 };

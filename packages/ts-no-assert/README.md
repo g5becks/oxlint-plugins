@@ -24,7 +24,7 @@ Add the plugin to `jsPlugins` and enable the rule:
 {
   "jsPlugins": ["./node_modules/oxlint-plugin-ts-no-assert/dist/index.js"],
   "rules": {
-    "oxlint-plugin-ts-no-assert/no-type-assertion": "error"
+    "ts-no-assert/no-type-assertion": "error"
   }
 }
 ```
@@ -37,7 +37,7 @@ import tsNoAssertPlugin from "oxlint-plugin-ts-no-assert/dist/index.js";
 
 export default [
   {
-    plugins: { "no-type-assertion": tsNoAssertPlugin },
+    plugins: { "ts-no-assert": tsNoAssertPlugin },
     rules: tsNoAssertPlugin.configs.recommended.rules,
   },
 ];

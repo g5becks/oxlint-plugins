@@ -1,12 +1,13 @@
 import { eslintCompatPlugin } from "@oxlint/plugins";
+import { PACKAGE_NAME, presetRules } from "./plugin-meta.ts";
 import noThrowErrorset from "./rules/no-throw-errorset.ts";
 import noCatchErrorset from "./rules/no-catch-errorset.ts";
 import noNewErrorInErrorsetFn from "./rules/no-new-error-in-errorset-fn.ts";
 import preferGuardOverManualKindCheck from "./rules/prefer-guard-over-manual-kind-check.ts";
 import noUnguardedDataAccess from "./rules/no-unguarded-data-access.ts";
 
-const _base = eslintCompatPlugin({
-  meta: { name: "oxlint-plugin-errorset" },
+const plugin = {
+  meta: { name: PACKAGE_NAME },
   rules: {
     "no-throw-errorset": noThrowErrorset,
     "no-catch-errorset": noCatchErrorset,
@@ -14,21 +15,21 @@ const _base = eslintCompatPlugin({
     "prefer-guard-over-manual-kind-check": preferGuardOverManualKindCheck,
     "no-unguarded-data-access": noUnguardedDataAccess,
   },
-});
-
-const plugin = {
-  ..._base,
   configs: {
     recommended: {
-      rules: {
-        "errorset/no-throw-errorset": "error",
-        "errorset/no-catch-errorset": "error",
-        "errorset/no-new-error-in-errorset-fn": "warn",
-        "errorset/prefer-guard-over-manual-kind-check": "warn",
-        "errorset/no-unguarded-data-access": "warn",
-      },
+      rules: presetRules({
+        "no-throw-errorset": "error",
+        "no-catch-errorset": "error",
+        "no-new-error-in-errorset-fn": "warn",
+        "prefer-guard-over-manual-kind-check": "warn",
+        "no-unguarded-data-access": "warn",
+      }),
     },
   },
 };
+
+// eslintCompatPlugin converts the rules in place and returns the same object.
+// Passing a variable (not a literal) keeps `configs`, which its `Plugin` type omits.
+eslintCompatPlugin(plugin);
 
 export default plugin;

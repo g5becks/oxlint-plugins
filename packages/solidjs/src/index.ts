@@ -1,4 +1,5 @@
 import { eslintCompatPlugin } from "@oxlint/plugins";
+import { PACKAGE_NAME, presetRules } from "./plugin-meta.ts";
 import componentsReturnOnce from "./rules/components-return-once.ts";
 import eventHandlers from "./rules/event-handlers.ts";
 import importsRule from "./rules/imports.ts";
@@ -21,7 +22,7 @@ import selfClosingComp from "./rules/self-closing-comp.ts";
 import styleProp from "./rules/style-prop.ts";
 
 const plugin = {
-  meta: { name: "oxlint-plugin-solidjs" },
+  meta: { name: PACKAGE_NAME },
   rules: {
     "components-return-once": componentsReturnOnce,
     "event-handlers": eventHandlers,
@@ -46,28 +47,28 @@ const plugin = {
   },
   configs: {
     recommended: {
-      rules: {
-        "solid/jsx-no-duplicate-props": "error",
-        "solid/jsx-no-undef": "error",
-        "solid/jsx-uses-vars": "error",
-        "solid/no-unknown-namespaces": "error",
-        "solid/no-innerhtml": "error",
-        "solid/jsx-no-script-url": "error",
-        "solid/components-return-once": "warn",
-        "solid/no-destructure": "error",
-        "solid/prefer-for": "error",
-        "solid/reactivity": "warn",
-        "solid/event-handlers": "warn",
-        "solid/imports": "warn",
-        "solid/style-prop": "warn",
-        "solid/no-react-deps": "warn",
-        "solid/no-react-specific-props": "warn",
-        "solid/self-closing-comp": "warn",
-        "solid/no-array-handlers": "off",
-        "solid/prefer-show": "off",
-        "solid/no-proxy-apis": "off",
-        "solid/prefer-classlist": "off",
-      },
+      rules: presetRules({
+        "jsx-no-duplicate-props": "error",
+        "jsx-no-undef": "error",
+        "jsx-uses-vars": "error",
+        "no-unknown-namespaces": "error",
+        "no-innerhtml": "error",
+        "jsx-no-script-url": "error",
+        "components-return-once": "warn",
+        "no-destructure": "error",
+        "prefer-for": "error",
+        reactivity: "warn",
+        "event-handlers": "warn",
+        imports: "warn",
+        "style-prop": "warn",
+        "no-react-deps": "warn",
+        "no-react-specific-props": "warn",
+        "self-closing-comp": "warn",
+        "no-array-handlers": "off",
+        "prefer-show": "off",
+        "no-proxy-apis": "off",
+        "prefer-classlist": "off",
+      }),
     },
   },
 };

@@ -26,8 +26,8 @@ Add the plugin to `jsPlugins` and enable the rules you want:
 {
   "jsPlugins": ["./node_modules/oxlint-plugin-router/dist/index.js"],
   "rules": {
-    "oxlint-plugin-router/create-route-property-order": "error",
-    "oxlint-plugin-router/route-param-names": "error"
+    "router/create-route-property-order": "error",
+    "router/route-param-names": "error"
   }
 }
 ```

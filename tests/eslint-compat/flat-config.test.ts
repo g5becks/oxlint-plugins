@@ -156,4 +156,27 @@ describe("ESLint 9 flat config + typescript-eslint parser", () => {
     expect(alone).toHaveLength(0);
     expect(afterA).toEqual(alone);
   });
+
+  // Audit R15: the recommended preset works with the plugin registered under its
+  // normalized name (the preset keys are `<name>/<rule>`).
+  for (const [name, c] of Object.entries(CASES) as [PluginName, Case][]) {
+    test(`${name}: configs.recommended spreads into a flat config`, () => {
+      const plugin = plugins[name] as { configs: { recommended: { rules: Record<string, unknown> } } };
+      const linter = new Linter({ configType: "flat" });
+      const messages = linter.verify(
+        c.invalid,
+        [
+          {
+            files: ["**/*.tsx"],
+            plugins: { [name]: plugin as never },
+            languageOptions: { parser: tsParser, parserOptions: { ecmaFeatures: { jsx: true } } },
+            rules: plugin.configs.recommended.rules as never,
+          },
+        ],
+        "file.tsx",
+      );
+      expect(messages.filter((m) => m.fatal || /Definition for rule|could not find/i.test(m.message))).toEqual([]);
+      for (const m of messages) expect(m.ruleId?.startsWith(`${name}/`)).toBe(true);
+    });
+  }
 });
