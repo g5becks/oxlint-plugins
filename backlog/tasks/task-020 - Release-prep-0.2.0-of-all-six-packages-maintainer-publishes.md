@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T21:16:00Z'
+updated_date: '2026-11-11T21:21:00Z'
 labels:
   - release
 milestone: m-1
@@ -59,4 +59,21 @@ Release prep for 0.2.0 of all six packages, together (audit section 6). Breaking
 ## Release tooling changes (this commit)
 - scripts/pack-smoke.ts: for every tarball and oxlint version, also reads the installed package's `configs.recommended` with Node and lints the fixture with exactly that preset: no stderr/config errors, only preset rules report, the smoke rule reports. Local run on oxlint 1.70.0 and 1.93.0: PASS for all six presets (errorset 5 rules, immutable 5, ts-no-assert 1, query 6, router 2, solidjs 20).
 - scripts/release-prepare.ts: when docs/migration-<major.minor>.md exists, RELEASE_NOTES.md and each NOTES-<tag>.md start with "Migration guide: https://github.com/g5becks/oxlint-plugins/blob/<url-encoded tag>/docs/migration-0.2.md".
+
+## release-prepare 0.2.0 (real run, on release/0.2.0 at aa632a4; log oxlint-plugins-release/logs/release-prepare-0.2.0.log)
+- Dry run first (aa632a4): exit 0, all six -> 0.2.0, pack-smoke PASS incl. presets on 1.70.0 and 1.93.0; repo untouched afterwards.
+- `changeset version`: all six 0.2.0 (ts-no-assert from 0.1.2); 14 changesets consumed; CHANGELOG.md entries added to every package; bun.lock workspace versions updated; frozen install OK; `bun run gate` passed.
+- Release commit de302ffef948ac38ba85be79ceb1bf3e656ee17a "chore(release): 0.2.0".
+- Local annotated tags (tag object -> commit): oxlint-plugin-errorset@0.2.0 9c4345a, oxlint-plugin-immutable@0.2.0 d791a69, oxlint-plugin-ts-no-assert@0.2.0 846bae5, oxlint-plugin-query@0.2.0 56c884f, oxlint-plugin-router@0.2.0 940c0f2, oxlint-plugin-solidjs@0.2.0 33db905 -> all de302ff. NOT pushed.
+- ci-local on the release commit de302ff: RESULT: PASS (13 legs; CI_LOCAL.log in the release folder).
+- Packed into /Users/takinprofit/Dev/oxlint-plugins-release/0.2.0/; pack-smoke --tarballs on oxlint 1.70.0 and 1.93.0: PASS (30 ok, 0 FAIL: contents x6, one-rule lint x12, recommended preset x12). `shasum -a 512 -c SHA512SUMS`: all OK.
+
+## Tarballs (path, size, SHA-512)
+- /Users/takinprofit/Dev/oxlint-plugins-release/0.2.0/oxlint-plugin-errorset-0.2.0.tgz 16932 B b536cfb0284b1f47fc237dfd97b2be5b734897922b3865984d8f8c115bbb83bc26cb5b322a3de120944c195eb377005443e24979310d138132575c27faca9ccc
+- .../oxlint-plugin-immutable-0.2.0.tgz 9297 B c3e1275fa538b26a7b915ae7e26d5e114df9ac66b8fc8c0aefc4b159258caceab7cefdd2e88c2081334ca7a6b61c25c1bcd29e399982c30d6b08de1cca2e7ede
+- .../oxlint-plugin-query-0.2.0.tgz 11416 B 335aeb8ec0a945ddf8746af5d6f88b2779d60b3d2bfa0d16729b0236e7c21ee8c0336847e147336bd3f4dc0b6f9bcf1510d01f3249ce54fda0c51738d9ab7819
+- .../oxlint-plugin-router-0.2.0.tgz 7762 B 407c46264849b0f6338582e464b052c74c5e7c162694a35481f1b338d459982bce3cae0635268b0d05a89aa9d122bf5d308653423dc7a05999164b03904ddbbd
+- .../oxlint-plugin-solidjs-0.2.0.tgz 30192 B 449aa3f0df329d9a203ce934e00a909a33acefb3d8a86d914ae5f918543b537bd23aa7d781e1a7f7b9d46005367bc580cd9dff01963e6470964e9fa69832408e
+- .../oxlint-plugin-ts-no-assert-0.2.0.tgz 6014 B ede27e9b1ed1312bdb1ad5088070615e3478c64953440d68d49d8ec7f1f863b85bb2eec90c9e261deae16b6fa16fa288a8c68bf27c5819894e7d7cf718ad3df9
+- RELEASE_NOTES.md links https://github.com/g5becks/oxlint-plugins/blob/oxlint-plugin-errorset%400.2.0/docs/migration-0.2.md; each NOTES-<tag>.md links the guide at its own tag.
 <!-- SECTION:NOTES:END -->
