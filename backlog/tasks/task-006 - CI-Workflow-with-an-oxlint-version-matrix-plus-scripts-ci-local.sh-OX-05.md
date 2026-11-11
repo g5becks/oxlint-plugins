@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T17:20:00Z'
+updated_date: '2026-11-11T17:45:00Z'
 labels:
   - ci
 milestone: m-0
@@ -57,7 +57,7 @@ Audit T6 and U4. There is no CI. JS plugins are explicitly outside oxlint's semv
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-BLOCKED: ci-local Linux legs cannot run oxlint JS plugins in this Colima VM (environment memory limit); RESULT: FAIL on 6982cdb. Needs a maintainer decision (see below). Code for all ACs is committed in 6982cdb; AC #3 (PASS part), #4 verified partly, #5 not met.
+Previously blocked (2026-11-11): ci-local Linux legs could not run oxlint JS plugins in the Colima VM; RESULT: FAIL on 6982cdb. Resolved by the maintainer; see "Resolution" below.
 
 ## ci-local run on 6982cdb (2026-11-11)
 Table (logs: /Users/takinprofit/Dev/oxlint-plugins-release/ci-local/6982cdb/logs):
@@ -82,4 +82,9 @@ After the maintainer enlarges the VM: `bash scripts/ci-local.sh HEAD` (expect PA
 - AC #1: ci.yml has check, unit (ubuntu+macOS), cli (floor 1.70.0 / pinned ubuntu+macOS / latest), eslint-compat and pack jobs, weekly cron `17 6 * * 1`, `permissions: contents: read`; actions SHA-pinned (checkout v7.0.1 3d3c42e, setup-bun v2.2.0 0c5077e, setup-node v7.1.0 949feb2; each resolved via `gh api repos/<repo>/commits/<tag>`); `rhysd/actionlint:1.7.12` exit 0.
 - AC #2: cli job `continue-on-error: ${{ matrix.oxlint == 'latest' && github.event_name != 'schedule' }}`; ci-local labels the latest leg [advisory] unless CI_SCHEDULE=1.
 - scripts/pack-smoke.ts on macOS (before commit): contents ok for all six; oxlint 1.70.0 and 1.93.0 each load all six plugins by package name and report the expected code (errorset 2, immutable 3, ts-no-assert 4, query 2, router 3, solidjs 2).
+
+## Resolution
+- Root cause: oxlint's JS-plugin allocator pool (oxc_allocator FixedSizeAllocatorPool) reserves a large block of address space per thread (one 4 GiB allocation aligned on 4 GiB). Linux heuristic overcommit (vm.overcommit_memory=0) refuses it on a 6 GiB VM without swap, so oxlint aborts at fixed_size.rs:112 (exit 134). It is an address-space reservation, not real memory use: the maintainer measured ~84 MB peak RSS for the same run on the macOS host.
+- Fix (maintainer, 2026-11-11): `vm.overcommit_memory=1` in the Colima VM, applied live (`colima ssh -- sudo sysctl -w vm.overcommit_memory=1`) and persisted via a `provision` step in ~/.config/colima/default/colima.yaml. Colima not restarted; size unchanged (4 CPUs, 6 GiB). Re-verified: /proc/sys/vm/overcommit_memory = 1 in our CI image and the no-op-plugin repro exits 0 on oxlint 1.93.0.
+- scripts/ci-local.sh now has a preflight: after building the image it runs a one-rule no-op JS plugin through the pinned oxlint in the CI image (log: preflight.log, which also records vm.overcommit_memory); on failure it prints the fix (sysctl command + colima.yaml provision step) and exits with RESULT: FAIL instead of failing every leg. The requirement is documented in the header comment of ci-local.sh (CONTRIBUTING.md is written in TASK-007).
 <!-- SECTION:NOTES:END -->

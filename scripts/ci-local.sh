@@ -19,6 +19,14 @@
 #          CI_SCHEDULE=1 treat the latest-oxlint leg as blocking (the weekly scheduled run)
 #          DOCKER_HOST   auto-detected for Colima when unset or unreachable
 # Exit:    0 if every required leg passed, 1 otherwise. Logs: $CI_LOCAL_DIR/<sha>/logs/
+#
+# Requirements: Docker via Colima, and the Colima VM must allow overcommit
+# (vm.overcommit_memory=1). oxlint's JS-plugin allocator pool reserves a large block of
+# address space per thread; heuristic overcommit (mode 0) refuses it on a 6 GiB VM without
+# swap and oxlint aborts (oxc_allocator fixed_size.rs, exit 134). Real memory use is small.
+#   colima ssh -- sudo sysctl -w vm.overcommit_memory=1
+#   ~/.config/colima/default/colima.yaml:  provision: [{ mode: system, script: sysctl -w vm.overcommit_memory=1 }]
+# A preflight runs a no-op JS plugin in the CI image first and stops with this fix if it fails.
 set -euo pipefail
 
 REPO="$(git rev-parse --show-toplevel)"
@@ -51,6 +59,38 @@ docker build -q -t "$IMAGE" --build-arg "NODE_IMAGE=$NODE_IMAGE" --build-arg "BU
   "$REPO/scripts/ci-local" >"$LOGS/image.log" 2>&1 || { cat "$LOGS/image.log"; echo "image build failed"; exit 1; }
 
 OXLINT_PINNED="$(git -C "$REPO" show "$SHA:package.json" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).devDependencies.oxlint))')"
+
+# Preflight: can oxlint run a JS plugin in this Docker VM at all? (see "Requirements" above)
+echo "▶ preflight (oxlint $OXLINT_PINNED JS plugin in $IMAGE)"
+PREFLIGHT='set -e
+echo "vm.overcommit_memory=$(cat /proc/sys/vm/overcommit_memory)"
+mkdir -p /tmp/pf && cd /tmp/pf
+npm install --no-audit --no-fund --silent --prefix /tmp/pf/ox "oxlint@$1" >/dev/null
+printf "export default { meta: { name: \"preflight\" }, rules: { noop: { create() { return {}; } } } };\n" > plugin.mjs
+printf "{\"jsPlugins\": [\"./plugin.mjs\"], \"rules\": {\"preflight/noop\": \"error\"}}\n" > .oxlintrc.json
+echo "export const a = 1;" > a.ts
+/tmp/pf/ox/node_modules/.bin/oxlint a.ts'
+if ! docker run --rm "$IMAGE" bash -c "$PREFLIGHT" _ "$OXLINT_PINNED" >"$LOGS/preflight.log" 2>&1; then
+  cat "$LOGS/preflight.log"
+  cat <<'MSG'
+
+ci-local preflight FAILED: oxlint cannot run JS plugins in the Docker VM.
+oxlint's JS-plugin allocator pool reserves a large block of address space per thread,
+and Linux heuristic overcommit (vm.overcommit_memory=0) refuses it on a small VM without swap
+(panic at oxc_allocator/src/pool/fixed_size.rs, exit 134). Fix:
+
+  colima ssh -- sudo sysctl -w vm.overcommit_memory=1
+
+and persist it in ~/.config/colima/default/colima.yaml:
+
+  provision:
+    - mode: system
+      script: sysctl -w vm.overcommit_memory=1
+
+RESULT: FAIL
+MSG
+  exit 1
+fi
 OXLINT_LATEST="$(npm view oxlint version 2>/dev/null || true)"
 [[ -n "$OXLINT_LATEST" ]] || { echo "Could not resolve the latest oxlint version from npm"; exit 1; }
 
