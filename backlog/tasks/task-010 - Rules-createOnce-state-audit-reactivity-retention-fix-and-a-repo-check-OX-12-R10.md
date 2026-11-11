@@ -3,11 +3,11 @@ id: TASK-010
 title: >-
   Rules: createOnce state audit, reactivity retention fix and a repo check
   (OX-12, R10)
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T19:58:00Z'
+updated_date: '2026-11-11T20:08:00Z'
 labels:
   - solidjs
   - bug
@@ -41,7 +41,7 @@ Audit R10 and P2. `reactivity` creates `const scopeStack = new ScopeStack()` onc
 - [x] #2 reactivity state is created per file; linting B after A equals linting B alone (test)
 - [x] #3 The repo check runs in CI and ci-local, passes on the repo, and fails on a planted violation (mutation check recorded)
 - [x] #4 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #5 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -111,4 +111,12 @@ scripts/check-createonce-state.ts (TypeScript compiler API): flags `let`/`var` a
 - Changeset .changeset/solidjs-reactivity-state.md (oxlint-plugin-solidjs: patch).
 
 Consumer-visible change: yes (reactivity no longer order-dependent / no longer retains AST nodes).
+
+Verified with scripts/ci-local.sh (1732e94, PASS); GitHub Actions unavailable (billing lock). The check (linux) leg log shows "createOnce state: 29 declarations, 0 not reset".
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+All createOnce closure state audited (table in notes) and checked by a repo lint step (mutation-tested); reactivity recreates its scope stack and clears its import tracker per file, fixing AST-node retention and a newly found order-dependent false positive; function stacks reset per file. Changeset: solidjs patch. Verified with scripts/ci-local.sh (1732e94, PASS).
+<!-- SECTION:FINAL_SUMMARY:END -->
