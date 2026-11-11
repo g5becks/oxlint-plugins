@@ -1,4 +1,5 @@
 #!/bin/sh
-# Project-pinned Backlog.md CLI (backlog.md 1.55.3). The toolchain task (OX-01) adds
-# backlog.md as an exact devDependency and switches this wrapper to the local binary.
-exec bunx backlog.md@1.55.3 "$@"
+# Project-pinned Backlog.md CLI: runs the local backlog.md devDependency (exactly 1.55.3).
+# Run `bun install --frozen-lockfile` first.
+here=$(cd "$(dirname "$0")/.." && pwd)
+exec "$here/node_modules/.bin/backlog" "$@"

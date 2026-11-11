@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { oxlintBin } from "../../helpers/oxlint-bin.ts";
 
 const ROOT = join(import.meta.dir, "..", "..", "..");
 
@@ -81,7 +82,6 @@ interface RunOptions {
 /** Spawn oxlint with --format json -A all, parse output, return structured result */
 export async function runOxlint(options: RunOptions): Promise<OxlintResult> {
   const args = [
-    "oxlint",
     "-c", options.configPath,
     "--format", "json",
     "-A", "all",
@@ -89,7 +89,7 @@ export async function runOxlint(options: RunOptions): Promise<OxlintResult> {
   ];
 
   const start = performance.now();
-  const proc = Bun.spawn(["bunx", ...args], {
+  const proc = Bun.spawn([oxlintBin(), ...args], {
     cwd: ROOT,
     stdout: "pipe",
     stderr: "pipe",
@@ -165,7 +165,6 @@ export async function runOxlintWithFix(options: RunWithFixOptions): Promise<Oxli
 
   // Run oxlint --fix on temp copies
   const args = [
-    "oxlint",
     "-c", options.configPath,
     "--format", "json",
     "-A", "all",
@@ -175,7 +174,7 @@ export async function runOxlintWithFix(options: RunWithFixOptions): Promise<Oxli
   ];
 
   const start = performance.now();
-  const proc = Bun.spawn(["bunx", ...args], {
+  const proc = Bun.spawn([oxlintBin(), ...args], {
     cwd: ROOT,
     stdout: "pipe",
     stderr: "pipe",
