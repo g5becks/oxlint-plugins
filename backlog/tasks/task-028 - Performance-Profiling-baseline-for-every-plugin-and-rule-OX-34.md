@@ -1,11 +1,11 @@
 ---
 id: TASK-028
 title: 'Performance: Profiling baseline for every plugin and rule (OX-34)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-11T23:32:00Z'
+updated_date: '2026-11-11T23:37:00Z'
 labels:
   - performance
   - testing
@@ -35,7 +35,7 @@ Audit P1 and U2. Performance targets in Phase 3 need a recorded baseline. Measur
 <!-- AC:BEGIN -->
 - [x] #1 The bench suite writes per-plugin and per-rule medians on the corpus; a committed baseline records machine and versions
 - [x] #2 oxlint rule-timing usage is documented or recorded as non-functional with evidence
-- [ ] #3 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #3 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -73,4 +73,6 @@ Audit P1 and U2. Performance targets in Phase 3 need a recorded baseline. Measur
 
 ## Consumer-visible
 - None (repo tooling only); no changeset.
+
+Verified with scripts/ci-local.sh (ba2b34d, PASS); GitHub Actions unavailable (billing lock). Bench legs (incl. profiler smoke) pass on floor 1.70.0, pinned and macOS.
 <!-- SECTION:NOTES:END -->
