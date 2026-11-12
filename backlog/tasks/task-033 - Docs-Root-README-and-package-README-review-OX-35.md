@@ -1,11 +1,11 @@
 ---
 id: TASK-033
 title: 'Docs: Root README and package README review (OX-35)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-12T14:34:00Z'
+updated_date: '2026-11-12T14:38:00Z'
 labels:
   - docs
 milestone: m-3
@@ -60,4 +60,6 @@ A root README with the packages table (name, rules, purpose), the compatibility 
 ## Verification
 - `bun run gate`: exit 0.
 - Changeset .changeset/readme-review-0-3.md (solidjs, errorset patch: README ships in the tarball).
+
+Verified with scripts/ci-local.sh (f2fbffe, PASS); GitHub Actions unavailable (billing lock).
 <!-- SECTION:NOTES:END -->
