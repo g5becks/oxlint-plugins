@@ -86,6 +86,52 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 | `immutable-data` | Disallow mutating methods on arrays/objects (`push`, `splice`, etc.) | — |
 | `readonly-type` | Enforce `readonly` on TypeScript type members | — |
 
+### Options compared with eslint-plugin-functional
+
+Option names follow [eslint-plugin-functional](https://github.com/eslint-functional/eslint-plugin-functional)
+10.0.1 where the behavior is the same. Options that need type information, or that this port
+doesn't implement, are rejected by the schema (oxlint stops with "Options validation failed")
+rather than silently ignored.
+
+| Rule | This plugin | eslint-plugin-functional 10.0.1 |
+|---|---|---|
+| `no-let` | `allowInForLoopInit`, `allowInFunctions`, `ignoreIdentifierPattern` (defaults `false`, `false`, none) | same names and behavior (measured identical on the rule's test cases) |
+| `no-throw-statements` | `allowInAsyncFunctions`: allow `throw` anywhere in an `async` function | `allowToRejectPromises` (a later rename with narrower behavior): allows `throw` in an `async` function only outside a `try` with a `catch` in that function, and in promise handler callbacks. Not accepted here |
+| `prefer-property-signatures` | `ignoreIfReadonlyWrapped` | same |
+| `prefer-immutable-types` | `parameters`, `returnTypes`, `variables`, each `{ enforcement, ignoreNamePattern }`; `enforcement` is `"ReadonlyShallow"`, or `"None"` / `false` to turn the category off | same category keys; `enforcement` levels `"Immutable"` / `"ReadonlyDeep"`, `ignoreClasses`, `ignoreInferredTypes`, `ignoreTypePattern`, `fixer`, `suggestions` and `overrides` need type information and aren't accepted |
+| `type-declaration-immutability` | `identifiers`: type names matching the pattern(s) are **skipped**; `ignoreInterfaces` | `ignoreIdentifierPattern` is the equivalent of `identifiers` (despite the name, not upstream's `rules[].identifiers`); `ignoreInterfaces` same; `rules` and `ignoreTypePattern` aren't accepted |
+| `immutable-data` | `ignoreClasses`, `ignoreMapsAndSets`, `ignoreImmediateMutation`, `ignoreNonConstDeclarations`, `ignoreIdentifierPattern` | same; `ignoreAccessorPattern` and `overrides` aren't accepted |
+| `no-promise-reject` | none | none |
+| `readonly-type` | none (always the `readonly` keyword) | `"generic"` / `"keyword"`; only `"keyword"` is implemented |
+
+### `type-declaration-immutability` without type information
+
+The rule checks the declared type **syntactically** for `ReadonlyShallow` (the property itself
+must be `readonly`; its value type may be mutable, so `{ readonly items: string[] }` is fine):
+
+| Declaration | Result |
+|---|---|
+| `{ a: string }`, `interface I { a: string }`, `{ [k: string]: T }` | reported |
+| `T[]`, `Array<T>`, `[A, B]` | reported (use `readonly T[]`, `ReadonlyArray<T>`, `readonly [A, B]`) |
+| `Map`, `Set`, `WeakMap`, `WeakSet`, `Record<K, V>` | reported (use `ReadonlyMap`, `ReadonlySet`, `Readonly<Record<K, V>>`) |
+| `{ [K in X]: T }`, `{ -readonly [K in X]: T }` | reported (use `{ readonly [K in X]: T }`) |
+| unions and intersections | reported when any member is reported |
+| `Partial`, `Required`, `Pick`, `Omit`, `NonNullable` over a literal | follows the literal |
+| `Readonly<T>`, `readonly` arrays/tuples, primitives, literals, function types | accepted |
+
+What it **can't see** without a type checker (upstream eslint-plugin-functional resolves these):
+
+- **Named types:** `type A = SomeInterface` or `Partial<SomeType>`, where the referenced
+  declaration lives elsewhere. Those aren't reported here; the referenced declaration is checked
+  where it is declared.
+- **Classes and generic parameters:** `type A = MyClass`, `type A<T> = T`.
+- **Deep immutability:** only `ReadonlyShallow` is enforced. The upstream `Immutable` and
+  `ReadonlyDeep` levels need type information.
+
+Measured against upstream `eslint-plugin-functional@10.0.1` (type-aware, ReadonlyShallow /
+AtLeast) on a 22-declaration probe, the rule agrees on all 22
+(`packages/immutable/tests/type-declaration-immutability-probe.test.ts`).
+
 ## License
 
 MIT

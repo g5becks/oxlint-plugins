@@ -1,15 +1,13 @@
+import { defineRule } from "@oxlint/plugins";
 import { trackImports } from "../utils/imports.ts";
 import { trace } from "../utils/trace.ts";
-
-function isFunctionNode(node: any): boolean {
-  return ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(node?.type);
-}
+import { isFunctionNode } from "../utils/functions.ts";
 
 function isPropsByName(name: string): boolean {
   return /^(?:props|_props)$/.test(name);
 }
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -28,8 +26,7 @@ export default {
         "If you pass a function to `mergeProps`, it will create a Proxy, which are incompatible with your target environment.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     const tracker = trackImports();
 
     return {
@@ -41,7 +38,7 @@ export default {
         tracker.clear();
       },
 
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
 
         if (node.source?.value === "solid-js/store") {
@@ -49,28 +46,28 @@ export default {
         }
       },
 
-      "JSXSpreadAttribute MemberExpression"(node: any) {
+      "JSXSpreadAttribute MemberExpression"(node) {
         context.report({ node, messageId: "spreadMember" });
       },
 
-      "JSXSpreadAttribute CallExpression"(node: any) {
+      "JSXSpreadAttribute CallExpression"(node) {
         context.report({ node, messageId: "spreadCall" });
       },
 
-      CallExpression(node: any) {
-        if (node.callee?.type === "Identifier") {
+      CallExpression(node) {
+        if (node.callee.type === "Identifier") {
           if (tracker.matchImport("mergeProps", node.callee.name)) {
             (node.arguments ?? [])
-              .filter((arg: any) => {
+              .filter((arg) => {
                 if (arg.type === "SpreadElement") return true;
                 const traced = trace(arg, context);
-                return (traced.type === "Identifier" && !isPropsByName(traced.name)) || isFunctionNode(traced);
+                return (traced?.type === "Identifier" && !isPropsByName(traced.name)) || isFunctionNode(traced);
               })
-              .forEach((badArg: any) => {
+              .forEach((badArg) => {
                 context.report({ node: badArg, messageId: "mergeProps" });
               });
           }
-        } else if (node.callee?.type === "MemberExpression") {
+        } else if (node.callee.type === "MemberExpression") {
           if (
             node.callee.object?.type === "Identifier" &&
             node.callee.object.name === "Proxy" &&
@@ -82,11 +79,11 @@ export default {
         }
       },
 
-      NewExpression(node: any) {
+      NewExpression(node) {
         if (node.callee?.type === "Identifier" && node.callee.name === "Proxy") {
           context.report({ node, messageId: "proxyLiteral" });
         }
       },
     };
   },
-};
+});

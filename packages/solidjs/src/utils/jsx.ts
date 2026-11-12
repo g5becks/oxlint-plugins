@@ -1,3 +1,7 @@
+import type { ESTree } from "@oxlint/plugins";
+
+type Child = ESTree.Node | null | undefined;
+
 const HTML_TAGS = new Set<string>([
   "a",
   "abbr",
@@ -82,59 +86,66 @@ export function isDOMElementName(name: string): boolean {
   return HTML_TAGS.has(name) || /^[a-z]/.test(name);
 }
 
-export function isJSXElementOrFragment(node: any): boolean {
+export function isJSXElementOrFragment(node: Child): node is ESTree.JSXElement | ESTree.JSXFragment {
   return node?.type === "JSXElement" || node?.type === "JSXFragment";
 }
 
-export function getJSXAttributeName(attribute: any): string | null {
+export function getJSXAttributeName(attribute: Child): string | null {
   if (!attribute || attribute.type !== "JSXAttribute") {
     return null;
   }
 
-  if (attribute.name?.type === "JSXIdentifier") {
+  if (attribute.name.type === "JSXIdentifier") {
     return attribute.name.name;
   }
 
-  if (attribute.name?.type === "JSXNamespacedName") {
-    const ns = attribute.name.namespace?.name;
-    const name = attribute.name.name?.name;
+  if (attribute.name.type === "JSXNamespacedName") {
+    const ns = attribute.name.namespace.name;
+    const name = attribute.name.name.name;
     return ns && name ? `${ns}:${name}` : null;
   }
 
   return null;
 }
 
-export function getJSXAttributeValue(attribute: any): any {
+export function getJSXAttributeValue(
+  attribute: ESTree.JSXAttribute | null | undefined,
+): ESTree.JSXAttributeValue | null {
   return attribute?.value ?? null;
 }
 
-export function jsxPropName(prop: any): string {
-  if (prop?.name?.type === "JSXNamespacedName") {
+export function jsxPropName(prop: ESTree.JSXAttributeItem | null | undefined): string {
+  // Spread attributes have no name.
+  if (prop?.type !== "JSXAttribute") {
+    return "";
+  }
+
+  if (prop.name.type === "JSXNamespacedName") {
     return `${prop.name.namespace.name}:${prop.name.name.name}`;
   }
 
-  return prop?.name?.name ?? "";
+  return prop.name.name ?? "";
 }
 
-export function* jsxGetAllProps(props: Array<any>): Generator<[string, any]> {
+export function* jsxGetAllProps(props: ReadonlyArray<ESTree.JSXAttributeItem>): Generator<[string, ESTree.Node]> {
   for (const attr of props ?? []) {
-    if (attr?.type === "JSXSpreadAttribute" && attr.argument?.type === "ObjectExpression") {
-      for (const property of attr.argument.properties ?? []) {
-        if (property?.type === "Property") {
-          if (property.key?.type === "Identifier") {
+    if (attr.type === "JSXSpreadAttribute" && attr.argument.type === "ObjectExpression") {
+      for (const property of attr.argument.properties) {
+        if (property.type === "Property") {
+          if (property.key.type === "Identifier") {
             yield [property.key.name, property.key];
-          } else if (property.key?.type === "Literal") {
+          } else if (property.key.type === "Literal") {
             yield [String(property.key.value), property.key];
           }
         }
       }
-    } else if (attr?.type === "JSXAttribute") {
+    } else if (attr.type === "JSXAttribute") {
       yield [jsxPropName(attr), attr.name];
     }
   }
 }
 
-export function jsxHasProp(props: Array<any>, prop: string): boolean {
+export function jsxHasProp(props: ReadonlyArray<ESTree.JSXAttributeItem>, prop: string): boolean {
   for (const [name] of jsxGetAllProps(props)) {
     if (name === prop) {
       return true;
@@ -144,8 +155,12 @@ export function jsxHasProp(props: Array<any>, prop: string): boolean {
   return false;
 }
 
-export function jsxGetProp(props: Array<any>, prop: string): any | undefined {
+export function jsxGetProp(
+  props: ReadonlyArray<ESTree.JSXAttributeItem>,
+  prop: string,
+): ESTree.JSXAttribute | undefined {
   return (props ?? []).find(
-    (attribute: any) => attribute?.type !== "JSXSpreadAttribute" && prop === jsxPropName(attribute),
+    (attribute): attribute is ESTree.JSXAttribute =>
+      attribute.type !== "JSXSpreadAttribute" && prop === jsxPropName(attribute),
   );
 }

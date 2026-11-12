@@ -1,19 +1,14 @@
+import { defineRule } from "@oxlint/plugins";
+import { getStaticString } from "../utils/static-value.ts";
 import { jsxPropName } from "../utils/jsx.ts";
+import { ruleOptions } from "../utils/options.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 function isHtmlLike(str: string): boolean {
   return /<[a-z][\s\S]*>/i.test(str.trim());
 }
 
-function getStringIfConstant(node: any): string | null {
-  if (!node) return null;
-  if (node.type === "Literal" && typeof node.value === "string") return node.value;
-  if (node.type === "TemplateLiteral" && node.expressions.length === 0) {
-    return node.quasis[0]?.value?.cooked ?? null;
-  }
-  return null;
-}
-
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -45,12 +40,16 @@ export default {
       useInnerText: "For text content, using innerText is clearer and safer.",
       dangerouslySetInnerHTML: "The dangerouslySetInnerHTML prop is not supported; use innerHTML instead.",
     },
+    defaultOptions: [{ allowStatic: true }],
   },
-  defaultOptions: [{ allowStatic: true }],
-  createOnce(context: any) {
+  createOnce(context) {
     return {
-      JSXAttribute(node: any) {
-        const allowStatic = Boolean(context.options?.[0]?.allowStatic ?? true);
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
+      JSXAttribute(node) {
+        const allowStatic = Boolean(ruleOptions<{ allowStatic?: boolean }>(context)?.allowStatic ?? true);
         if (jsxPropName(node) === "dangerouslySetInnerHTML") {
           if (
             node.value?.type === "JSXExpressionContainer" &&
@@ -58,11 +57,11 @@ export default {
             node.value.expression.properties.length === 1
           ) {
             const htmlProp = node.value.expression.properties[0];
-            if (htmlProp.type === "Property" && htmlProp.key.type === "Identifier" && htmlProp.key.name === "__html") {
+            if (htmlProp?.type === "Property" && htmlProp.key.type === "Identifier" && htmlProp.key.name === "__html") {
               context.report({
                 node,
                 messageId: "dangerouslySetInnerHTML",
-                fix: (fixer: any) => {
+                fix: (fixer) => {
                   const propRange = node.range;
                   const valueRange = htmlProp.value.range;
                   return [
@@ -84,7 +83,7 @@ export default {
 
         if (allowStatic) {
           const innerHtmlNode = node.value?.type === "JSXExpressionContainer" ? node.value.expression : node.value;
-          const innerHtml = innerHtmlNode && getStringIfConstant(innerHtmlNode);
+          const innerHtml = innerHtmlNode && getStaticString(innerHtmlNode); // no scope: like upstream, identifiers stay "dynamic";
           if (typeof innerHtml === "string") {
             if (isHtmlLike(innerHtml)) {
               if (node.parent?.parent?.type === "JSXElement" && node.parent.parent.children?.length) {
@@ -99,7 +98,7 @@ export default {
                 messageId: "notHtml",
                 suggest: [
                   {
-                    fix: (fixer: any) => fixer.replaceText(node.name, "innerText"),
+                    fix: (fixer) => fixer.replaceText(node.name, "innerText"),
                     messageId: "useInnerText",
                   },
                 ],
@@ -114,4 +113,4 @@ export default {
       },
     };
   },
-};
+});

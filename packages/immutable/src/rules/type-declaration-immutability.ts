@@ -1,5 +1,7 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 import { shouldIgnorePattern } from "../utils/ignore.ts";
-import { hasReadonlyModifier, isReadonlyArrayType } from "../utils/immutability.ts";
+import { hasReadonlyModifier } from "../utils/immutability.ts";
+import { ruleOptions } from "../utils/options.ts";
 
 type RuleOptions = [
   {
@@ -8,38 +10,72 @@ type RuleOptions = [
   }?,
 ];
 
-function membersAreReadonly(members: Array<any>): boolean {
-  return members.every((member) => {
-    if (member.type === "TSPropertySignature") {
-      if (!hasReadonlyModifier(member)) {
-        return false;
-      }
-      const typeNode = member.typeAnnotation?.typeAnnotation;
-      // A plain array type (e.g. `string[]`) is not shallowly immutable even with `readonly`.
-      if (typeNode?.type === "TSArrayType") {
-        return false;
-      }
-      // `readonly T[]` syntax or `ReadonlyArray<T>` → immutable.
-      if (typeNode?.type === "TSTypeOperator" && typeNode.operator === "readonly") {
-        return true;
-      }
-      if (typeNode && isReadonlyArrayType(typeNode)) {
-        return true;
-      }
-      // NOTE: For TSTypeReference targets (e.g. `type Foo = OtherType`) we cannot resolve
-      // the alias without a type checker, so we conservatively accept them as-is when the
-      // `readonly` modifier is present.
-      return true;
-    }
+/**
+ * Syntactic ReadonlyShallow check (no type information): is the declared type mutable at the
+ * top level? Returns "unknown" for named types that can't be resolved without a type checker;
+ * those are not reported.
+ */
+type Verdict = "mutable" | "readonly" | "unknown";
 
-    if (member.type === "TSIndexSignature") {
-      return hasReadonlyModifier(member);
-    }
+/** Mutable collection types (and `Record`, an object type with mutable properties). */
+const MUTABLE_REFERENCES = new Set(["Array", "Map", "Set", "WeakMap", "WeakSet", "Record"]);
+/** Readonly wrappers and collections. */
+const READONLY_REFERENCES = new Set(["Readonly", "ReadonlyArray", "ReadonlyMap", "ReadonlySet"]);
+/** Utility types whose result keeps the readonly-ness of their first type argument. */
+const PRESERVING_REFERENCES = new Set(["Partial", "Required", "Pick", "Omit", "NonNullable"]);
 
-    // Other member kinds (TSMethodSignature, TSCallSignatureDeclaration, etc.) are
-    // considered readonly by default since they define behaviour, not mutable state.
-    return true;
-  });
+function membersVerdict(members: ReadonlyArray<ESTree.TSSignature>): Verdict {
+  for (const member of members) {
+    // ReadonlyShallow: the property itself must be readonly; its type may be mutable
+    // (`readonly items: string[]` is accepted, as upstream does).
+    if (member.type === "TSPropertySignature" || member.type === "TSIndexSignature") {
+      if (!hasReadonlyModifier(member)) return "mutable";
+    }
+    // Methods, call and construct signatures define behaviour, not mutable state.
+  }
+  return "readonly";
+}
+
+function typeArgs(node: ESTree.TSTypeReference): ReadonlyArray<ESTree.TSType> {
+  // `typeParameters`: the older ESTree name for the same node, read as before.
+  const legacy = (node as { typeParameters?: ESTree.TSTypeParameterInstantiation | null }).typeParameters;
+  return (node.typeArguments ?? legacy)?.params ?? [];
+}
+
+function verdictOf(node: ESTree.TSType | null | undefined, depth = 0): Verdict {
+  if (!node || depth > 20) return "unknown";
+  switch (node.type) {
+    case "TSParenthesizedType":
+      return verdictOf(node.typeAnnotation, depth + 1);
+    case "TSTypeLiteral":
+      return membersVerdict(node.members ?? []);
+    case "TSArrayType":
+    case "TSTupleType":
+      return "mutable";
+    case "TSTypeOperator":
+      // `readonly T[]` / `readonly [A, B]`
+      return node.operator === "readonly" ? "readonly" : "unknown";
+    case "TSMappedType":
+      // `{ [K in X]: T }` is mutable; `{ readonly [K in X]: T }` (or `+readonly`) is not.
+      return node.readonly === true || node.readonly === "+" ? "readonly" : "mutable";
+    case "TSUnionType":
+    case "TSIntersectionType": {
+      const verdicts = node.types.map((t) => verdictOf(t, depth + 1));
+      if (verdicts.includes("mutable")) return "mutable";
+      return verdicts.includes("unknown") ? "unknown" : "readonly";
+    }
+    case "TSTypeReference": {
+      const name = node.typeName.type === "Identifier" ? node.typeName.name : undefined;
+      if (!name) return "unknown";
+      if (MUTABLE_REFERENCES.has(name)) return "mutable";
+      if (READONLY_REFERENCES.has(name)) return "readonly";
+      if (PRESERVING_REFERENCES.has(name)) return verdictOf(typeArgs(node)[0], depth + 1);
+      return "unknown";
+    }
+    default:
+      // Primitives, literal types, function types, `typeof`, keyof, etc.
+      return node.type?.startsWith("TS") && node.type.endsWith("Keyword") ? "readonly" : "unknown";
+  }
 }
 
 function shouldCheckName(name: string | undefined, identifiers?: string | Array<string>): boolean {
@@ -49,7 +85,7 @@ function shouldCheckName(name: string | undefined, identifiers?: string | Array<
   return !shouldIgnorePattern(name, identifiers);
 }
 
-export default {
+export default defineRule({
   meta: {
     type: "suggestion" as const,
     docs: {
@@ -71,44 +107,24 @@ export default {
     messages: {
       notReadonly: "Type declaration should be at least ReadonlyShallow.",
     },
+    defaultOptions: [{ ignoreInterfaces: false }],
   },
-  defaultOptions: [{ ignoreInterfaces: false }] as RuleOptions,
-  createOnce(context: any) {
-    const getOpts = () => (context.options?.[0] ?? {}) as RuleOptions[0];
+  createOnce(context) {
+    const getOpts = () => ruleOptions<NonNullable<RuleOptions[0]>>(context) ?? {};
 
     return {
-      TSTypeAliasDeclaration(node: any) {
+      TSTypeAliasDeclaration(node) {
         const option = getOpts();
         const name = node.id?.name;
         if (!shouldCheckName(name, option?.identifiers)) {
           return;
         }
 
-        const typeAnnotation = node.typeAnnotation;
-
-        if (typeAnnotation?.type === "TSTypeLiteral") {
-          if (!membersAreReadonly(typeAnnotation.members ?? [])) {
-            context.report({ node, messageId: "notReadonly" });
-          }
-          return;
-        }
-
-        if (typeAnnotation?.type === "TSIntersectionType") {
-          const literalConstituents = (typeAnnotation.types ?? []).filter((t: any) => t.type === "TSTypeLiteral");
-          // No literal constituents means all parts are type references —
-          // we can't assess immutability without the type checker, so skip.
-          if (literalConstituents.length === 0) {
-            return;
-          }
-          for (const literal of literalConstituents) {
-            if (!membersAreReadonly(literal.members ?? [])) {
-              context.report({ node, messageId: "notReadonly" });
-              return;
-            }
-          }
+        if (verdictOf(node.typeAnnotation) === "mutable") {
+          context.report({ node, messageId: "notReadonly" });
         }
       },
-      TSInterfaceDeclaration(node: any) {
+      TSInterfaceDeclaration(node) {
         const option = getOpts();
         if (option?.ignoreInterfaces === true) {
           return;
@@ -119,10 +135,10 @@ export default {
           return;
         }
 
-        if (!membersAreReadonly(node.body?.body ?? [])) {
+        if (membersVerdict(node.body?.body ?? []) === "mutable") {
           context.report({ node, messageId: "notReadonly" });
         }
       },
     };
   },
-};
+});

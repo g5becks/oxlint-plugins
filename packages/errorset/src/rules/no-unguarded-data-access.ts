@@ -1,3 +1,4 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 /**
  * Rule: no-unguarded-data-access
  *
@@ -23,14 +24,18 @@
  * ✅ const result = getUser(id)
  *    if (UserError(result)) { console.log(result.data.id) }
  */
-import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
+import { sharedTrackerHandle } from "../utils/shared-tracker.ts";
 import { readErrorsetSettings } from "../utils/settings.ts";
-import { createNarrowing } from "../utils/narrowing.ts";
+import { createNarrowing, type VariableKey } from "../utils/narrowing.ts";
+import { ruleOptions } from "../utils/options.ts";
+
+type IdentifierNode = Extract<ESTree.Node, { type: "Identifier" }>;
 import { ERRORSET_PROPERTIES } from "../utils/pattern-helpers.ts";
+import { mayImportConfiguredModule } from "../utils/early-exit.ts";
 
 type Options = [{ properties?: string[] }?];
 
-export default {
+export default defineRule({
   meta: {
     type: "suggestion" as const,
     docs: {
@@ -57,15 +62,15 @@ export default {
         "Accessing `.{{prop}}` on `{{name}}` without a guard check. Use `if (SomeError({{name}}))` or `if (isErr({{name}}))` before accessing errorset properties.",
     },
   },
-  defaultOptions: [{}] as Options,
-  createOnce(context: any) {
-    const tracker = createErrorsetImportTracker();
+  createOnce(context) {
+    // The file's import tracker, shared with the other errorset rules (audit R6).
+    const tracker = sharedTrackerHandle();
     // Per file: candidate guard calls and property accesses, evaluated at Program:exit.
-    const calls: any[] = [];
-    const accesses: any[] = [];
+    const calls: Array<{ call: ESTree.CallExpression; subject: IdentifierNode }> = [];
+    const accesses: Array<{ node: ESTree.MemberExpression; object: IdentifierNode; prop: string }> = [];
 
     const getTrackedProps = (): Set<string> => {
-      const opts = context.options?.[0] as Options[0];
+      const opts = ruleOptions<NonNullable<Options[0]>>(context);
       if (opts?.properties && opts.properties.length > 0) {
         return new Set(opts.properties);
       }
@@ -74,51 +79,58 @@ export default {
 
     return {
       before() {
-        tracker.reset(readErrorsetSettings(context));
+        const settings = readErrorsetSettings(context);
         calls.length = 0;
         accesses.length = 0;
+        // No import from a configured errorset module: nothing to report in this file (audit P3).
+        if (!mayImportConfiguredModule(context.sourceCode.text, settings)) return false;
+        tracker.acquire(settings);
+        return true;
+      },
+      after() {
+        tracker.release();
       },
       Program() {
-        tracker.reset(readErrorsetSettings(context));
         calls.length = 0;
         accesses.length = 0;
       },
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
       },
-      VariableDeclaration(node: any) {
+      VariableDeclaration(node) {
         tracker.handleVariableDeclaration(node);
       },
-      CallExpression(node: any) {
-        if (node.arguments?.[0]?.type === "Identifier") calls.push(node);
+      CallExpression(node) {
+        const subject = node.arguments[0];
+        if (subject?.type === "Identifier") calls.push({ call: node, subject });
       },
-      MemberExpression(node: any) {
-        if (node.computed || node.property?.type !== "Identifier" || node.object?.type !== "Identifier") return;
-        accesses.push(node);
+      MemberExpression(node) {
+        if (node.computed || node.property.type !== "Identifier" || node.object.type !== "Identifier") return;
+        accesses.push({ node, object: node.object, prop: node.property.name });
       },
       "Program:exit"() {
         if (!tracker.hasErrorsetImport()) return;
         const narrowing = createNarrowing(context, tracker);
 
         // Variables that are the subject of any guard call in this file (any position).
-        const guarded = new Set<object | string>();
-        for (const call of calls) {
-          if (narrowing.isGuardLike(call)) guarded.add(narrowing.resolve(call.arguments[0]));
+        const guarded = new Set<VariableKey>();
+        for (const { call, subject } of calls) {
+          if (narrowing.isGuardLike(call)) guarded.add(narrowing.resolve(subject));
         }
         if (guarded.size === 0) return;
 
         const trackedProps = getTrackedProps();
-        for (const node of accesses) {
-          if (!trackedProps.has(node.property.name)) continue;
-          const key = narrowing.resolve(node.object);
+        for (const { node, object, prop } of accesses) {
+          if (!trackedProps.has(prop)) continue;
+          const key = narrowing.resolve(object);
           if (!guarded.has(key) || narrowing.narrowingCall(node, key)) continue;
           context.report({
             node,
             messageId: "unguardedAccess",
-            data: { prop: node.property.name, name: node.object.name },
+            data: { prop, name: object.name },
           });
         }
       },
     };
   },
-};
+});

@@ -1,4 +1,5 @@
-export default {
+import { defineRule } from "@oxlint/plugins";
+export default defineRule({
   meta: {
     type: "suggestion" as const,
     docs: {
@@ -11,10 +12,9 @@ export default {
       missingReadonly: "Property should have a readonly modifier.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     return {
-      TSTypeLiteral(node: any) {
+      TSTypeLiteral(node) {
         for (const member of node.members ?? []) {
           if (
             (member.type === "TSPropertySignature" || member.type === "TSIndexSignature") &&
@@ -23,7 +23,7 @@ export default {
             context.report({
               node: member,
               messageId: "missingReadonly",
-              fix(fixer: any) {
+              fix(fixer) {
                 return fixer.insertTextBefore(member, "readonly ");
               },
             });
@@ -32,4 +32,4 @@ export default {
       },
     };
   },
-};
+});

@@ -1,19 +1,10 @@
+import { defineRule, type ESTree, type RuleMeta } from "@oxlint/plugins";
 import { createTanstackQueryImportTracker } from "./detect-query-imports.ts";
 import { sortDataByOrder } from "./sort-data-by-order.ts";
-
-type RuleMeta = {
-  type: "problem" | "suggestion" | "layout";
-  docs: { description: string; recommended: string };
-  messages: Record<string, string>;
-  schema: Array<any>;
-  hasSuggestions?: boolean;
-  fixable?: "code" | "whitespace";
-};
 
 type RuleDefinition = {
   name: string;
   meta: RuleMeta;
-  defaultOptions: Array<any>;
 };
 
 export function createPropertyOrderRule<TFunc extends string, TProp extends string>(
@@ -21,12 +12,11 @@ export function createPropertyOrderRule<TFunc extends string, TProp extends stri
   targetFunctions: ReadonlyArray<TFunc> | Array<TFunc>,
   orderRules: ReadonlyArray<Readonly<[ReadonlyArray<TProp>, ReadonlyArray<TProp>]>>,
 ) {
-  const targetFunctionSet = new Set(targetFunctions);
+  const targetFunctionSet: ReadonlySet<string> = new Set<string>(targetFunctions);
 
-  return {
+  return defineRule({
     meta: options.meta,
-    defaultOptions: options.defaultOptions,
-    createOnce(context: any) {
+    createOnce(context) {
       const tracker = createTanstackQueryImportTracker();
 
       return {
@@ -38,12 +28,12 @@ export function createPropertyOrderRule<TFunc extends string, TProp extends stri
           tracker.reset();
         },
 
-        ImportDeclaration(node: any) {
+        ImportDeclaration(node) {
           tracker.handleImportDeclaration(node);
         },
 
-        CallExpression(node: any) {
-          if (node?.callee?.type !== "Identifier") {
+        CallExpression(node) {
+          if (node.callee.type !== "Identifier") {
             return;
           }
 
@@ -52,27 +42,30 @@ export function createPropertyOrderRule<TFunc extends string, TProp extends stri
             return;
           }
 
-          const argument = node.arguments?.[0];
+          const argument = node.arguments[0];
           if (argument?.type !== "ObjectExpression") {
             return;
           }
 
-          const allProperties = argument.properties ?? [];
+          const allProperties = argument.properties;
           if (allProperties.length < 2) {
             return;
           }
 
-          const properties = allProperties.map((property: any, index: number) => {
-            if (property?.type === "Property" && property.key?.type === "Identifier") {
+          // Indices below are within bounds (length >= 2 checked above).
+          const propertyAt = (i: number) => allProperties[i] as ESTree.ObjectPropertyKind;
+          const properties = allProperties.map((property, index) => {
+            if (property.type === "Property" && property.key.type === "Identifier") {
               return { name: property.key.name, property };
             }
 
             return { name: `_property_${index}`, property };
           });
 
-          const sortedProperties = sortDataByOrder<{ name: string; property: any }, "name">(
+          const sortedProperties = sortDataByOrder<{ name: string; property: ESTree.ObjectPropertyKind }, "name">(
             properties,
-            orderRules as any,
+            // Property names outside TProp simply match no rule.
+            orderRules as ReadonlyArray<Readonly<[ReadonlyArray<string>, ReadonlyArray<string>]>>,
             "name",
           );
           if (sortedProperties == null) {
@@ -83,25 +76,28 @@ export function createPropertyOrderRule<TFunc extends string, TProp extends stri
             node: argument,
             data: { function: functionName },
             messageId: "invalidOrder",
-            fix(fixer: any) {
+            fix(fixer) {
               const sourceCode = context.sourceCode;
 
-              const reorderedText = sortedProperties.reduce((sourceText: string, specifier: any, index: number) => {
+              const reorderedText = sortedProperties.reduce((sourceText, specifier, index) => {
                 let textBetweenProperties = "";
                 if (index < allProperties.length - 1) {
                   textBetweenProperties = sourceCode
                     .getText()
-                    .slice(allProperties[index].range[1], allProperties[index + 1].range[0]);
+                    .slice(propertyAt(index).range[1], propertyAt(index + 1).range[0]);
                 }
 
                 return sourceText + sourceCode.getText(specifier.property) + textBetweenProperties;
               }, "");
 
-              return fixer.replaceTextRange([allProperties[0].range[0], allProperties.at(-1).range[1]], reorderedText);
+              return fixer.replaceTextRange(
+                [propertyAt(0).range[0], propertyAt(allProperties.length - 1).range[1]],
+                reorderedText,
+              );
             },
           });
         },
       };
     },
-  };
+  });
 }

@@ -1,10 +1,13 @@
+import { defineRule } from "@oxlint/plugins";
 import { isDOMElementName } from "../utils/jsx.ts";
+import { ruleOptions } from "../utils/options.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 const knownNamespaces = ["on", "oncapture", "use", "prop", "attr", "bool"];
 const styleNamespaces = ["style", "class"];
 const otherNamespaces = ["xmlns", "xlink"];
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -21,7 +24,6 @@ export default {
             description: "an array of additional namespace names to allow",
             type: "array",
             items: { type: "string" },
-            default: [],
             minItems: 1,
             uniqueItems: true,
           },
@@ -39,13 +41,23 @@ export default {
       "component-suggest": "Replace {{namespace}}:{{name}} with {{name}}.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     return {
-      "JSXAttribute > JSXNamespacedName"(node: any) {
-        const explicitlyAllowedNamespaces = context.options?.[0]?.allowedNamespaces;
-        const openingElement = node.parent?.parent;
-        if (openingElement?.name?.type === "JSXIdentifier" && !isDOMElementName(openingElement.name.name)) {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
+      "JSXAttribute > JSXNamespacedName"(node) {
+        if (node.type !== "JSXNamespacedName") return; // guaranteed by the selector
+        const explicitlyAllowedNamespaces = ruleOptions<{ allowedNamespaces?: Array<string> }>(
+          context,
+        )?.allowedNamespaces;
+        const openingElement = node.parent.parent;
+        if (
+          openingElement?.type === "JSXOpeningElement" &&
+          openingElement.name.type === "JSXIdentifier" &&
+          !isDOMElementName(openingElement.name.name)
+        ) {
           context.report({
             node,
             messageId: "component",
@@ -53,14 +65,14 @@ export default {
               {
                 messageId: "component-suggest",
                 data: { namespace: node.namespace.name, name: node.name.name },
-                fix: (fixer: any) => fixer.replaceText(node, node.name.name),
+                fix: (fixer) => fixer.replaceText(node, node.name.name),
               },
             ],
           });
           return;
         }
 
-        const namespace = node.namespace?.name;
+        const namespace = node.namespace.name;
         if (
           !(
             knownNamespaces.includes(namespace) ||
@@ -85,4 +97,4 @@ export default {
       },
     };
   },
-};
+});

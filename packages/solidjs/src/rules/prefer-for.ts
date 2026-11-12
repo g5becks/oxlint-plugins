@@ -1,10 +1,9 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 import { isJSXElementOrFragment } from "../utils/jsx.ts";
+import { type FunctionNode, isFunctionNode } from "../utils/functions.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
-function isFunctionNode(node: any): boolean {
-  return ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(node?.type);
-}
-
-function getPropertyName(memberExpr: any): string | null {
+function getPropertyName(memberExpr: ESTree.MemberExpression): string | null {
   if (!memberExpr?.property) return null;
   if (!memberExpr.computed && memberExpr.property.type === "Identifier") {
     return memberExpr.property.name;
@@ -15,7 +14,7 @@ function getPropertyName(memberExpr: any): string | null {
   return null;
 }
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -31,16 +30,14 @@ export default {
         "Use Solid's `<For />` component or `<Index />` component for rendering lists. Array#map causes DOM elements to be recreated.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
-    const reportPreferFor = (node: any) => {
+  createOnce(context) {
+    const reportPreferFor = (node: ESTree.CallExpression, callee: ESTree.MemberExpression, mapFnNode: ESTree.Node) => {
       const jsxExpressionContainerNode = node.parent;
-      const arrayNode = node.callee.object;
-      const mapFnNode = node.arguments[0];
+      const arrayNode = callee.object;
       context.report({
         node,
         messageId: "preferFor",
-        fix: (fixer: any) => {
+        fix: (fixer) => {
           const beforeArray: [number, number] = [jsxExpressionContainerNode.range[0], arrayNode.range[0]];
           const betweenArrayAndMapFn: [number, number] = [arrayNode.range[1], mapFnNode.range[0]];
           const afterMapFn: [number, number] = [mapFnNode.range[1], jsxExpressionContainerNode.range[1]];
@@ -54,21 +51,25 @@ export default {
     };
 
     return {
-      CallExpression(node: any) {
-        const callOrChain = node.parent?.type === "ChainExpression" ? node.parent : node;
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
+      CallExpression(node) {
+        const callOrChain: ESTree.Node = node.parent.type === "ChainExpression" ? node.parent : node;
         if (
           callOrChain.parent?.type === "JSXExpressionContainer" &&
           isJSXElementOrFragment(callOrChain.parent.parent)
         ) {
           if (
-            node.callee?.type === "MemberExpression" &&
+            node.callee.type === "MemberExpression" &&
             getPropertyName(node.callee) === "map" &&
-            node.arguments?.length === 1 &&
+            node.arguments.length === 1 &&
             isFunctionNode(node.arguments[0])
           ) {
-            const mapFnNode = node.arguments[0];
-            if (mapFnNode.params.length === 1 && mapFnNode.params[0].type !== "RestElement") {
-              reportPreferFor(node);
+            const mapFnNode = node.arguments[0] as FunctionNode; // isFunctionNode checked above
+            if (mapFnNode.params.length === 1 && mapFnNode.params[0]?.type !== "RestElement") {
+              reportPreferFor(node, node.callee, mapFnNode);
             } else {
               context.report({ node, messageId: "preferForOrIndex" });
             }
@@ -77,4 +78,4 @@ export default {
       },
     };
   },
-};
+});

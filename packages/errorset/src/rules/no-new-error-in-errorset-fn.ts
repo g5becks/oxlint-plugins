@@ -1,3 +1,4 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 /**
  * Rule: no-new-error-in-errorset-fn
  *
@@ -13,9 +14,11 @@
  *      if (!id) return UserError.invalid`id is required`
  *    }
  */
-import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
+import { sharedTrackerHandle } from "../utils/shared-tracker.ts";
 import { readErrorsetSettings } from "../utils/settings.ts";
-import { isErrorsetCreation, getEnclosingFunction, CAPTURE_METHODS } from "../utils/pattern-helpers.ts";
+import { isErrorsetCreation, getEnclosingFunction, CAPTURE_METHODS, nodeName } from "../utils/pattern-helpers.ts";
+import { ruleOptions } from "../utils/options.ts";
+import { mayImportConfiguredModule } from "../utils/early-exit.ts";
 
 type Options = [{ allowedBuiltins?: string[] }?];
 
@@ -29,7 +32,7 @@ const BUILT_IN_ERRORS = new Set([
   "EvalError",
 ]);
 
-export default {
+export default defineRule({
   meta: {
     type: "suggestion" as const,
     docs: {
@@ -59,31 +62,36 @@ export default {
         "Avoid `return new {{name}}(...)` from a function that uses errorset. Return an errorset kind value instead.",
     },
   },
-  defaultOptions: [{}] as Options,
-  createOnce(context: any) {
-    const tracker = createErrorsetImportTracker();
+  createOnce(context) {
+    // The file's import tracker, shared with the other errorset rules (audit R6).
+    const tracker = sharedTrackerHandle();
 
     // Per-file: functions that contain at least one errorset creation expression.
-    const errorsetFunctions = new Set<any>();
+    const errorsetFunctions = new Set<ESTree.Node>();
 
     // Collect pending throw violations. We defer until Program:exit
     // because top-down traversal may visit ThrowStatement BEFORE the
     // TaggedTemplateExpression that proves the function uses errorset.
-    const pendingViolations: Array<{ node: any; enclosingFn: any; name: string; returned: boolean }> = [];
+    const pendingViolations: Array<{
+      node: ESTree.ThrowStatement | ESTree.ReturnStatement;
+      enclosingFn: ESTree.Node;
+      name: string;
+      returned: boolean;
+    }> = [];
 
     const getAllowedBuiltins = (): Set<string> => {
-      const opts = context.options?.[0] as Options[0];
+      const opts = ruleOptions<NonNullable<Options[0]>>(context);
       const list = opts?.allowedBuiltins ?? [];
       return new Set(list);
     };
 
-    const checkNewError = (node: any) => {
+    const checkNewError = (node: ESTree.ThrowStatement | ESTree.ReturnStatement) => {
       if (!tracker.hasErrorsetImport()) return;
       // Only care about `throw new SomeError(...)` / `return new SomeError(...)`
       const arg = node.argument;
       if (arg?.type !== "NewExpression") return;
       const callee = arg.callee;
-      if (callee?.type !== "Identifier") return;
+      if (callee.type !== "Identifier") return;
       if (!BUILT_IN_ERRORS.has(callee.name)) return;
 
       // Check allowedBuiltins option
@@ -96,11 +104,11 @@ export default {
       // Inside the target function of X.capture() / X.captureAsync(), or of the errorset >= 0.4
       // helpers captureSync() / captureAsync()? Throwing there is the point: exempt.
       const parentCall = fn.parent;
-      if (parentCall?.type === "CallExpression" && parentCall.arguments?.[0] === fn) {
+      if (parentCall.type === "CallExpression" && parentCall.arguments[0] === fn) {
         const c = parentCall.callee;
-        if (c?.type === "MemberExpression" && CAPTURE_METHODS.has(c.property?.name)) return;
+        if (c.type === "MemberExpression" && CAPTURE_METHODS.has(nodeName(c.property) ?? "")) return;
         if (
-          c?.type === "Identifier" &&
+          c.type === "Identifier" &&
           (tracker.isErrorsetExport(c.name, "captureSync") || tracker.isErrorsetExport(c.name, "captureAsync"))
         ) {
           return;
@@ -113,31 +121,37 @@ export default {
 
     return {
       before() {
-        tracker.reset(readErrorsetSettings(context));
+        const settings = readErrorsetSettings(context);
         errorsetFunctions.clear();
         pendingViolations.length = 0;
+        // No import from a configured errorset module: nothing to report in this file (audit P3).
+        if (!mayImportConfiguredModule(context.sourceCode.text, settings)) return false;
+        tracker.acquire(settings);
+        return true;
+      },
+      after() {
+        tracker.release();
       },
       Program() {
-        tracker.reset(readErrorsetSettings(context));
         errorsetFunctions.clear();
         pendingViolations.length = 0;
       },
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
       },
-      VariableDeclaration(node: any) {
+      VariableDeclaration(node) {
         tracker.handleVariableDeclaration(node);
       },
 
       // When we see an errorset creation expression, mark the enclosing function.
-      TaggedTemplateExpression(node: any) {
+      TaggedTemplateExpression(node) {
         if (!tracker.hasErrorsetImport()) return;
         const guardNames = tracker.guardNames();
         if (!isErrorsetCreation(node, guardNames)) return;
         const fn = getEnclosingFunction(node);
         if (fn) errorsetFunctions.add(fn);
       },
-      CallExpression(node: any) {
+      CallExpression(node) {
         if (!tracker.hasErrorsetImport()) return;
         const guardNames = tracker.guardNames();
         if (!isErrorsetCreation(node, guardNames)) return;
@@ -145,11 +159,11 @@ export default {
         if (fn) errorsetFunctions.add(fn);
       },
 
-      ThrowStatement(node: any) {
+      ThrowStatement(node) {
         checkNewError(node);
       },
       // `return new Error(...)` from a function that returns errorset values (audit R6).
-      ReturnStatement(node: any) {
+      ReturnStatement(node) {
         checkNewError(node);
       },
 
@@ -167,4 +181,4 @@ export default {
       },
     };
   },
-};
+});

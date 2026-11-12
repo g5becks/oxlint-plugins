@@ -1,8 +1,10 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 import { isJSXElementOrFragment } from "../utils/jsx.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 const EXPENSIVE_TYPES = ["JSXElement", "JSXFragment", "Identifier"];
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -17,21 +19,20 @@ export default {
       preferShowTernary: "Use Solid's `<Show />` component for conditionally showing content with a fallback.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
-    const putIntoJSX = (node: any): string => {
+  createOnce(context) {
+    const putIntoJSX = (node: ESTree.Node): string => {
       const text = context.sourceCode.getText(node);
       return isJSXElementOrFragment(node) ? text : `{${text}}`;
     };
 
-    const logicalExpressionHandler = (node: any) => {
-      if (node.operator === "&&" && EXPENSIVE_TYPES.includes(node.right?.type)) {
+    const logicalExpressionHandler = (node: ESTree.LogicalExpression) => {
+      if (node.operator === "&&" && EXPENSIVE_TYPES.includes(node.right.type)) {
         context.report({
           node,
           messageId: "preferShowAnd",
-          fix: (fixer: any) =>
+          fix: (fixer) =>
             fixer.replaceText(
-              node.parent?.type === "JSXExpressionContainer" && isJSXElementOrFragment(node.parent.parent)
+              node.parent.type === "JSXExpressionContainer" && isJSXElementOrFragment(node.parent.parent)
                 ? node.parent
                 : node,
               `<Show when={${context.sourceCode.getText(node.left)}}>${putIntoJSX(node.right)}</Show>`,
@@ -40,14 +41,14 @@ export default {
       }
     };
 
-    const conditionalExpressionHandler = (node: any) => {
-      if (EXPENSIVE_TYPES.includes(node.consequent?.type) || EXPENSIVE_TYPES.includes(node.alternate?.type)) {
+    const conditionalExpressionHandler = (node: ESTree.ConditionalExpression) => {
+      if (EXPENSIVE_TYPES.includes(node.consequent.type) || EXPENSIVE_TYPES.includes(node.alternate.type)) {
         context.report({
           node,
           messageId: "preferShowTernary",
-          fix: (fixer: any) =>
+          fix: (fixer) =>
             fixer.replaceText(
-              node.parent?.type === "JSXExpressionContainer" && isJSXElementOrFragment(node.parent.parent)
+              node.parent.type === "JSXExpressionContainer" && isJSXElementOrFragment(node.parent.parent)
                 ? node.parent
                 : node,
               `<Show when={${context.sourceCode.getText(node.test)}} fallback={${context.sourceCode.getText(
@@ -59,7 +60,11 @@ export default {
     };
 
     return {
-      JSXExpressionContainer(node: any) {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
+      JSXExpressionContainer(node) {
         if (!isJSXElementOrFragment(node.parent)) {
           return;
         }
@@ -81,4 +86,4 @@ export default {
       },
     };
   },
-};
+});

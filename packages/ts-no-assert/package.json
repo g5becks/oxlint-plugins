@@ -1,6 +1,6 @@
 {
   "name": "oxlint-plugin-ts-no-assert",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Disallow TypeScript type assertions (as, angle-bracket, non-null !) — ported from eslint-plugin-no-type-assertion to Oxlint's JS plugin API. Also compatible with ESLint flat config.",
   "license": "MIT",
@@ -24,7 +24,8 @@
     "dist",
     "README.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "keywords": [
     "oxlint",

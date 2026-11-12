@@ -1,3 +1,5 @@
+import { defineRule, type ESTree, type Fix, type Fixer, type SourceCode } from "@oxlint/plugins";
+import { appendImports } from "../utils/fix-imports.ts";
 type Source = "solid-js" | "solid-js/web" | "solid-js/store";
 
 const primitiveMap = new Map<string, Source>();
@@ -96,7 +98,7 @@ for (const t of ["StoreNode", "Store", "SetStoreFunction"]) typeMap.set(t, "soli
 const sourceRegex = /^solid-js(?:\/web|\/store)?$/;
 const isSource = (source: string): source is Source => sourceRegex.test(source);
 
-export default {
+export default defineRule({
   meta: {
     type: "suggestion" as const,
     docs: {
@@ -109,10 +111,9 @@ export default {
       "prefer-source": 'Prefer importing {{name}} from "{{source}}".',
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     return {
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         const source = node.source?.value;
         if (!isSource(source)) return;
 
@@ -120,30 +121,34 @@ export default {
           if (specifier.type === "ImportSpecifier") {
             const isType = specifier.importKind === "type" || node.importKind === "type";
             const map = isType ? typeMap : primitiveMap;
-            const correctSource = map.get(specifier.imported?.name);
+            // String-literal import names (`import { "x" as y }`) have no `name`.
+            const importedName = specifier.imported.type === "Literal" ? undefined : specifier.imported.name;
+            const correctSource = importedName === undefined ? undefined : map.get(importedName);
             if (correctSource != null && correctSource !== source) {
               context.report({
                 node: specifier,
                 messageId: "prefer-source",
-                data: { name: specifier.imported.name, source: correctSource },
-                fix(fixer: any) {
+                data: { name: importedName, source: correctSource },
+                fix(fixer) {
                   const sourceCode = context.sourceCode;
                   const program = sourceCode.ast;
                   const correctDeclaration = program.body.find(
-                    (n: any) => n.type === "ImportDeclaration" && n.source?.value === correctSource,
+                    (n): n is ESTree.ImportDeclaration =>
+                      n.type === "ImportDeclaration" && n.source.value === correctSource,
                   );
 
                   const specText = sourceCode.getText(specifier);
 
                   if (correctDeclaration) {
-                    const lastSpecifier = correctDeclaration.specifiers[correctDeclaration.specifiers.length - 1];
                     const removeResult = removeSpecifierFromNode(fixer, sourceCode, specifier, node);
                     if (!removeResult) return null;
-                    return [removeResult, fixer.insertTextAfter(lastSpecifier, `, ${specText}`)];
+                    // Works for `import "solid-js"` and `import {} from "solid-js"` too (no specifiers).
+                    const append = appendImports(fixer, sourceCode, correctDeclaration, [specText]);
+                    return append ? [removeResult, append] : null;
                   }
 
                   const firstSolidDecl = program.body.find(
-                    (n: any) => n.type === "ImportDeclaration" && isSource(n.source?.value),
+                    (n): n is ESTree.ImportDeclaration => n.type === "ImportDeclaration" && isSource(n.source.value),
                   );
                   const removeResult = removeSpecifierFromNode(fixer, sourceCode, specifier, node);
                   if (!removeResult) return null;
@@ -163,18 +168,27 @@ export default {
       },
     };
   },
-};
+});
 
-function removeSpecifierFromNode(fixer: any, sourceCode: any, specifier: any, declaration: any): any {
-  const specifiers = declaration.specifiers ?? [];
+function removeSpecifierFromNode(
+  fixer: Fixer,
+  sourceCode: SourceCode,
+  specifier: ESTree.ImportDeclarationSpecifier,
+  declaration: ESTree.ImportDeclaration,
+): Fix | null {
+  const specifiers: ReadonlyArray<ESTree.ImportDeclarationSpecifier> = declaration.specifiers ?? [];
   if (specifiers.length === 1) {
     return fixer.remove(declaration);
   }
   const index = specifiers.indexOf(specifier);
   if (index === specifiers.length - 1) {
     const tokenBefore = sourceCode.getTokenBefore(specifier);
+    // A non-first specifier always has a `,` before it.
+    if (!tokenBefore) return null;
     return fixer.removeRange([tokenBefore.range[0], specifier.range[1]]);
   }
   const tokenAfter = sourceCode.getTokenAfter(specifier);
+  // A non-last specifier always has a `,` after it.
+  if (!tokenAfter) return null;
   return fixer.removeRange([specifier.range[0], tokenAfter.range[1]]);
 }

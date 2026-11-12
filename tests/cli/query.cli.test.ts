@@ -60,7 +60,8 @@ describe("exhaustive-deps", () => {
     const result = await runOxlint({ configPath, files: [ruleFixture(PLUGIN, RULE)] });
     const diags = result.diagnostics.filter((d) => d.code === CODE(RULE));
     const lines = diags.map((d) => d.labels[0]?.span.line ?? -1).sort((a, b) => a - b);
-    expect(lines).toEqual([19, 30]);
+    // Reported on the useQuery options object (lines 18, 29), like upstream >= 5.107 (audit R12).
+    expect(lines).toEqual([18, 29]);
   });
 
   test("all diagnostics are errors", async () => {

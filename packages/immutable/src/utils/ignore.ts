@@ -1,3 +1,5 @@
+import type { ESTree } from "@oxlint/plugins";
+
 function asPatterns(pattern?: string | Array<string>): Array<RegExp> {
   if (pattern == null) {
     return [];
@@ -16,7 +18,10 @@ export function shouldIgnorePattern(name: string | null | undefined, pattern?: s
   return patterns.some((regex) => regex.test(name));
 }
 
-export function isIgnoredViaIdentifierPattern(node: any, pattern?: string | Array<string>): boolean {
+export function isIgnoredViaIdentifierPattern(
+  node: ESTree.Node | null | undefined,
+  pattern?: string | Array<string>,
+): boolean {
   if (!node) {
     return false;
   }
@@ -25,7 +30,7 @@ export function isIgnoredViaIdentifierPattern(node: any, pattern?: string | Arra
     return shouldIgnorePattern(node.name, pattern);
   }
 
-  if (node.type === "MemberExpression" && node.property?.type === "Identifier") {
+  if (node.type === "MemberExpression" && node.property.type === "Identifier") {
     return shouldIgnorePattern(node.property.name, pattern);
   }
 

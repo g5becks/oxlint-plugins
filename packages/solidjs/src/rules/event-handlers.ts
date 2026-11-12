@@ -1,4 +1,8 @@
+import { defineRule } from "@oxlint/plugins";
+import { getStaticValue } from "../utils/static-value.ts";
 import { isDOMElementName } from "../utils/jsx.ts";
+import { ruleOptions } from "../utils/options.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 const COMMON_EVENTS = [
   "onAnimationEnd",
@@ -70,23 +74,7 @@ const NONSTANDARD_EVENTS_MAP: Record<string, string> = {
   ondoubleclick: "onDblClick",
 };
 
-function getStaticValue(node: any, scope: any): { value: unknown } | null {
-  if (!node) return null;
-  if (node.type === "Literal") return { value: node.value };
-  if (node.type === "TemplateLiteral" && node.expressions.length === 0) {
-    return { value: node.quasis[0]?.value?.cooked ?? null };
-  }
-  if (node.type === "Identifier" && scope) {
-    const variable = scope.set?.get?.(node.name);
-    const def = variable?.defs?.[0];
-    if (def?.node?.type === "VariableDeclarator" && def.node.parent?.kind === "const" && def.node.init) {
-      return getStaticValue(def.node.init, scope);
-    }
-  }
-  return null;
-}
-
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -127,20 +115,28 @@ export default {
         "The {{name}} prop should be added as a JSX attribute, not spread in. Solid doesn't add listeners when spreading into JSX.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
+    const options = () => ruleOptions<{ ignoreCase?: boolean; warnOnSpread?: boolean }>(context);
     return {
-      JSXAttribute(node: any) {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
+      JSXAttribute(node) {
         const openingElement = node.parent;
-        if (openingElement?.name?.type !== "JSXIdentifier" || !isDOMElementName(openingElement.name.name)) {
+        if (
+          openingElement.type !== "JSXOpeningElement" ||
+          openingElement.name.type !== "JSXIdentifier" ||
+          !isDOMElementName(openingElement.name.name)
+        ) {
           return;
         }
 
-        if (node.name?.type === "JSXNamespacedName") {
+        if (node.name.type === "JSXNamespacedName") {
           return;
         }
 
-        const { name } = node.name ?? {};
+        const { name } = node.name;
         if (!name || !/^on[a-zA-Z]/.test(name)) {
           return;
         }
@@ -164,7 +160,7 @@ export default {
             messageId: "detected-attr",
             data: { name, staticValue: node.value !== null ? node.value.value : true },
           });
-        } else if (!context.options[0]?.ignoreCase) {
+        } else if (!options()?.ignoreCase) {
           const lowercaseHandlerName = name.toLowerCase();
           if (NONSTANDARD_EVENTS_MAP[lowercaseHandlerName]) {
             const fixedName = NONSTANDARD_EVENTS_MAP[lowercaseHandlerName];
@@ -172,7 +168,7 @@ export default {
               node: node.name,
               messageId: "nonstandard",
               data: { name, fixedName },
-              fix: (fixer: any) => fixer.replaceText(node.name, fixedName),
+              fix: (fixer) => fixer.replaceText(node.name, fixedName),
             });
           } else if (COMMON_EVENTS_MAP.has(lowercaseHandlerName)) {
             const fixedName = COMMON_EVENTS_MAP.get(lowercaseHandlerName)!;
@@ -181,11 +177,11 @@ export default {
                 node: node.name,
                 messageId: "capitalization",
                 data: { name, fixedName },
-                fix: (fixer: any) => fixer.replaceText(node.name, fixedName),
+                fix: (fixer) => fixer.replaceText(node.name, fixedName),
               });
             }
-          } else if (name[2] === name[2].toLowerCase()) {
-            const handlerName = `on${name[2].toUpperCase()}${name.slice(3)}`;
+          } else if (name.charAt(2) === name.charAt(2).toLowerCase()) {
+            const handlerName = `on${name.charAt(2).toUpperCase()}${name.slice(3)}`;
             const attrName = `attr:${name}`;
             context.report({
               node: node.name,
@@ -195,43 +191,42 @@ export default {
                 {
                   messageId: "make-handler",
                   data: { name, handlerName },
-                  fix: (fixer: any) => fixer.replaceText(node.name, handlerName),
+                  fix: (fixer) => fixer.replaceText(node.name, handlerName),
                 },
                 {
                   messageId: "make-attr",
                   data: { name, attrName },
-                  fix: (fixer: any) => fixer.replaceText(node.name, attrName),
+                  fix: (fixer) => fixer.replaceText(node.name, attrName),
                 },
               ],
             });
           }
         }
       },
-      Property(node: any) {
+      Property(node) {
+        const objectExpression = node.parent;
+        const spread = objectExpression.parent;
         if (
-          context.options[0]?.warnOnSpread &&
-          node.parent?.type === "ObjectExpression" &&
-          node.parent.parent?.type === "JSXSpreadAttribute" &&
-          node.parent.parent.parent?.type === "JSXOpeningElement"
+          options()?.warnOnSpread &&
+          objectExpression.type === "ObjectExpression" &&
+          spread?.type === "JSXSpreadAttribute" &&
+          spread.parent.type === "JSXOpeningElement"
         ) {
-          const openingElement = node.parent.parent.parent;
-          if (openingElement.name?.type === "JSXIdentifier" && isDOMElementName(openingElement.name.name)) {
-            if (node.key?.type === "Identifier" && node.key.name.startsWith("on")) {
+          const openingElement = spread.parent;
+          if (openingElement.name.type === "JSXIdentifier" && isDOMElementName(openingElement.name.name)) {
+            if (node.key.type === "Identifier" && node.key.name.startsWith("on")) {
               const handlerName = node.key.name;
               context.report({
                 node,
                 messageId: "spread-handler",
                 data: { name: node.key.name },
-                *fix(fixer: any) {
+                *fix(fixer) {
                   const commaAfter = context.sourceCode.getTokenAfter(node);
-                  yield fixer.remove(node.parent.properties.length === 1 ? node.parent.parent : node);
+                  yield fixer.remove(objectExpression.properties.length === 1 ? spread : node);
                   if (commaAfter?.value === ",") {
                     yield fixer.remove(commaAfter);
                   }
-                  yield fixer.insertTextAfter(
-                    node.parent.parent,
-                    ` ${handlerName}={${context.sourceCode.getText(node.value)}}`,
-                  );
+                  yield fixer.insertTextAfter(spread, ` ${handlerName}={${context.sourceCode.getText(node.value)}}`);
                 },
               });
             }
@@ -240,4 +235,4 @@ export default {
       },
     };
   },
-};
+});

@@ -1,8 +1,10 @@
+import { defineRule } from "@oxlint/plugins";
 import { getEnclosingFunction } from "../utils/tree.ts";
+import { ruleOptions } from "../utils/options.ts";
 
 type RuleOptions = [{ allowInAsyncFunctions?: boolean }?];
 
-export default {
+export default defineRule({
   meta: {
     type: "suggestion" as const,
     docs: {
@@ -21,12 +23,12 @@ export default {
     messages: {
       generic: "Unexpected throw, throwing exceptions is not functional.",
     },
+    defaultOptions: [{ allowInAsyncFunctions: false }],
   },
-  defaultOptions: [{ allowInAsyncFunctions: false }] as RuleOptions,
-  createOnce(context: any) {
+  createOnce(context) {
     return {
-      ThrowStatement(node: any) {
-        const allowInAsyncFunctions = context.options?.[0]?.allowInAsyncFunctions === true;
+      ThrowStatement(node) {
+        const allowInAsyncFunctions = ruleOptions<NonNullable<RuleOptions[0]>>(context)?.allowInAsyncFunctions === true;
         if (allowInAsyncFunctions) {
           const fn = getEnclosingFunction(node);
           if (fn?.async === true) {
@@ -38,4 +40,4 @@ export default {
       },
     };
   },
-};
+});

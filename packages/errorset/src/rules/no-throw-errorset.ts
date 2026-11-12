@@ -1,3 +1,4 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 /**
  * Rule: no-throw-errorset
  *
@@ -6,21 +7,28 @@
  * ❌ throw UserError.not_found`User ${"id"} not found`({ id })
  * ✅ return UserError.not_found`User ${"id"} not found`({ id })
  */
-import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
+import { sharedTrackerHandle } from "../utils/shared-tracker.ts";
 import { readErrorsetSettings } from "../utils/settings.ts";
-import { getErrorsetTag, getMemberObjectName, unwrapWith, CAPTURE_METHODS } from "../utils/pattern-helpers.ts";
+import {
+  getErrorsetTag,
+  getMemberObjectName,
+  unwrapWith,
+  CAPTURE_METHODS,
+  nodeName,
+} from "../utils/pattern-helpers.ts";
+import { mayImportConfiguredModule } from "../utils/early-exit.ts";
 
 /**
  * Returns true when the ThrowStatement's argument is an errorset creation expression
  * (either a tagged template or a call wrapping a tagged template).
  */
-function getCreationObjectName(node: any, guardNames: Set<string>): string | null {
+function getCreationObjectName(node: ESTree.ThrowStatement, guardNames: Set<string>): string | null {
   // Pattern C (errorset >= 0.4): throw SomeError.kind`...`.with({ cause })
   let candidate = unwrapWith(node.argument);
   if (!candidate) return null;
 
   // Pattern A: throw SomeError.kind`...`(data) — CallExpression wrapping TTE
-  if (candidate.type === "CallExpression" && candidate.callee?.type === "TaggedTemplateExpression") {
+  if (candidate.type === "CallExpression" && candidate.callee.type === "TaggedTemplateExpression") {
     candidate = candidate.callee;
   }
 
@@ -38,29 +46,27 @@ function getCreationObjectName(node: any, guardNames: Set<string>): string | nul
  * of a .capture() or .captureAsync() call — those throw intentionally.
  */
 function isInsideCaptureTarget(
-  node: any,
+  node: ESTree.Node,
   guardNames: Set<string>,
   isCaptureHelper: (name: string) => boolean = () => false,
 ): boolean {
-  let current = node?.parent;
+  let current: ESTree.Node | null = node.parent;
   while (current) {
     const isMemberCapture =
       current.type === "CallExpression" &&
-      current.callee?.type === "MemberExpression" &&
-      CAPTURE_METHODS.has(current.callee.property?.name) &&
-      current.callee.object?.type === "Identifier" &&
+      current.callee.type === "MemberExpression" &&
+      CAPTURE_METHODS.has(nodeName(current.callee.property) ?? "") &&
+      current.callee.object.type === "Identifier" &&
       guardNames.has(current.callee.object.name);
     // errorset >= 0.4 top-level helpers: captureSync(fn, map) / captureAsync(fn, map)
     const isHelperCapture =
-      current.type === "CallExpression" &&
-      current.callee?.type === "Identifier" &&
-      isCaptureHelper(current.callee.name);
+      current.type === "CallExpression" && current.callee.type === "Identifier" && isCaptureHelper(current.callee.name);
     if (isMemberCapture || isHelperCapture) {
       // We're inside a .capture() call — check if we're in the first arg (target fn)
-      const firstArg = current.arguments?.[0];
+      const firstArg = current.type === "CallExpression" ? current.arguments[0] : undefined;
       if (firstArg && (firstArg.type === "ArrowFunctionExpression" || firstArg.type === "FunctionExpression")) {
         // Check if the current node's ancestry includes this firstArg
-        let inner = node?.parent;
+        let inner: ESTree.Node | null = node.parent;
         while (inner && inner !== current) {
           if (inner === firstArg) return true;
           inner = inner.parent;
@@ -83,8 +89,8 @@ const TRANSPARENT = new Set(["BlockStatement", "IfStatement"]);
  * function must not be a callback passed to a call (where `return` would hand the error
  * value to the caller, e.g. into the array built by `.map`).
  */
-function isDirectThrow(node: any): boolean {
-  let current = node.parent;
+function isDirectThrow(node: ESTree.Node): boolean {
+  let current: ESTree.Node | null = node.parent;
   while (current && !FUNCTION_TYPES.has(current.type)) {
     if (!TRANSPARENT.has(current.type)) return false;
     current = current.parent;
@@ -97,7 +103,7 @@ function isDirectThrow(node: any): boolean {
   return true;
 }
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -113,24 +119,28 @@ export default {
       suggestReturn: "Return the errorset value instead of throwing it.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
-    const tracker = createErrorsetImportTracker();
+  createOnce(context) {
+    // The file's import tracker, shared with the other errorset rules (audit R6).
+    const tracker = sharedTrackerHandle();
 
     return {
       before() {
-        tracker.reset(readErrorsetSettings(context));
+        const settings = readErrorsetSettings(context);
+        // No import from a configured errorset module: nothing to report in this file (audit P3).
+        if (!mayImportConfiguredModule(context.sourceCode.text, settings)) return false;
+        tracker.acquire(settings);
+        return true;
       },
-      Program() {
-        tracker.reset(readErrorsetSettings(context));
+      after() {
+        tracker.release();
       },
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
       },
-      VariableDeclaration(node: any) {
+      VariableDeclaration(node) {
         tracker.handleVariableDeclaration(node);
       },
-      ThrowStatement(node: any) {
+      ThrowStatement(node) {
         if (!tracker.hasErrorsetImport()) return;
         const guardNames = tracker.guardNames();
         if (guardNames.size === 0) return;
@@ -167,7 +177,7 @@ export default {
             ? [
                 {
                   messageId: "suggestReturn",
-                  fix: (fixer: any) => {
+                  fix: (fixer) => {
                     const sourceCode = context.sourceCode;
                     const argText = sourceCode.getText(node.argument);
                     // Preserve the trailing semicolon if the ThrowStatement range includes one.
@@ -181,4 +191,4 @@ export default {
       },
     };
   },
-};
+});

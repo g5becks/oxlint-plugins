@@ -108,6 +108,8 @@ interface RunOptions {
   files: string[];
   /** Extra args to pass to oxlint (e.g. ["--threads", "1"]) */
   extraArgs?: string[];
+  /** Keep oxlint's built-in default rules (by default they are turned off with `-A all`). */
+  keepBuiltins?: boolean;
 }
 
 function absolute(f: string): string {
@@ -158,8 +160,7 @@ export async function runOxlint(options: RunOptions): Promise<OxlintResult> {
     options.configPath,
     "--format",
     "json",
-    "-A",
-    "all",
+    ...(options.keepBuiltins ? [] : ["-A", "all"]),
     ...(options.extraArgs ?? []),
     ...options.files.map(absolute),
   ]);

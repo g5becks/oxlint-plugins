@@ -2,13 +2,5 @@
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "import"],
   "categories": { "correctness": "error" },
-  "ignorePatterns": [
-    "**/upstream/**",
-    "**/fixtures/**",
-    "**/dist/**",
-    "client/**",
-    "backlog/**",
-    ".clavix/**",
-    "node_modules/**"
-  ]
+  "ignorePatterns": ["vendor/**", "**/fixtures/**", "**/dist/**", "backlog/**", ".clavix/**", "node_modules/**"]
 }

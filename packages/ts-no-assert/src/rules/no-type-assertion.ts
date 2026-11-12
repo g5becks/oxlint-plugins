@@ -1,4 +1,6 @@
-function isAllowedTypeAnnotation(typeAnnotation: any): boolean {
+import { defineRule, type ESTree } from "@oxlint/plugins";
+
+function isAllowedTypeAnnotation(typeAnnotation: ESTree.TSType): boolean {
   // `as unknown` and `<unknown>` are allowed
   if (typeAnnotation.type === "TSUnknownKeyword") {
     return true;
@@ -6,20 +8,21 @@ function isAllowedTypeAnnotation(typeAnnotation: any): boolean {
   // `as const` and `<const>`: both oxlint (verified with the RuleTester of 1.47, 1.70 and 1.93)
   // and @typescript-eslint/parser produce a TSTypeReference named `const`. A TSTypeOperator
   // `const` shape is also accepted defensively; no tested runtime produces it.
-  if (typeAnnotation.type === "TSTypeOperator" && typeAnnotation.operator === "const") {
+  // (The ESTree types don't list "const" as a TSTypeOperator operator, hence the string widening.)
+  if (typeAnnotation.type === "TSTypeOperator" && (typeAnnotation.operator as string) === "const") {
     return true;
   }
   if (
     typeAnnotation.type === "TSTypeReference" &&
-    typeAnnotation.typeName?.type === "Identifier" &&
-    typeAnnotation.typeName?.name === "const"
+    typeAnnotation.typeName.type === "Identifier" &&
+    typeAnnotation.typeName.name === "const"
   ) {
     return true;
   }
   return false;
 }
 
-export default {
+export default defineRule({
   meta: {
     type: "suggestion" as const,
     docs: {
@@ -33,11 +36,10 @@ export default {
     },
     schema: [],
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     return {
       // Angle-bracket syntax: <Type>value
-      TSTypeAssertion(node: any) {
+      TSTypeAssertion(node) {
         if (isAllowedTypeAnnotation(node.typeAnnotation)) {
           return;
         }
@@ -45,7 +47,7 @@ export default {
       },
 
       // As-operator syntax: value as Type
-      TSAsExpression(node: any) {
+      TSAsExpression(node) {
         if (isAllowedTypeAnnotation(node.typeAnnotation)) {
           return;
         }
@@ -53,9 +55,9 @@ export default {
       },
 
       // Non-null assertion: value!
-      TSNonNullExpression(node: any) {
+      TSNonNullExpression(node) {
         context.report({ node, messageId: "nonNullAssertion" });
       },
     };
   },
-};
+});

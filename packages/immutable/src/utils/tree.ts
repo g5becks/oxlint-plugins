@@ -1,4 +1,8 @@
-export function getEnclosingFunction(node: any): any | null {
+import type { ESTree } from "@oxlint/plugins";
+
+type FunctionNode = ESTree.Function | ESTree.ArrowFunctionExpression;
+
+export function getEnclosingFunction(node: ESTree.Node | null | undefined): FunctionNode | null {
   let current = node?.parent;
   while (current != null) {
     if (
@@ -13,11 +17,11 @@ export function getEnclosingFunction(node: any): any | null {
   return null;
 }
 
-export function isInFunctionBody(node: any, fn: any): boolean {
+export function isInFunctionBody(node: ESTree.Node, fn: FunctionNode | null | undefined): boolean {
   if (!fn?.body) {
     return false;
   }
-  let current = node;
+  let current: ESTree.Node | null = node;
   while (current != null) {
     if (current === fn.body) {
       return true;
@@ -27,7 +31,7 @@ export function isInFunctionBody(node: any, fn: any): boolean {
   return false;
 }
 
-export function isInForLoopInitializer(node: any): boolean {
+export function isInForLoopInitializer(node: ESTree.Node | null | undefined): boolean {
   const parent = node?.parent;
   if (parent?.type === "ForStatement") {
     return parent.init === node;

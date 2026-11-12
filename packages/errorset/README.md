@@ -129,6 +129,9 @@ Notes:
   strings, or a `guardPattern` that doesn't compile, is ignored and the default is used.
 - The `recommended` config only lists rules; add `settings.errorset` yourself when your sets
   are re-exported.
+- Files whose source never mentions one of the `modules` are skipped entirely (nothing in them
+  could be reported). The check is textual, so a module specifier written with escape sequences
+  (`"@takinprofit/errorset"`) isn't recognized.
 
 ## Supported errorset versions and patterns
 

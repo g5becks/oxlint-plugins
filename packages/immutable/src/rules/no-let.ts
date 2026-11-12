@@ -1,8 +1,32 @@
-import { isInForLoopInitializer } from "../utils/tree.ts";
+import { defineRule, type ESTree } from "@oxlint/plugins";
+import { shouldIgnorePattern } from "../utils/ignore.ts";
+import { getEnclosingFunction, isInForLoopInitializer, isInFunctionBody } from "../utils/tree.ts";
+import { ruleOptions } from "../utils/options.ts";
 
-type RuleOptions = [{ allowInForLoopInit?: boolean }?];
+type RuleOptions = [
+  { allowInForLoopInit?: boolean; allowInFunctions?: boolean; ignoreIdentifierPattern?: string | Array<string> }?,
+];
 
-export default {
+/** Inside the body of any enclosing function (not just the nearest), like upstream's `isInFunctionBody`. */
+function isInsideAnyFunctionBody(node: ESTree.Node): boolean {
+  for (let fn = getEnclosingFunction(node); fn != null; fn = getEnclosingFunction(fn)) {
+    if (isInFunctionBody(node, fn)) return true;
+  }
+  return false;
+}
+
+/**
+ * Upstream (eslint-plugin-functional 10.0.1) matches the pattern against each declarator's name and
+ * ignores the declaration only if every named declarator matches; destructured declarators have no
+ * name and don't count. No named declarator at all: not ignored.
+ */
+function isIgnoredByPattern(node: ESTree.VariableDeclaration, pattern: string | Array<string> | undefined): boolean {
+  if (pattern === undefined) return false;
+  const names = node.declarations.flatMap((d) => (d.id.type === "Identifier" ? [d.id.name] : []));
+  return names.length > 0 && names.every((name) => shouldIgnorePattern(name, pattern));
+}
+
+export default defineRule({
   meta: {
     type: "suggestion" as const,
     docs: {
@@ -14,6 +38,10 @@ export default {
         type: "object",
         properties: {
           allowInForLoopInit: { type: "boolean" },
+          allowInFunctions: { type: "boolean" },
+          ignoreIdentifierPattern: {
+            anyOf: [{ type: "string" }, { type: "array", items: { type: "string" } }],
+          },
         },
         additionalProperties: false,
       },
@@ -21,20 +49,26 @@ export default {
     messages: {
       generic: "Unexpected let, use const instead.",
     },
+    defaultOptions: [{ allowInForLoopInit: false, allowInFunctions: false }],
   },
-  defaultOptions: [{ allowInForLoopInit: false }] as RuleOptions,
-  createOnce(context: any) {
+  createOnce(context) {
     return {
-      VariableDeclaration(node: any) {
+      VariableDeclaration(node) {
         if (node.kind !== "let") {
           return;
         }
-        const allowInForLoopInit = context.options?.[0]?.allowInForLoopInit === true;
-        if (allowInForLoopInit && isInForLoopInitializer(node)) {
+        const options = ruleOptions<NonNullable<RuleOptions[0]>>(context);
+        if (options?.allowInFunctions === true && isInsideAnyFunctionBody(node)) {
+          return;
+        }
+        if (isIgnoredByPattern(node, options?.ignoreIdentifierPattern)) {
+          return;
+        }
+        if (options?.allowInForLoopInit === true && isInForLoopInitializer(node)) {
           return;
         }
         context.report({ node, messageId: "generic" });
       },
     };
   },
-};
+});

@@ -1,11 +1,9 @@
+import { defineRule } from "@oxlint/plugins";
 import { trackImports } from "../utils/imports.ts";
 import { trace } from "../utils/trace.ts";
+import { isFunctionNode } from "../utils/functions.ts";
 
-function isFunctionNode(node: any): boolean {
-  return ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(node?.type);
-}
-
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -19,8 +17,7 @@ export default {
         "In Solid, `{{name}}` doesn't accept a dependency array because it automatically tracks its dependencies. If you really need to override the list of dependencies, use `on`.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     const tracker = trackImports();
 
     return {
@@ -32,29 +29,30 @@ export default {
         tracker.clear();
       },
 
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
       },
 
-      CallExpression(node: any) {
+      CallExpression(node) {
         if (
-          node.callee?.type === "Identifier" &&
+          node.callee.type === "Identifier" &&
           tracker.matchImport(["createEffect", "createMemo"], node.callee.name) &&
-          node.arguments?.length === 2 &&
-          node.arguments.every((arg: any) => arg.type !== "SpreadElement")
+          node.arguments.length === 2 &&
+          node.arguments.every((arg) => arg.type !== "SpreadElement")
         ) {
-          const [arg0, arg1] = node.arguments.map((arg: any) => trace(arg, context));
+          const [arg0, arg1] = node.arguments.map((arg) => trace(arg, context));
+          const depsArg = node.arguments[1];
 
-          if (isFunctionNode(arg0) && arg0.params.length === 0 && arg1.type === "ArrayExpression") {
+          if (depsArg && isFunctionNode(arg0) && arg0.params.length === 0 && arg1?.type === "ArrayExpression") {
             context.report({
-              node: node.arguments[1],
+              node: depsArg,
               messageId: "noUselessDep",
               data: { name: node.callee.name },
-              fix: arg1 === node.arguments[1] ? (fixer: any) => fixer.remove(arg1) : undefined,
+              fix: arg1 === depsArg ? (fixer) => fixer.remove(arg1) : undefined,
             });
           }
         }
       },
     };
   },
-};
+});

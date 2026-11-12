@@ -12,7 +12,9 @@
  * regex, or template.
  *
  * A declaration counts as reset when the `before` hook of the returned visitor reassigns it
- * (`x = ...`), calls `x.clear()` / `x.reset()`, sets `x.length = 0`, or deletes keys (`delete x[k]`). A declaration that is
+ * (`x = ...`), calls `x.clear()` / `x.reset()`, sets `x.length = 0`, or deletes keys (`delete x[k]`), or
+ * when it is a per-file handle: `before` calls `x.acquire(...)` and `after` calls `x.release()`
+ * (the shared per-file cache pattern of @oxlint/plugins). A declaration that is
  * genuinely immutable can be allowlisted with a comment on the line above:
  *   // createonce-state: immutable (<reason>)
  *
@@ -61,19 +63,37 @@ function createOnceBody(node: ts.Node): ts.Block | undefined {
 }
 
 /** The `before` hook body of the visitor object returned directly by createOnce. */
-function beforeHook(body: ts.Block): ts.Node | undefined {
+function hook(body: ts.Block, name: "before" | "after"): ts.Node | undefined {
   for (const st of body.statements) {
     if (!ts.isReturnStatement(st) || !st.expression) continue;
     let e = st.expression;
     while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression(e)) e = e.expression;
     if (!ts.isObjectLiteralExpression(e)) continue;
     for (const p of e.properties) {
-      if (p.name?.getText() !== "before") continue;
+      if (p.name?.getText() !== name) continue;
       if (ts.isMethodDeclaration(p)) return p.body;
       if (ts.isPropertyAssignment(p)) return p.initializer;
     }
   }
   return undefined;
+}
+
+/** Identifiers `x` with a call `x.<method>(...)` inside the hook. */
+function callNames(hook: ts.Node | undefined, method: string): Set<string> {
+  const names = new Set<string>();
+  const visit = (n: ts.Node) => {
+    if (
+      ts.isCallExpression(n) &&
+      ts.isPropertyAccessExpression(n.expression) &&
+      n.expression.name.text === method &&
+      ts.isIdentifier(n.expression.expression)
+    ) {
+      names.add(n.expression.expression.text);
+    }
+    ts.forEachChild(n, visit);
+  };
+  if (hook) visit(hook);
+  return names;
 }
 
 function resetNames(hook: ts.Node | undefined): Set<string> {
@@ -114,7 +134,10 @@ export function checkFile(file: string, text = readFileSync(file, "utf8")): Find
   const visit = (node: ts.Node) => {
     const body = createOnceBody(node);
     if (body) {
-      const reset = resetNames(beforeHook(body));
+      const reset = resetNames(hook(body, "before"));
+      // Per-file handles: acquired in before(), released in after().
+      const acquired = callNames(hook(body, "before"), "acquire");
+      for (const name of callNames(hook(body, "after"), "release")) if (acquired.has(name)) reset.add(name);
       for (const st of body.statements) {
         if (!ts.isVariableStatement(st)) continue;
         const isLet = (st.declarationList.flags & (ts.NodeFlags.Let | ts.NodeFlags.Const)) !== ts.NodeFlags.Const;
@@ -150,7 +173,7 @@ async function shippedRuleFiles(): Promise<string[]> {
   const glob = new Bun.Glob("packages/*/src/**/*.ts");
   const files: string[] = [];
   for await (const f of glob.scan({ cwd: REPO_ROOT, absolute: true })) {
-    if (!f.includes("/upstream/")) files.push(f);
+    files.push(f);
   }
   return files.sort();
 }

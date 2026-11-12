@@ -1,0 +1,329 @@
+{
+  "generatedAt": "2026-11-11T23:31:21.624Z",
+  "machine": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "osRelease": "27.2.0",
+    "cpu": "Apple M5",
+    "cores": 10,
+    "memoryGiB": 24
+  },
+  "versions": {
+    "oxlint": "1.93.0",
+    "bun": "1.4.4",
+    "node": "26.13.0",
+    "commit": "4c60203",
+    "dirty": true
+  },
+  "method": {
+    "corpus": "tests/fixtures/corpus",
+    "files": 76,
+    "threads": 1,
+    "warmup": 1,
+    "runs": 9,
+    "timingsAvailable": true
+  },
+  "baselineMs": 30.56,
+  "plugins": {
+    "errorset": {
+      "medianMs": 85.75,
+      "deltaMs": 55.18,
+      "callbacksMs": 1.62,
+      "runsMs": [86.02, 84.51, 84.98, 85.95, 85.86, 84.95, 85.3, 86.38, 85.75],
+      "rules": {
+        "errorset/no-catch-errorset": {
+          "medianMs": 84.44,
+          "deltaMs": 53.87,
+          "callbacksMs": 0.71,
+          "runsMs": [83.58, 86.32, 83.55, 84.94, 84.71, 86.4, 83.49, 84.44, 84.3]
+        },
+        "errorset/no-new-error-in-errorset-fn": {
+          "medianMs": 84.26,
+          "deltaMs": 53.7,
+          "callbacksMs": 0.72,
+          "runsMs": [84.2, 84.21, 84.26, 83.7, 84.53, 84.35, 85.13, 84.09, 87.57]
+        },
+        "errorset/no-throw-errorset": {
+          "medianMs": 84.95,
+          "deltaMs": 54.39,
+          "callbacksMs": 0.57,
+          "runsMs": [84.9, 86.2, 84.95, 84.15, 84.87, 86.59, 85.24, 84.95, 85.08]
+        },
+        "errorset/no-unguarded-data-access": {
+          "medianMs": 85.11,
+          "deltaMs": 54.55,
+          "callbacksMs": 0.76,
+          "runsMs": [84.14, 84.16, 85.11, 84.99, 86.32, 85.77, 84.08, 85.47, 85.49]
+        },
+        "errorset/prefer-guard-over-manual-kind-check": {
+          "medianMs": 85.03,
+          "deltaMs": 54.47,
+          "callbacksMs": 0.58,
+          "runsMs": [85.47, 84.66, 85.06, 85.27, 84.74, 84.67, 86.62, 84.92, 85.03]
+        }
+      }
+    },
+    "immutable": {
+      "medianMs": 99.75,
+      "deltaMs": 69.19,
+      "callbacksMs": 4.63,
+      "runsMs": [98.78, 100.51, 105.09, 99.35, 99.26, 99, 100.84, 99.75, 99.8],
+      "rules": {
+        "immutable/immutable-data": {
+          "medianMs": 85.74,
+          "deltaMs": 55.18,
+          "callbacksMs": 0.45,
+          "runsMs": [84.75, 85.49, 85.2, 85.76, 85.74, 87.06, 87.01, 85.4, 86.79]
+        },
+        "immutable/no-let": {
+          "medianMs": 85.43,
+          "deltaMs": 54.87,
+          "callbacksMs": 0.21,
+          "runsMs": [86.16, 85.91, 85.24, 86.29, 84.82, 85, 85.43, 84.81, 86.28]
+        },
+        "immutable/no-promise-reject": {
+          "medianMs": 86.37,
+          "deltaMs": 55.81,
+          "callbacksMs": 0.22,
+          "runsMs": [85.52, 85.81, 85.48, 86.37, 86.34, 87.19, 88.08, 87.14, 86.56]
+        },
+        "immutable/no-throw-statements": {
+          "medianMs": 85.45,
+          "deltaMs": 54.88,
+          "callbacksMs": 0.11,
+          "runsMs": [85.45, 87.04, 85.21, 88.39, 84.6, 85.84, 85.4, 86.23, 85.22]
+        },
+        "immutable/prefer-immutable-types": {
+          "medianMs": 95.28,
+          "deltaMs": 64.72,
+          "callbacksMs": 2.94,
+          "runsMs": [95.52, 95.28, 95.8, 96.49, 94.64, 93.92, 96.09, 93.97, 94.75]
+        },
+        "immutable/prefer-property-signatures": {
+          "medianMs": 85.18,
+          "deltaMs": 54.62,
+          "callbacksMs": 0,
+          "runsMs": [85.09, 85.1, 85.14, 85.33, 85.51, 85.38, 85.95, 85.18, 85.03]
+        },
+        "immutable/readonly-type": {
+          "medianMs": 87.53,
+          "deltaMs": 56.97,
+          "callbacksMs": 1.32,
+          "runsMs": [86.87, 88.08, 88.69, 87.52, 90.9, 86.68, 87.53, 88.54, 87.35]
+        },
+        "immutable/type-declaration-immutability": {
+          "medianMs": 85.62,
+          "deltaMs": 55.06,
+          "callbacksMs": 0.39,
+          "runsMs": [87.2, 85.53, 85.24, 88.76, 86.7, 85.38, 86.24, 85.62, 85.21]
+        }
+      }
+    },
+    "ts-no-assert": {
+      "medianMs": 83.13,
+      "deltaMs": 52.57,
+      "callbacksMs": 0.21,
+      "runsMs": [82.9, 83.63, 84.18, 82.64, 84.1, 85.07, 83.11, 82.93, 83.13],
+      "rules": {
+        "ts-no-assert/no-type-assertion": {
+          "medianMs": 83.58,
+          "deltaMs": 53.02,
+          "callbacksMs": 0.21,
+          "runsMs": [83.63, 83.13, 83.58, 83.43, 82.92, 84.46, 83.33, 85.49, 84.43]
+        }
+      }
+    },
+    "query": {
+      "medianMs": 85.87,
+      "deltaMs": 55.31,
+      "callbacksMs": 1.37,
+      "runsMs": [85.87, 86.62, 87.9, 84.9, 87.46, 88.65, 85.29, 85.1, 84.45],
+      "rules": {
+        "query/exhaustive-deps": {
+          "medianMs": 84.15,
+          "deltaMs": 53.58,
+          "callbacksMs": 0.32,
+          "runsMs": [83.14, 84.5, 85.32, 84.15, 82.6, 83.62, 85.66, 84.56, 83.44]
+        },
+        "query/infinite-query-property-order": {
+          "medianMs": 84.13,
+          "deltaMs": 53.57,
+          "callbacksMs": 0.35,
+          "runsMs": [86.13, 85.28, 84.81, 83.42, 83.96, 84.44, 84.13, 83.81, 82.94]
+        },
+        "query/mutation-property-order": {
+          "medianMs": 84.61,
+          "deltaMs": 54.05,
+          "callbacksMs": 0.36,
+          "runsMs": [83.15, 83.77, 85.52, 84.61, 83.81, 84.79, 84.13, 85.1, 86.15]
+        },
+        "query/no-rest-destructuring": {
+          "medianMs": 84.17,
+          "deltaMs": 53.61,
+          "callbacksMs": 0.42,
+          "runsMs": [84.84, 83.64, 83.35, 86.03, 83.43, 83.83, 84.8, 84.25, 84.17]
+        },
+        "query/no-unstable-deps": {
+          "medianMs": 84.49,
+          "deltaMs": 53.93,
+          "callbacksMs": 0.56,
+          "runsMs": [84.49, 84.04, 84.6, 83.95, 83.82, 85.8, 84.55, 85.79, 83.36]
+        },
+        "query/stable-query-client": {
+          "medianMs": 84,
+          "deltaMs": 53.44,
+          "callbacksMs": 0.22,
+          "runsMs": [83.4, 84, 83.84, 83.55, 85.27, 85.51, 84.21, 83.69, 84.5]
+        }
+      }
+    },
+    "router": {
+      "medianMs": 84.51,
+      "deltaMs": 53.95,
+      "callbacksMs": 0.73,
+      "runsMs": [84.53, 85.57, 84.91, 85.41, 83.25, 84.32, 84.51, 83.07, 83.64],
+      "rules": {
+        "router/create-route-property-order": {
+          "medianMs": 83.65,
+          "deltaMs": 53.09,
+          "callbacksMs": 0.53,
+          "runsMs": [86.38, 85.08, 83.58, 83.65, 83.4, 83.22, 84.95, 83.45, 83.82]
+        },
+        "router/route-param-names": {
+          "medianMs": 84.33,
+          "deltaMs": 53.76,
+          "callbacksMs": 0.42,
+          "runsMs": [84.33, 83.76, 83.88, 83.87, 84.04, 84.92, 85.75, 84.33, 89.38]
+        }
+      }
+    },
+    "solidjs": {
+      "medianMs": 112.28,
+      "deltaMs": 81.72,
+      "callbacksMs": 20.33,
+      "runsMs": [111.76, 113.12, 111.21, 112.28, 111.15, 112.51, 112.64, 111.52, 113.27],
+      "rules": {
+        "solidjs/components-return-once": {
+          "medianMs": 88.45,
+          "deltaMs": 57.89,
+          "callbacksMs": 0.52,
+          "runsMs": [88.63, 87.92, 88.45, 88.59, 88.53, 89.75, 88.42, 87.6, 88.3]
+        },
+        "solidjs/event-handlers": {
+          "medianMs": 91.89,
+          "deltaMs": 61.33,
+          "callbacksMs": 3.86,
+          "runsMs": [91.33, 90.41, 90.97, 91.89, 92.83, 90.63, 92.3, 92.08, 92.68]
+        },
+        "solidjs/imports": {
+          "medianMs": 87.13,
+          "deltaMs": 56.57,
+          "callbacksMs": 0.16,
+          "runsMs": [86.93, 87.9, 87.13, 87.67, 87.59, 87.66, 87.07, 86.72, 86.72]
+        },
+        "solidjs/jsx-no-duplicate-props": {
+          "medianMs": 88.13,
+          "deltaMs": 57.56,
+          "callbacksMs": 0.56,
+          "runsMs": [88.25, 87.76, 87, 87.54, 88.57, 88.26, 88.13, 88.01, 88.48]
+        },
+        "solidjs/jsx-no-script-url": {
+          "medianMs": 96.97,
+          "deltaMs": 66.41,
+          "callbacksMs": 8.58,
+          "runsMs": [97.43, 96.65, 96.97, 97.37, 96.5, 96.48, 96.7, 98.67, 97.52]
+        },
+        "solidjs/jsx-no-undef": {
+          "medianMs": 96.7,
+          "deltaMs": 66.14,
+          "callbacksMs": 7.95,
+          "runsMs": [96.97, 96.53, 96.05, 96.66, 96.78, 96.7, 97.09, 96.4, 98.28]
+        },
+        "solidjs/jsx-uses-vars": {
+          "medianMs": 97.06,
+          "deltaMs": 66.5,
+          "callbacksMs": 8.64,
+          "runsMs": [96.73, 97.91, 96.76, 96.56, 97.06, 99.73, 97.19, 97.02, 98.04]
+        },
+        "solidjs/no-array-handlers": {
+          "medianMs": 90.21,
+          "deltaMs": 59.65,
+          "callbacksMs": 2.51,
+          "runsMs": [90.07, 90.55, 89.9, 90.37, 90.23, 90.04, 90.21, 89.45, 91.96]
+        },
+        "solidjs/no-destructure": {
+          "medianMs": 88.39,
+          "deltaMs": 57.83,
+          "callbacksMs": 0.25,
+          "runsMs": [89.35, 89.08, 88.59, 88.41, 87.87, 87.64, 88.13, 87.13, 88.39]
+        },
+        "solidjs/no-innerhtml": {
+          "medianMs": 88.29,
+          "deltaMs": 57.73,
+          "callbacksMs": 0.15,
+          "runsMs": [87.13, 88.5, 88.23, 91.56, 89.24, 88.21, 88.81, 88.29, 87.56]
+        },
+        "solidjs/no-proxy-apis": {
+          "medianMs": 94.21,
+          "deltaMs": 63.65,
+          "callbacksMs": 5.1,
+          "runsMs": [95.66, 94.21, 93.77, 94.75, 92.59, 92.99, 98.52, 95.6, 93.74]
+        },
+        "solidjs/no-react-deps": {
+          "medianMs": 89.16,
+          "deltaMs": 58.6,
+          "callbacksMs": 0.39,
+          "runsMs": [88.1, 87.92, 87.1, 90.39, 89.53, 90.12, 89.21, 87.27, 89.16]
+        },
+        "solidjs/no-react-specific-props": {
+          "medianMs": 87.44,
+          "deltaMs": 56.88,
+          "callbacksMs": 0.35,
+          "runsMs": [87.44, 88.76, 87.99, 88.71, 86.76, 88.39, 86.85, 87.25, 87.4]
+        },
+        "solidjs/no-unknown-namespaces": {
+          "medianMs": 88.03,
+          "deltaMs": 57.47,
+          "callbacksMs": 0,
+          "runsMs": [88.13, 87.25, 88.5, 88.76, 88, 88.03, 87.31, 88.33, 87.36]
+        },
+        "solidjs/prefer-classlist": {
+          "medianMs": 87.76,
+          "deltaMs": 57.2,
+          "callbacksMs": 0.32,
+          "runsMs": [88.05, 87.74, 88.5, 88.15, 87.5, 87.76, 88.48, 87, 87.34]
+        },
+        "solidjs/prefer-for": {
+          "medianMs": 88.31,
+          "deltaMs": 57.74,
+          "callbacksMs": 0.14,
+          "runsMs": [88.07, 88.13, 88.94, 89.01, 88.31, 87.91, 88.03, 89.24, 88.38]
+        },
+        "solidjs/prefer-show": {
+          "medianMs": 87.65,
+          "deltaMs": 57.09,
+          "callbacksMs": 0.32,
+          "runsMs": [87.7, 88.77, 87.14, 87.13, 87.65, 86.82, 87.99, 87.18, 87.97]
+        },
+        "solidjs/reactivity": {
+          "medianMs": 104.12,
+          "deltaMs": 73.55,
+          "callbacksMs": 13.97,
+          "runsMs": [103.98, 104.77, 104.42, 104.22, 104.12, 104.09, 102.87, 103.93, 104.25]
+        },
+        "solidjs/self-closing-comp": {
+          "medianMs": 87.41,
+          "deltaMs": 56.85,
+          "callbacksMs": 0.3,
+          "runsMs": [86.78, 88.13, 88.33, 87.31, 89.59, 86.91, 87.85, 87.37, 87.41]
+        },
+        "solidjs/style-prop": {
+          "medianMs": 90.07,
+          "deltaMs": 59.51,
+          "callbacksMs": 2.77,
+          "runsMs": [89.41, 90.37, 90.32, 90.07, 90.78, 89.91, 90.45, 90, 89.13]
+        }
+      }
+    }
+  }
+}

@@ -20,6 +20,7 @@ import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PLUGIN_NAMES, PLUGINS, type PluginName, REPO_ROOT, distEntry, packageDir } from "./plugins.ts";
+import { copyrightLines, NOTICES_FILE, UPSTREAMS } from "./third-party-notices.ts";
 
 /** One rule per plugin and a CLI fixture that must trigger it. */
 const SMOKE: Record<PluginName, { rule: string; fixture: string }> = {
@@ -80,10 +81,22 @@ try {
       "package/CHANGELOG.md",
       "package/LICENSE",
       "package/dist/index.js",
+      // Ported packages carry the upstream copyright and license notices (TASK-036).
+      ...(UPSTREAMS[name] ? [`package/${NOTICES_FILE}`] : []),
     ].filter((f) => !files.includes(f));
-    const extra = files.filter((f) => !/^package\/(package\.json|README\.md|CHANGELOG\.md|LICENSE|dist\/.+)$/.test(f));
-    const ok = missing.length === 0 && extra.length === 0;
-    console.log(`${ok ? "ok  " : "FAIL"} contents ${name}${ok ? "" : ` missing=${missing} unexpected=${extra}`}`);
+    const extra = files.filter(
+      (f) => !/^package\/(package\.json|README\.md|CHANGELOG\.md|LICENSE|THIRD_PARTY_NOTICES\.md|dist\/.+)$/.test(f),
+    );
+    // Every upstream copyright line must be in the shipped notices file.
+    let noticesMissing: string[] = [];
+    if (UPSTREAMS[name] && files.includes(`package/${NOTICES_FILE}`)) {
+      const notices = await $`tar -xOzf ${tgz} ${`package/${NOTICES_FILE}`}`.text();
+      noticesMissing = (await copyrightLines(name)).filter((line) => !notices.includes(line));
+    }
+    const ok = missing.length === 0 && extra.length === 0 && noticesMissing.length === 0;
+    console.log(
+      `${ok ? "ok  " : "FAIL"} contents ${name}${ok ? "" : ` missing=${missing} unexpected=${extra} notices-missing=${noticesMissing}`}`,
+    );
     if (!ok) failed = true;
   }
 

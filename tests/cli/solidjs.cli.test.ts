@@ -512,3 +512,63 @@ describe("reactivity state isolation", () => {
     }
   });
 });
+
+// ── jsx-uses-vars under oxlint (TASK-024 decision) ────
+// oxlint's built-in no-unused-vars is native and doesn't see a JS plugin's
+// markVariableAsUsed, so jsx-uses-vars can't mark Solid directives (`use:tooltip`) as used under
+// oxlint: it is a no-op there and is not recommended for oxlint configs (README). If this test
+// starts failing, oxlint changed and the recommendation should be revisited.
+describe("jsx-uses-vars under oxlint", () => {
+  test("does not affect oxlint's native no-unused-vars", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "jsx-uses-vars-"));
+    const file = join(dir, "a.tsx");
+    await Bun.write(
+      file,
+      'import { tooltip } from "./tooltip";\nimport { Comp } from "./comp";\nexport const A = () => (\n  <div use:tooltip>\n    <Comp />\n  </div>\n);\n',
+    );
+    try {
+      for (const withRule of [false, true]) {
+        const cfg = await writeOxlintConfig({
+          plugins: ["solidjs"],
+          rules: { "no-unused-vars": "error", ...(withRule ? { "solidjs/jsx-uses-vars": "error" } : {}) },
+        });
+        try {
+          // keepBuiltins: `-A all` would turn off the built-in rule.
+          const result = await runOxlint({ configPath: cfg, files: [file], keepBuiltins: true });
+          const unused = result.diagnostics.filter((d) => d.code.endsWith("(no-unused-vars)")).map((d) => d.message);
+          expect({ withRule, unused }).toEqual({
+            withRule,
+            unused: ["Identifier 'tooltip' is imported but never used."],
+          });
+        } finally {
+          await cleanupConfig(cfg);
+        }
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// Audit P2 / TASK-030: deep JSX passed to a reactive function (reactivity walks the argument).
+// 1,800 levels is near the deepest oxlint 1.93 itself handles: from ~1,900 its AST deserializer
+// overflows for any JS plugin, and from ~5,000 the native parser aborts (measured; not ours).
+describe("reactivity on deep JSX", () => {
+  test("1,800 nested elements in createMemo lint without a JS plugin error", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "oxlint-deep-jsx-"));
+    try {
+      const depth = 1800;
+      const file = join(dir, "deep.tsx");
+      await Bun.write(
+        file,
+        `import { createMemo } from "solid-js";\nexport function App() {\n  const view = createMemo(() => ${"<div>".repeat(depth)}x${"</div>".repeat(depth)});\n  return view;\n}\n`,
+      );
+      const result = await runOxlint({ configPath, files: [file], extraArgs: ["--threads", "1"] });
+      expect(result.stderr).not.toContain("Error running JS plugin");
+      expect(result.stderr).not.toContain("RangeError");
+      expect(result.exitCode).toBe(0);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});

@@ -45,4 +45,34 @@ describe("check-createonce-state", () => {
       "missingComponentsSet:NOT RESET",
     );
   });
+
+  test("a per-file handle counts only with acquire() in before() and release() in after()", () => {
+    const withHooks = (before: string, after: string) => `export default {
+  createOnce(context: any) {
+    const tracker = sharedTrackerHandle();
+    return {
+      before() {
+        ${before}
+      },
+      after() {
+        ${after}
+      },
+    };
+  },
+};
+`;
+    expect(statuses(withHooks("tracker.acquire(s);", "tracker.release();"))).toEqual(["tracker:reset"]);
+    expect(statuses(withHooks("tracker.acquire(s);", ""))).toEqual(["tracker:NOT RESET"]);
+    expect(statuses(withHooks("", "tracker.release();"))).toEqual(["tracker:NOT RESET"]);
+  });
+
+  test("the errorset rules' shared tracker is caught when release() is removed", async () => {
+    const url = new URL("../../packages/errorset/src/rules/no-throw-errorset.ts", import.meta.url);
+    const real = await Bun.file(url).text();
+    expect(checkFile("no-throw-errorset.ts", real).every((f) => f.status !== "NOT RESET")).toBe(true);
+    const planted = real.replace("tracker.release();", "");
+    expect(checkFile("no-throw-errorset.ts", planted).map((f) => `${f.name}:${f.status}`)).toContain(
+      "tracker:NOT RESET",
+    );
+  });
 });

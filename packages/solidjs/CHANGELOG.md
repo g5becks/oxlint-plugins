@@ -1,5 +1,26 @@
 # oxlint-plugin-solidjs
 
+## 0.2.1
+
+### Patch Changes
+
+- 58a58df: Per-file early exits (rules return `false` from `before()`, which makes oxlint skip them for that file):
+  
+  - errorset: all rules skip files whose source never mentions a configured errorset module (`@takinprofit/errorset` or `settings.errorset.modules`); those files couldn't produce reports. On a 76-file corpus with few errorset users, linting with the errorset plugin got 30% faster (88 → 62 ms, single-threaded). A module specifier spelled with escape sequences (`"\u0040takinprofit/errorset"`) is no longer recognized.
+  - solidjs: the 16 JSX-only rules skip `.ts`, `.mts` and `.cts` files, which can't contain JSX. Lint results are unchanged.
+- f2fbffe: README corrections. solidjs: `no-proxy-apis` and `no-array-handlers` are off in the `recommended` preset (the table said `error` and `warn`); corrected descriptions of `no-array-handlers`, `no-innerhtml` and `prefer-classlist`; new "Options" section documenting every rule option with its default. errorset: notes that files never mentioning a configured module are skipped.
+- 6051ec5: - `components-return-once`: the fixes that rewrite early returns to `<Show>`, `<Switch>` and `<Match>` now add the missing `solid-js` imports, so the fixed file type-checks (previously the components were referenced without an import).
+  - `no-unknown-namespaces`: options `{}` no longer abort the oxlint run with "Options validation failed" (the schema's `default: []` contradicted its own `minItems: 1`; the default is removed, `allowedNamespaces: []` is still rejected).
+- 7c7f1f1: `reactivity`: the subtree walk for arguments of `use*`/`create*` calls is now iterative instead of recursive, so very deep JSX can't overflow the stack in the rule (ESLint on Bun parses 5,000 levels of nesting). Lint results are unchanged. The README documents oxlint's own nesting limits (about 1,900 nested JSX elements with JS plugins, about 5,000 for its parser).
+- ebed8c2: Fixes found by running eslint-plugin-solid 0.14.5's own test suites against the rules (all 465 runnable cases now pass):
+  
+  - `imports`: no longer crashes when fixing into `import "solid-js"` or `import {} from "solid-js"`.
+  - Static values are evaluated like upstream (string concatenation, unary minus, `const` resolution): `jsx-no-script-url` reports `"javascrip" + "t:..."`, `no-innerhtml` accepts concatenated static HTML, `style-prop` reports `'margin-top': -10`.
+  - `style-prop`: vendor-prefixed properties (`-webkit-align-content`) are accepted and camelCase vendor names get the kebab-case message; the string-style fix drops declarations without a value.
+  - README: `jsx-uses-vars` has no effect under oxlint (oxlint's `no-unused-vars` is native), so don't enable it in `.oxlintrc.json`; it stays in the ESLint `recommended` preset. Parity with upstream is documented in PARITY.md.
+- 118fd0d: The package now ships `THIRD_PARTY_NOTICES.md` with the copyright and MIT license notice of the upstream ESLint plugin its rules are ported from (eslint-plugin-functional, eslint-plugin-no-type-assertion, @tanstack/eslint-plugin-query, @tanstack/eslint-plugin-router, eslint-plugin-solid), as the MIT license requires.
+- e3ce3fa: Rules now declare their defaults in `meta.defaultOptions`, where oxlint, ESLint and documentation tools read them (they were previously in an ignored top-level `defaultOptions`). The declared values are the ones the rules already used, so lint results don't change. `immutable/immutable-data` now documents `ignoreImmediateMutation: false`, its actual default; the earlier declaration said `true` (eslint-plugin-functional's default) but was never applied.
+
 ## 0.2.0
 
 ### Minor Changes

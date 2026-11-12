@@ -1,3 +1,5 @@
+import type { Context } from "@oxlint/plugins";
+
 /**
  * `settings.errorset` (shared by all errorset rules):
  *
@@ -65,7 +67,7 @@ export function parseErrorsetSettings(settings: unknown): ErrorsetSettings {
 }
 
 /** Read `settings.errorset` from a rule context; never throws. */
-export function readErrorsetSettings(context: any): ErrorsetSettings {
+export function readErrorsetSettings(context: Pick<Context, "settings">): ErrorsetSettings {
   try {
     return parseErrorsetSettings(context?.settings);
   } catch {

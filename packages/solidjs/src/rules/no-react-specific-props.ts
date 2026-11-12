@@ -1,11 +1,13 @@
+import { defineRule, type Fixer } from "@oxlint/plugins";
 import { isDOMElementName, jsxGetProp, jsxHasProp } from "../utils/jsx.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 const reactSpecificProps = [
   { from: "className", to: "class" },
   { from: "htmlFor", to: "for" },
 ];
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -19,15 +21,18 @@ export default {
       noUselessKey: "Elements in a <For> or <Index> list do not need a key prop.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     return {
-      JSXOpeningElement(node: any) {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
+      JSXOpeningElement(node) {
         for (const { from, to } of reactSpecificProps) {
           const classNameAttribute = jsxGetProp(node.attributes ?? [], from);
           if (classNameAttribute) {
             const fix = !jsxHasProp(node.attributes ?? [], to)
-              ? (fixer: any) => fixer.replaceText(classNameAttribute.name, to)
+              ? (fixer: Fixer) => fixer.replaceText(classNameAttribute.name, to)
               : undefined;
 
             context.report({
@@ -44,11 +49,11 @@ export default {
             context.report({
               node: keyProp,
               messageId: "noUselessKey",
-              fix: (fixer: any) => fixer.remove(keyProp),
+              fix: (fixer) => fixer.remove(keyProp),
             });
           }
         }
       },
     };
   },
-};
+});

@@ -17,7 +17,6 @@ export default createPropertyOrderRule(
       hasSuggestions: true,
       fixable: "code" as const,
     },
-    defaultOptions: [],
   },
   mutationFunctions,
   mutationSortRules,

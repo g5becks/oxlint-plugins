@@ -7,7 +7,8 @@
 #   unit           linux Node 22 + 24 x RuleTester {floor, pinned} + macOS (host, pinned)
 #   cli            oxlint floor (1.70.0, linux), pinned (linux + macOS), latest (linux, advisory):
 #                  CLI suite + bench, via OXLINT_BIN for non-pinned versions
-#   eslint-compat  linux
+#   eslint-compat  linux, ESLint 9 and 10
+#   parity         linux, advisory: upstream ESLint plugins vs ports on the corpus (scripts/parity.ts)
 #   pack           linux: build, pack every package, install into a consumer with the
 #                  oxlint floor and the pinned oxlint, lint a fixture per plugin
 # Linux legs run in Docker (Colima) on Node + the pinned Bun (scripts/ci-local/Dockerfile);
@@ -175,7 +176,11 @@ linux "cli (linux, oxlint latest=$OXLINT_LATEST)" cli-latest "$latest_kind" \
   "$INSTALL; $(with_oxlint "$OXLINT_LATEST"); $CLI_STEPS"
 
 # eslint-compat
-linux "eslint-compat (linux)" eslint-compat required "$INSTALL; bun run test:compat"
+linux "eslint-compat (linux, eslint 9)" eslint-compat-9 required "$INSTALL; bun run test:compat"
+linux "eslint-compat (linux, eslint 10)" eslint-compat-10 required "$INSTALL; bun run test:compat:eslint10"
+
+# parity (advisory: never fails the run; the report is in the leg's log)
+linux "parity (linux)" parity advisory "$INSTALL; bun scripts/parity.ts --out /w/parity-report.md"
 
 # pack
 linux "pack (linux, oxlint $OXLINT_FLOOR + $OXLINT_PINNED)" pack required \

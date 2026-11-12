@@ -1,3 +1,4 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 import { createRouteFunctions, createRouteFunctionsIndirect, sortRules } from "../utils/constants.ts";
 import { createTanstackRouterImportTracker } from "../utils/detect-router-imports.ts";
 import { sortDataByOrder } from "../utils/sort-data-by-order.ts";
@@ -8,7 +9,7 @@ function isCreateRouteFunction(name: string): boolean {
   return createRouteFunctionSet.has(name);
 }
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -22,8 +23,7 @@ export default {
     hasSuggestions: true,
     fixable: "code" as const,
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     const tracker = createTanstackRouterImportTracker();
 
     return {
@@ -33,11 +33,11 @@ export default {
       Program() {
         tracker.reset();
       },
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
       },
-      CallExpression(node: any) {
-        if (node?.callee?.type !== "Identifier") {
+      CallExpression(node) {
+        if (node.callee.type !== "Identifier") {
           return;
         }
 
@@ -46,37 +46,39 @@ export default {
           return;
         }
 
-        let args = node.arguments;
+        let args: ReadonlyArray<ESTree.Argument> = node.arguments;
         if ((createRouteFunctionsIndirect as ReadonlyArray<string>).includes(createRouteFunction)) {
-          if (node.parent?.type === "CallExpression") {
+          if (node.parent.type === "CallExpression") {
             args = node.parent.arguments;
           } else {
             return;
           }
         }
 
-        const argument = args?.[0];
+        const argument = args[0];
         if (argument?.type !== "ObjectExpression") {
           return;
         }
 
-        const allProperties = argument.properties ?? [];
+        const allProperties = argument.properties;
         if (allProperties.length < 2) {
           return;
         }
 
-        type PropertyEntry = { name: string; property: any };
-        const properties: PropertyEntry[] = allProperties.flatMap((property: any) => {
-          if (property?.type === "Property" && property.key?.type === "Identifier") {
-            return [{ name: property.key.name as string, property }];
+        type PropertyEntry = { name: string; property: ESTree.ObjectPropertyKind };
+        const properties: PropertyEntry[] = allProperties.flatMap((property): PropertyEntry[] => {
+          if (property.type === "Property" && property.key.type === "Identifier") {
+            return [{ name: property.key.name, property }];
           }
-          if (property?.type === "SpreadElement" && property.argument?.type === "Identifier") {
-            return [{ name: property.argument.name as string, property }];
+          if (property.type === "SpreadElement" && property.argument.type === "Identifier") {
+            return [{ name: property.argument.name, property }];
           }
           return [];
         });
 
-        const sortedProperties = sortDataByOrder<PropertyEntry, "name">(properties, sortRules as any, "name");
+        // Indices below are within bounds (length >= 2 checked above).
+        const propertyAt = (i: number) => allProperties[i] as ESTree.ObjectPropertyKind;
+        const sortedProperties = sortDataByOrder<PropertyEntry, "name">(properties, sortRules, "name");
         if (sortedProperties == null) {
           return;
         }
@@ -85,21 +87,23 @@ export default {
           node: argument,
           data: { function: createRouteFunction },
           messageId: "invalidOrder",
-          fix(fixer: any) {
+          fix(fixer) {
             const sourceCode = context.sourceCode;
             const text = sortedProperties.reduce((sourceText, specifier, index) => {
               let between = "";
               if (index < allProperties.length - 1) {
-                between = sourceCode.getText().slice(allProperties[index].range[1], allProperties[index + 1].range[0]);
+                between = sourceCode.getText().slice(propertyAt(index).range[1], propertyAt(index + 1).range[0]);
               }
               return sourceText + sourceCode.getText(specifier.property) + between;
             }, "");
 
-            const lastProp = allProperties[allProperties.length - 1];
-            return fixer.replaceTextRange([allProperties[0].range[0], lastProp.range[1]], text);
+            return fixer.replaceTextRange(
+              [propertyAt(0).range[0], propertyAt(allProperties.length - 1).range[1]],
+              text,
+            );
           },
         });
       },
     };
   },
-};
+});

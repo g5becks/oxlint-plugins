@@ -1,6 +1,9 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 import { jsxGetAllProps } from "../utils/jsx.ts";
+import { ruleOptions } from "../utils/options.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -27,13 +30,16 @@ export default {
       noDuplicateChildren: "Using {{used}} at the same time is not allowed.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     return {
-      JSXOpeningElement(node: any) {
-        const ignoreCase = context.options[0]?.ignoreCase ?? false;
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
+      JSXOpeningElement(node) {
+        const ignoreCase = ruleOptions<{ ignoreCase?: boolean }>(context)?.ignoreCase ?? false;
         const props = new Set<string>();
-        const checkPropName = (name: string, propNode: any) => {
+        const checkPropName = (name: string, propNode: ESTree.Node) => {
           let normalizedName = name;
           if (ignoreCase || name.startsWith("on")) {
             normalizedName = name
@@ -55,7 +61,7 @@ export default {
         }
 
         const hasChildrenProp = props.has("children");
-        const hasChildren = (node.parent?.children?.length ?? 0) > 0;
+        const hasChildren = (node.parent.type === "JSXElement" ? node.parent.children.length : 0) > 0;
         const hasInnerHTML = props.has("innerHTML") || props.has("innerhtml");
         const hasTextContent = props.has("textContent") || props.has("textcontent");
         const used = [
@@ -74,4 +80,4 @@ export default {
       },
     };
   },
-};
+});

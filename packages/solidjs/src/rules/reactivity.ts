@@ -1,31 +1,41 @@
+import {
+  type Context,
+  defineRule,
+  type ESTree,
+  type Location,
+  type Reference,
+  type Scope,
+  type SourceCode,
+  type Variable,
+} from "@oxlint/plugins";
 import { trackImports } from "../utils/imports.ts";
 import { isDOMElementName, isJSXElementOrFragment } from "../utils/jsx.ts";
 import { trace } from "../utils/trace.ts";
 import { findParent } from "../utils/traverse.ts";
+import { walkTree } from "../utils/walk.ts";
+import { type FunctionNode, isFunctionNode } from "../utils/functions.ts";
+import { ruleOptions } from "../utils/options.ts";
 
 // ---- Inlined helpers ----
 
-const isFunctionNode = (node: any): boolean =>
-  !!node &&
-  (node.type === "FunctionDeclaration" ||
-    node.type === "FunctionExpression" ||
-    node.type === "ArrowFunctionExpression");
+type Child = ESTree.Node | null | undefined;
+type IdentifierNode = Extract<ESTree.Node, { type: "Identifier" }>;
 
-const isProgramOrFunctionNode = (node: any): boolean => !!node && (node.type === "Program" || isFunctionNode(node));
+const isProgramOrFunctionNode = (node: Child): boolean => !!node && (node.type === "Program" || isFunctionNode(node));
 
 const isPropsByName = (name: string): boolean => /[pP]rops/.test(name);
 
-const getFunctionName = (node: any): string | null => {
+const getFunctionName = (node: FunctionNode): string | null => {
   if ((node.type === "FunctionDeclaration" || node.type === "FunctionExpression") && node.id != null) {
     return node.id.name;
   }
-  if (node.parent?.type === "VariableDeclarator" && node.parent.id.type === "Identifier") {
+  if (node.parent.type === "VariableDeclarator" && node.parent.id.type === "Identifier") {
     return node.parent.id.name;
   }
   return null;
 };
 
-function ignoreTransparentWrappers(node: any, up = false): any {
+function ignoreTransparentWrappers(node: ESTree.Node, up = false): ESTree.Node {
   if (node.type === "TSAsExpression" || node.type === "TSNonNullExpression" || node.type === "TSSatisfiesExpression") {
     const next = up ? node.parent : node.expression;
     if (next) return ignoreTransparentWrappers(next, up);
@@ -33,8 +43,12 @@ function ignoreTransparentWrappers(node: any, up = false): any {
   return node;
 }
 
-function findInScope(node: any, scope: any, predicate: (n: any) => boolean): any {
-  let current: any = node;
+function findInScope(
+  node: ESTree.Node,
+  scope: ESTree.Node,
+  predicate: (n: ESTree.Node) => boolean,
+): ESTree.Node | null {
+  let current: Child = node;
   while (current) {
     if (current === scope) return predicate(node) ? current : null;
     if (predicate(current)) return current;
@@ -43,11 +57,11 @@ function findInScope(node: any, scope: any, predicate: (n: any) => boolean): any
   return null;
 }
 
-function findVariable(context: any, node: any): any {
+function findVariable(context: Context, node: IdentifierNode): Variable | null {
   const scope = context.sourceCode.getScope(node);
   if (!scope) return null;
   // Walk up scopes to find variable
-  let s = scope;
+  let s: Scope | null = scope;
   while (s) {
     const v = s.set?.get?.(node.name);
     if (v) return v;
@@ -56,10 +70,10 @@ function findVariable(context: any, node: any): any {
   return null;
 }
 
-function getFunctionHeadLoc(node: any, sourceCode: any): any {
+function getFunctionHeadLoc(node: FunctionNode, sourceCode: SourceCode): Location {
   const parent = node.parent;
   if (node.type === "ArrowFunctionExpression") {
-    const arrowToken = sourceCode.getTokenBefore(node.body, (t: any) => t.value === "=>");
+    const arrowToken = sourceCode.getTokenBefore(node.body, { filter: (t) => t.value === "=>" });
     if (arrowToken) {
       return {
         start: node.loc.start,
@@ -70,56 +84,31 @@ function getFunctionHeadLoc(node: any, sourceCode: any): any {
   if (node.id) {
     return node.id.loc;
   }
-  if (parent?.type === "VariableDeclarator" && parent.id?.loc) {
+  if (parent.type === "VariableDeclarator" && parent.id.loc) {
     return parent.id.loc;
   }
   return node.loc;
 }
 
-// Simple tree walker replacing estraverse
-function walkTree(node: any, enter: (n: any, skip: () => void) => void): void {
-  let skipped = false;
-  const skipFn = () => {
-    skipped = true;
-  };
-  enter(node, skipFn);
-  if (skipped) return;
-  for (const key of Object.keys(node)) {
-    if (key === "parent") continue;
-    const child = node[key];
-    if (child && typeof child === "object") {
-      if (Array.isArray(child)) {
-        for (const item of child) {
-          if (item && typeof item.type === "string") {
-            walkTree(item, enter);
-          }
-        }
-      } else if (typeof child.type === "string") {
-        walkTree(child, enter);
-      }
-    }
-  }
-}
-
 // ---- ScopeStack classes ----
 
 interface ReactiveVariable {
-  references: any[];
-  declarationScope: any;
-  variable: any;
+  references: Reference[];
+  declarationScope: ESTree.Node;
+  variable: Variable;
 }
 
 interface TrackedScope {
-  node: any;
+  node: ESTree.Node;
   expect: "function" | "called-function" | "expression";
 }
 
 class ScopeStackItem {
-  node: any;
+  node: ESTree.Node;
   trackedScopes: TrackedScope[] = [];
-  unnamedDerivedSignals = new Set<any>();
+  unnamedDerivedSignals = new Set<FunctionNode>();
   hasJSX = false;
-  constructor(node: any) {
+  constructor(node: ESTree.Node) {
     this.node = node;
   }
 }
@@ -128,7 +117,7 @@ class ScopeStack {
   private items: ScopeStackItem[] = [];
   private signals: ReactiveVariable[] = [];
   private props: ReactiveVariable[] = [];
-  syncCallbacks = new Set<any>();
+  syncCallbacks = new Set<ESTree.Node>();
 
   // ---- Stack operations ----
 
@@ -162,16 +151,16 @@ class ScopeStack {
 
   // ---- Reactive variable tracking ----
 
-  pushSignal(variable: any, declarationScope?: any) {
+  pushSignal(variable: Variable, declarationScope?: ESTree.Node) {
     if (!declarationScope) declarationScope = this.currentScope().node;
     this.signals.push({
-      references: variable.references.filter((ref: any) => !ref.init),
+      references: variable.references.filter((ref) => !ref.init),
       variable,
       declarationScope,
     });
   }
 
-  pushUniqueSignal(variable: any, declarationScope: any) {
+  pushUniqueSignal(variable: Variable, declarationScope: ESTree.Node) {
     const found = this.signals.find((s) => s.variable === variable);
     if (!found) {
       this.pushSignal(variable, declarationScope);
@@ -180,10 +169,10 @@ class ScopeStack {
     }
   }
 
-  pushProps(variable: any, declarationScope?: any) {
+  pushProps(variable: Variable, declarationScope?: ESTree.Node) {
     if (!declarationScope) declarationScope = this.currentScope().node;
     this.props.push({
-      references: variable.references.filter((ref: any) => !ref.init),
+      references: variable.references.filter((ref) => !ref.init),
       variable,
       declarationScope,
     });
@@ -199,11 +188,13 @@ class ScopeStack {
     this.props = this.props.filter((v) => v.references.length !== 0);
   }
 
-  private *consumeRefs(variables: ReactiveVariable[]): Iterable<{ reference: any; declarationScope: any }> {
+  private *consumeRefs(
+    variables: ReactiveVariable[],
+  ): Iterable<{ reference: Reference; declarationScope: ESTree.Node }> {
     for (const variable of variables) {
-      const inScope: any[] = [];
-      const notInScope: any[] = [];
-      variable.references.forEach((ref: any) => {
+      const inScope: Reference[] = [];
+      const notInScope: Reference[] = [];
+      variable.references.forEach((ref) => {
         if (this.isRefInCurrentScope(ref)) inScope.push(ref);
         else notInScope.push(ref);
       });
@@ -215,7 +206,7 @@ class ScopeStack {
     }
   }
 
-  private findDeepest(a: any, b: any): any {
+  private findDeepest(a: ESTree.Node, b: ESTree.Node): ESTree.Node {
     if (a === b) return a;
     for (let i = this.items.length - 1; i >= 0; i--) {
       const { node } = this.items[i]!;
@@ -224,7 +215,7 @@ class ScopeStack {
     return a;
   }
 
-  private isRefInCurrentScope(reference: any) {
+  private isRefInCurrentScope(reference: Reference) {
     let parentFn = findParent(reference.identifier, isProgramOrFunctionNode);
     while (isFunctionNode(parentFn) && this.syncCallbacks.has(parentFn)) {
       parentFn = findParent(parentFn, isProgramOrFunctionNode);
@@ -235,7 +226,7 @@ class ScopeStack {
 
 // ---- Helper functions ----
 
-const getNthDestructuredVar = (id: any, n: number, context: any): any => {
+const getNthDestructuredVar = (id: Child, n: number, context: Context): Variable | null => {
   if (id?.type === "ArrayPattern") {
     const el = id.elements[n];
     if (el?.type === "Identifier") return findVariable(context, el);
@@ -243,14 +234,14 @@ const getNthDestructuredVar = (id: any, n: number, context: any): any => {
   return null;
 };
 
-const getReturnedVar = (id: any, context: any): any => {
+const getReturnedVar = (id: ESTree.Node, context: Context): Variable | null => {
   if (id.type === "Identifier") return findVariable(context, id);
   return null;
 };
 
 // ---- Rule export ----
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -287,18 +278,19 @@ export default {
       shouldAssign: "For proper analysis, a variable should be used to capture the result of this function call.",
       noAsyncTrackedScope: "This tracked scope should not be async. Solid's reactivity only tracks synchronously.",
     },
+    defaultOptions: [{ customReactiveFunctions: [] }],
   },
-  defaultOptions: [{ customReactiveFunctions: [] as string[] }],
-  createOnce(context: any) {
-    const getCustomReactiveFunctions = (): string[] => context.options?.[0]?.customReactiveFunctions ?? [];
+  createOnce(context) {
+    const getCustomReactiveFunctions = (): string[] =>
+      ruleOptions<{ customReactiveFunctions?: Array<string> }>(context)?.customReactiveFunctions ?? [];
 
-    const warnShouldDestructure = (node: any, nth?: string) =>
+    const warnShouldDestructure = (node: ESTree.Node, nth?: string) =>
       context.report({
         node,
         messageId: "shouldDestructure",
         data: nth ? { nth: nth + " " } : undefined,
       });
-    const warnShouldAssign = (node: any) => context.report({ node, messageId: "shouldAssign" });
+    const warnShouldAssign = (node: ESTree.Node) => context.report({ node, messageId: "shouldAssign" });
 
     // createOnce runs once per worker: the scope stack (including syncCallbacks and the
     // signal/props lists) and the import tracker are recreated/cleared for every file in
@@ -331,13 +323,13 @@ export default {
       scopeStack.push(new ScopeStackItem(node));
     };
 
-    const matchTrackedScope = (trackedScope: TrackedScope, node: any): boolean => {
+    const matchTrackedScope = (trackedScope: TrackedScope, node: ESTree.Node): boolean => {
       switch (trackedScope.expect) {
         case "function":
         case "called-function":
           return node === trackedScope.node;
         case "expression":
-          return Boolean(findInScope(node, currentScope().node, (n: any) => n === trackedScope.node));
+          return Boolean(findInScope(node, currentScope().node, (n) => n === trackedScope.node));
       }
     };
 
@@ -567,7 +559,7 @@ export default {
     };
 
     // ---- Reactive assignment detection ----
-    const checkForReactiveAssignment = (id: any, init: any) => {
+    const checkForReactiveAssignment = (id: ESTree.Node | null, init: ESTree.Node) => {
       init = ignoreTransparentWrappers(init);
       if (init.type === "CallExpression" && init.callee.type === "Identifier") {
         const { callee } = init;
@@ -601,11 +593,13 @@ export default {
           }
         } else if (matchImport("splitProps", callee.name)) {
           if (id?.type === "ArrayPattern") {
-            const vars = id.elements.map((_: any, i: number) => getNthDestructuredVar(id, i, context)).filter(Boolean);
+            const vars = id.elements
+              .map((_, i) => getNthDestructuredVar(id, i, context))
+              .filter((v): v is Variable => Boolean(v));
             if (vars.length === 0) {
               warnShouldDestructure(id);
             } else {
-              vars.forEach((v: any) => scopeStack.pushProps(v, currentScope().node));
+              vars.forEach((v) => scopeStack.pushProps(v, currentScope().node));
             }
           } else {
             const v = id && getReturnedVar(id, context);
@@ -619,14 +613,16 @@ export default {
           if (mutable) scopeStack.pushProps(mutable, currentScope().node);
         } else if (matchImport("mapArray", callee.name)) {
           const arg1 = init.arguments[1];
-          if (isFunctionNode(arg1) && arg1.params.length >= 2 && arg1.params[1].type === "Identifier") {
-            const indexSignal = findVariable(context, arg1.params[1]);
+          const indexParam = isFunctionNode(arg1) ? arg1.params[1] : undefined;
+          if (indexParam?.type === "Identifier") {
+            const indexSignal = findVariable(context, indexParam);
             if (indexSignal) scopeStack.pushSignal(indexSignal);
           }
         } else if (matchImport("indexArray", callee.name)) {
           const arg1 = init.arguments[1];
-          if (isFunctionNode(arg1) && arg1.params.length >= 1 && arg1.params[0].type === "Identifier") {
-            const valueSignal = findVariable(context, arg1.params[0]);
+          const valueParam = isFunctionNode(arg1) ? arg1.params[0] : undefined;
+          if (valueParam?.type === "Identifier") {
+            const valueSignal = findVariable(context, valueParam);
             if (valueSignal) scopeStack.pushSignal(valueSignal);
           }
         }
@@ -635,19 +631,19 @@ export default {
 
     // ---- Tracked scope detection ----
     const checkForTrackedScopes = (node: any) => {
-      const pushTrackedScope = (n: any, expect: TrackedScope["expect"]) => {
+      const pushTrackedScope = (n: ESTree.Node, expect: TrackedScope["expect"]) => {
         currentScope().trackedScopes.push({ node: n, expect });
         if (expect !== "called-function" && isFunctionNode(n) && n.async) {
           context.report({ node: n, messageId: "noAsyncTrackedScope" });
         }
       };
 
-      const permissivelyTrackNode = (n: any) => {
-        walkTree(n, (childNode: any, skip: () => void) => {
+      const permissivelyTrackNode = (n: ESTree.Node) => {
+        walkTree(n, (childNode, skip) => {
           const traced = trace(childNode, context);
           if (
             isFunctionNode(traced) ||
-            (traced.type === "Identifier" &&
+            (traced?.type === "Identifier" &&
               traced.parent?.type !== "MemberExpression" &&
               !(traced.parent?.type === "CallExpression" && traced.parent.callee === traced))
           ) {
@@ -758,7 +754,7 @@ export default {
           } else if (matchImport("on", callee.name)) {
             if (arg0) {
               if (arg0.type === "ArrayExpression") {
-                arg0.elements.forEach((el: any) => {
+                arg0.elements.forEach((el: ESTree.Node | null) => {
                   if (el && el?.type !== "SpreadElement") pushTrackedScope(el, "function");
                 });
               } else {
@@ -785,12 +781,12 @@ export default {
                   matchImport("getOwner", decl.node.init.callee.name)
                 ) {
                   const ownerFunction = findParent(decl.node, isProgramOrFunctionNode);
-                  const scopeStackIndex = scopeStack.findIndex(({ node }: any) => ownerFunction === node);
+                  const scopeStackIndex = scopeStack.findIndex(({ node }) => ownerFunction === node);
                   if (
                     (scopeStackIndex >= 1 &&
                       !scopeStack
                         .at(scopeStackIndex - 1)!
-                        .trackedScopes.some((ts: any) => ts.expect === "function" && ts.node === ownerFunction)) ||
+                        .trackedScopes.some((ts) => ts.expect === "function" && ts.node === ownerFunction)) ||
                     scopeStackIndex === 0
                   ) {
                     isTrackedScope = false;
@@ -872,13 +868,13 @@ export default {
         imports.clear();
       },
       ImportDeclaration: handleImportDeclaration,
-      JSXExpressionContainer(node: any) {
+      JSXExpressionContainer(node) {
         checkForTrackedScopes(node);
       },
-      JSXSpreadAttribute(node: any) {
+      JSXSpreadAttribute(node) {
         checkForTrackedScopes(node);
       },
-      CallExpression(node: any) {
+      CallExpression(node) {
         checkForTrackedScopes(node);
         checkForSyncCallbacks(node);
         const parent = node.parent && ignoreTransparentWrappers(node.parent, true);
@@ -886,25 +882,25 @@ export default {
           checkForReactiveAssignment(null, node);
         }
       },
-      NewExpression(node: any) {
+      NewExpression(node) {
         checkForTrackedScopes(node);
       },
-      VariableDeclarator(node: any) {
+      VariableDeclarator(node) {
         if (node.init) {
           checkForReactiveAssignment(node.id, node.init);
           checkForTrackedScopes(node);
         }
       },
-      AssignmentExpression(node: any) {
+      AssignmentExpression(node) {
         if (node.left.type !== "MemberExpression") {
           checkForReactiveAssignment(node.left, node.right);
         }
         checkForTrackedScopes(node);
       },
-      TaggedTemplateExpression(node: any) {
+      TaggedTemplateExpression(node) {
         checkForTrackedScopes(node);
       },
-      "JSXElement > JSXExpressionContainer > :function"(node: any) {
+      "JSXElement > JSXExpressionContainer > :function"(node) {
         if (
           isFunctionNode(node) &&
           node.parent?.type === "JSXExpressionContainer" &&
@@ -913,15 +909,12 @@ export default {
           const element = node.parent.parent;
           if (element.openingElement.name.type === "JSXIdentifier") {
             const tagName = element.openingElement.name.name;
-            if (matchImport("For", tagName) && node.params.length === 2 && node.params[1].type === "Identifier") {
-              const index = findVariable(context, node.params[1]);
+            const [first, second] = node.params;
+            if (matchImport("For", tagName) && node.params.length === 2 && second?.type === "Identifier") {
+              const index = findVariable(context, second);
               if (index) scopeStack.pushSignal(index, currentScope().node);
-            } else if (
-              matchImport("Index", tagName) &&
-              node.params.length >= 1 &&
-              node.params[0].type === "Identifier"
-            ) {
-              const item = findVariable(context, node.params[0]);
+            } else if (matchImport("Index", tagName) && node.params.length >= 1 && first?.type === "Identifier") {
+              const item = findVariable(context, first);
               if (item) scopeStack.pushSignal(item, currentScope().node);
             }
           }
@@ -943,4 +936,4 @@ export default {
       },
     };
   },
-};
+});

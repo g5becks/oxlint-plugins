@@ -1,3 +1,4 @@
+import { defineRule } from "@oxlint/plugins";
 /**
  * Rule: prefer-guard-over-manual-kind-check
  *
@@ -8,12 +9,13 @@
  * ❌ if (result.kind === "not_found") { result.data.id }  // data is Record<string, unknown>
  * ✅ if (UserError.not_found(result)) { result.data.id }  // data is { id: string }
  */
-import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
+import { sharedTrackerHandle } from "../utils/shared-tracker.ts";
 import { readErrorsetSettings } from "../utils/settings.ts";
 import { createNarrowing, guardSetName } from "../utils/narrowing.ts";
 import { getKindEquality } from "../utils/pattern-helpers.ts";
+import { mayImportConfiguredModule } from "../utils/early-exit.ts";
 
-export default {
+export default defineRule({
   meta: {
     type: "suggestion" as const,
     docs: {
@@ -30,24 +32,28 @@ export default {
         'Use a kind-level guard instead of `.kind === "{{kindLiteral}}"`. Manual kind checks don\'t provide TypeScript type narrowing for `.data`.',
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
-    const tracker = createErrorsetImportTracker();
+  createOnce(context) {
+    // The file's import tracker, shared with the other errorset rules (audit R6).
+    const tracker = sharedTrackerHandle();
 
     return {
       before() {
-        tracker.reset(readErrorsetSettings(context));
+        const settings = readErrorsetSettings(context);
+        // No import from a configured errorset module: nothing to report in this file (audit P3).
+        if (!mayImportConfiguredModule(context.sourceCode.text, settings)) return false;
+        tracker.acquire(settings);
+        return true;
       },
-      Program() {
-        tracker.reset(readErrorsetSettings(context));
+      after() {
+        tracker.release();
       },
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
       },
-      VariableDeclaration(node: any) {
+      VariableDeclaration(node) {
         tracker.handleVariableDeclaration(node);
       },
-      BinaryExpression(node: any) {
+      BinaryExpression(node) {
         if (!tracker.hasErrorsetImport()) return;
 
         const equality = getKindEquality(node);
@@ -75,7 +81,7 @@ export default {
               {
                 messageId: "preferGuard",
                 data: { guardName, kind: kindLiteral, varName },
-                fix(fixer: any) {
+                fix(fixer) {
                   return fixer.replaceText(node, `${guardName}.${kindLiteral}(${sourceCode.getText(object)})`);
                 },
               },
@@ -91,4 +97,4 @@ export default {
       },
     };
   },
-};
+});

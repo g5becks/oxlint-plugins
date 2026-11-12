@@ -1,8 +1,10 @@
+import { type Context, defineRule, type ESTree } from "@oxlint/plugins";
 import { shouldIgnorePattern } from "../utils/ignore.ts";
 import { isShallowReadonly } from "../utils/immutability.ts";
+import { ruleOptions } from "../utils/options.ts";
 
 type CategoryOption = {
-  enforcement?: "ReadonlyShallow";
+  enforcement?: "ReadonlyShallow" | "None" | false;
   ignoreNamePattern?: string | Array<string>;
 };
 
@@ -14,7 +16,21 @@ type RuleOptions = [
   }?,
 ];
 
-function getCategoryOption(option: any, key: "parameters" | "returnTypes" | "variables"): CategoryOption {
+/**
+ * Options per category. Only ReadonlyShallow is implemented (no type information), so
+ * `enforcement` accepts "ReadonlyShallow", or "None" / false to turn the category off (upstream's
+ * spellings); upstream-only levels and keys are rejected rather than silently ignored.
+ */
+const CATEGORY_SCHEMA = {
+  type: "object",
+  properties: {
+    enforcement: { enum: ["ReadonlyShallow", "None", false] },
+    ignoreNamePattern: { anyOf: [{ type: "string" }, { type: "array", items: { type: "string" } }] },
+  },
+  additionalProperties: false,
+};
+
+function getCategoryOption(option: RuleOptions[0], key: "parameters" | "returnTypes" | "variables"): CategoryOption {
   const value = option?.[key] ?? {};
   return {
     enforcement: value.enforcement ?? "ReadonlyShallow",
@@ -22,17 +38,19 @@ function getCategoryOption(option: any, key: "parameters" | "returnTypes" | "var
   };
 }
 
-function getParamName(param: any): string | undefined {
-  if (param?.type === "Identifier") {
+type FunctionNode = ESTree.Function | ESTree.ArrowFunctionExpression;
+
+function getParamName(param: ESTree.ParamPattern): string | undefined {
+  if (param.type === "Identifier") {
     return param.name;
   }
   return undefined;
 }
 
 function reportIfNotShallowReadonly(
-  context: any,
-  node: any,
-  typeNode: any,
+  context: Context,
+  node: ESTree.Node,
+  typeNode: ESTree.TSType | undefined,
   messageId: string,
   ignoreNamePattern?: string | Array<string>,
   name?: string,
@@ -46,7 +64,7 @@ function reportIfNotShallowReadonly(
   }
 }
 
-export default {
+export default defineRule({
   meta: {
     type: "suggestion" as const,
     docs: {
@@ -57,9 +75,9 @@ export default {
       {
         type: "object",
         properties: {
-          parameters: { type: "object" },
-          returnTypes: { type: "object" },
-          variables: { type: "object" },
+          parameters: CATEGORY_SCHEMA,
+          returnTypes: CATEGORY_SCHEMA,
+          variables: CATEGORY_SCHEMA,
         },
         additionalProperties: false,
       },
@@ -70,17 +88,17 @@ export default {
       variable: "Variable should be typed as ReadonlyShallow.",
       property: "Property should be typed as ReadonlyShallow.",
     },
+    defaultOptions: [
+      {
+        parameters: { enforcement: "ReadonlyShallow" },
+        returnTypes: { enforcement: "ReadonlyShallow" },
+        variables: { enforcement: "ReadonlyShallow" },
+      },
+    ],
   },
-  defaultOptions: [
-    {
-      parameters: { enforcement: "ReadonlyShallow" },
-      returnTypes: { enforcement: "ReadonlyShallow" },
-      variables: { enforcement: "ReadonlyShallow" },
-    },
-  ] as RuleOptions,
-  createOnce(context: any) {
+  createOnce(context) {
     const getOpts = () => {
-      const option = (context.options?.[0] ?? {}) as RuleOptions[0];
+      const option = ruleOptions<NonNullable<RuleOptions[0]>>(context);
       return {
         parameters: getCategoryOption(option, "parameters"),
         returnTypes: getCategoryOption(option, "returnTypes"),
@@ -88,11 +106,11 @@ export default {
       };
     };
 
-    const checkFunction = (node: any) => {
+    const checkFunction = (node: FunctionNode) => {
       const { parameters, returnTypes } = getOpts();
       if (parameters.enforcement === "ReadonlyShallow") {
-        for (const param of node.params ?? []) {
-          const typeNode = param?.typeAnnotation?.typeAnnotation;
+        for (const param of node.params) {
+          const typeNode = "typeAnnotation" in param ? (param.typeAnnotation?.typeAnnotation ?? undefined) : undefined;
           reportIfNotShallowReadonly(
             context,
             param,
@@ -114,7 +132,7 @@ export default {
       FunctionDeclaration: checkFunction,
       FunctionExpression: checkFunction,
       ArrowFunctionExpression: checkFunction,
-      TSPropertySignature(node: any) {
+      TSPropertySignature(node) {
         const { variables } = getOpts();
         if (variables.enforcement !== "ReadonlyShallow") {
           return;
@@ -124,7 +142,7 @@ export default {
         const name = node.key?.type === "Identifier" ? node.key.name : undefined;
         reportIfNotShallowReadonly(context, node, typeNode, "property", variables.ignoreNamePattern, name);
       },
-      VariableDeclarator(node: any) {
+      VariableDeclarator(node) {
         const { variables } = getOpts();
         if (variables.enforcement !== "ReadonlyShallow") {
           return;
@@ -136,4 +154,4 @@ export default {
       },
     };
   },
-};
+});

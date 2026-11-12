@@ -1,5 +1,5 @@
 /**
- * Determinism check: build every plugin, then lint a corpus (CLI + bench fixtures and client/)
+ * Determinism check: build every plugin, then lint a corpus (CLI + bench fixtures and the agentx-client corpus)
  * N times multi-threaded with every rule of all six plugins, and print a hash of the sorted,
  * normalized diagnostics per run. Identical hashes = no cross-file state leaks (audit R9/R10).
  *
@@ -27,7 +27,7 @@ for (const n of names) {
 const dir = mkdtempSync(join(tmpdir(), "determinism-"));
 const cfg = join(dir, ".oxlintrc.json");
 await Bun.write(cfg, JSON.stringify({ jsPlugins, rules }));
-const targets = ["tests/cli/fixtures", "tests/bench/fixtures", "client/src"].map((p) => join(root, p));
+const targets = ["tests/cli/fixtures", "tests/bench/fixtures", "tests/fixtures/corpus"].map((p) => join(root, p));
 const bin = join(root, "node_modules/.bin/oxlint");
 for (let i = 1; i <= runs; i++) {
   const out = await $`${bin} -c ${cfg} -A all --format json ${targets}`.cwd(root).nothrow().quiet();

@@ -6,7 +6,7 @@
  */
 import { describe, expect, test } from "bun:test";
 import tsParser from "@typescript-eslint/parser";
-import { Linter } from "eslint";
+import { ESLINT_VERSION, Linter } from "../helpers/eslint.ts";
 import errorset from "../../packages/errorset/src/index.ts";
 import immutable from "../../packages/immutable/src/index.ts";
 import query from "../../packages/query/src/index.ts";
@@ -81,7 +81,7 @@ function lint(name: PluginName, rule: string, code: string) {
   );
 }
 
-describe("ESLint 9 flat config + typescript-eslint parser", () => {
+describe(`ESLint ${ESLINT_VERSION} flat config + typescript-eslint parser`, () => {
   for (const [name, c] of Object.entries(CASES) as [PluginName, Case][]) {
     test(`${name}/${c.rule}: valid code has no reports`, () => {
       const messages = lint(name, c.rule, c.valid);
