@@ -1,11 +1,11 @@
 ---
 id: TASK-031
 title: 'Performance: Per-file early exits for JSX-only and errorset rules (OX-32, P3)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-12T14:20:00Z'
+updated_date: '2026-11-12T14:24:00Z'
 labels:
   - performance
 milestone: m-3
@@ -35,7 +35,7 @@ Audit P3. JSX-only Solid rules also run on `.ts` files; errorset rules could ski
 - [x] #1 The skip mechanism is verified on oxlint 1.70.0 and pinned, with evidence recorded
 - [x] #2 Diagnostics on the corpus are unchanged (diff); bench numbers before and after are recorded
 - [x] #3 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -70,4 +70,6 @@ Audit P3. JSX-only Solid rules also run on `.ts` files; errorset rules could ski
 
 ## Consumer-visible
 - errorset patch (faster; escape-sequence specifier edge), solidjs patch (no result change). Changeset .changeset/early-exits-p3.md.
+
+Verified with scripts/ci-local.sh (58a58df, PASS); GitHub Actions unavailable (billing lock). Skip test passes on oxlint 1.70.0 floor and 1.93.0; eslint-compat 9/10 pass.
 <!-- SECTION:NOTES:END -->
