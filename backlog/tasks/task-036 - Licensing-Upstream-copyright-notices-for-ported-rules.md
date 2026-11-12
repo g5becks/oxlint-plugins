@@ -1,11 +1,11 @@
 ---
 id: TASK-036
 title: 'Licensing: Upstream copyright notices for ported rules'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T17:52:00Z'
-updated_date: '2026-11-12T14:40:00Z'
+updated_date: '2026-11-12T14:44:00Z'
 labels:
   - licensing
 milestone: m-2
@@ -59,4 +59,6 @@ Add a THIRD_PARTY_NOTICES (or a section in each package LICENSE) with each upstr
 - AC #2: pack-smoke contents check above (also runs in ci-local's pack leg on 1.70.0 + 1.93.0).
 - `bun run gate`: exit 0 (repo suite +2 tests).
 - Changeset .changeset/third-party-notices.md (patch, 5 packages).
+
+Verified with scripts/ci-local.sh (118fd0d, PASS); GitHub Actions unavailable (billing lock). Pack leg (oxlint 1.70.0 + 1.93.0) checks the notices in every tarball.
 <!-- SECTION:NOTES:END -->
