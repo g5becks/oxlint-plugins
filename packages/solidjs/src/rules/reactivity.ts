@@ -12,6 +12,7 @@ import { trackImports } from "../utils/imports.ts";
 import { isDOMElementName, isJSXElementOrFragment } from "../utils/jsx.ts";
 import { trace } from "../utils/trace.ts";
 import { findParent } from "../utils/traverse.ts";
+import { walkTree } from "../utils/walk.ts";
 import { type FunctionNode, isFunctionNode } from "../utils/functions.ts";
 import { ruleOptions } from "../utils/options.ts";
 
@@ -87,33 +88,6 @@ function getFunctionHeadLoc(node: FunctionNode, sourceCode: SourceCode): Locatio
     return parent.id.loc;
   }
   return node.loc;
-}
-
-// Simple tree walker replacing estraverse
-function walkTree(node: ESTree.Node, enter: (n: ESTree.Node, skip: () => void) => void): void {
-  let skipped = false;
-  const skipFn = () => {
-    skipped = true;
-  };
-  enter(node, skipFn);
-  if (skipped) return;
-  // Visits every child node by field, like estraverse's fallback (any object with a string `type`).
-  const fields = node as unknown as Record<string, unknown>;
-  for (const key of Object.keys(fields)) {
-    if (key === "parent") continue;
-    const child = fields[key] as { type?: unknown } | Array<{ type?: unknown } | null> | null;
-    if (child && typeof child === "object") {
-      if (Array.isArray(child)) {
-        for (const item of child) {
-          if (item && typeof item.type === "string") {
-            walkTree(item as ESTree.Node, enter);
-          }
-        }
-      } else if (typeof child.type === "string") {
-        walkTree(child as ESTree.Node, enter);
-      }
-    }
-  }
 }
 
 // ---- ScopeStack classes ----

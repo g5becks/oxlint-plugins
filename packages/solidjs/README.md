@@ -123,6 +123,14 @@ The rules follow `eslint-plugin-solid` 0.14.5. Its test suites run unmodified ag
 on every CI run; differences (including two `reactivity` behaviors that changed upstream in
 0.15–0.19) are listed in [PARITY.md](https://github.com/g5becks/oxlint-plugins/blob/main/PARITY.md).
 
+## Deeply nested JSX
+
+`reactivity` walks the subtrees it inspects with an explicit stack, so deep JSX doesn't overflow
+it. oxlint is the limit: measured on oxlint 1.93.0, its AST deserializer for JS plugins overflows the stack at about
+1,900 nested JSX elements ("Error running JS plugin. RangeError: Maximum call stack size
+exceeded", for any JS plugin), and its native parser aborts at about 5,000 (exit code 132, no
+output). Under ESLint the parser is the limit (`@typescript-eslint/parser` on Node: about 2,000).
+
 ## License
 
 MIT
