@@ -1,3 +1,4 @@
+import { defineRule, type Fixer } from "@oxlint/plugins";
 import { isDOMElementName, jsxGetProp, jsxHasProp } from "../utils/jsx.ts";
 
 const reactSpecificProps = [
@@ -5,7 +6,7 @@ const reactSpecificProps = [
   { from: "htmlFor", to: "for" },
 ];
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -19,15 +20,14 @@ export default {
       noUselessKey: "Elements in a <For> or <Index> list do not need a key prop.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     return {
-      JSXOpeningElement(node: any) {
+      JSXOpeningElement(node) {
         for (const { from, to } of reactSpecificProps) {
           const classNameAttribute = jsxGetProp(node.attributes ?? [], from);
           if (classNameAttribute) {
             const fix = !jsxHasProp(node.attributes ?? [], to)
-              ? (fixer: any) => fixer.replaceText(classNameAttribute.name, to)
+              ? (fixer: Fixer) => fixer.replaceText(classNameAttribute.name, to)
               : undefined;
 
             context.report({
@@ -44,11 +44,11 @@ export default {
             context.report({
               node: keyProp,
               messageId: "noUselessKey",
-              fix: (fixer: any) => fixer.remove(keyProp),
+              fix: (fixer) => fixer.remove(keyProp),
             });
           }
         }
       },
     };
   },
-};
+});

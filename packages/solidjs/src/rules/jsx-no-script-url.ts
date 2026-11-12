@@ -1,3 +1,4 @@
+import { defineRule } from "@oxlint/plugins";
 import { getStaticString } from "../utils/static-value.ts";
 // Control characters are intentional: browsers ignore leading C0 controls and embedded
 // tab/CR/LF in URLs, so they must be matched to catch `javascript:` (same as upstream).
@@ -5,7 +6,7 @@ const isJavaScriptProtocol =
   // oxlint-disable-next-line no-control-regex
   /^[\u0000-\u001F ]*j[\r\n\t]*a[\r\n\t]*v[\r\n\t]*a[\r\n\t]*s[\r\n\t]*c[\r\n\t]*r[\r\n\t]*i[\r\n\t]*p[\r\n\t]*t[\r\n\t]*:/i;
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -17,10 +18,9 @@ export default {
       noJSURL: "For security, don't use javascript: URLs. Use event handlers instead if you can.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     return {
-      JSXAttribute(node: any) {
+      JSXAttribute(node) {
         if (node.name?.type === "JSXIdentifier" && node.value) {
           const valueNode = node.value.type === "JSXExpressionContainer" ? node.value.expression : node.value;
           const scope = context.sourceCode.getScope(node);
@@ -35,4 +35,4 @@ export default {
       },
     };
   },
-};
+});

@@ -1,4 +1,7 @@
-const getName = (node: any): string | null => {
+import { defineRule, type ESTree, type Fix, type Fixer } from "@oxlint/plugins";
+import type { FunctionNode } from "../utils/functions.ts";
+
+const getName = (node: ESTree.Node): string | null => {
   switch (node.type) {
     case "Literal":
       return typeof node.value === "string" ? node.value : null;
@@ -8,20 +11,20 @@ const getName = (node: any): string | null => {
       return getName(node.left);
     default:
       if (node.type === "TemplateLiteral" && node.expressions.length === 0) {
-        return node.quasis[0]?.value?.cooked ?? null;
+        return node.quasis[0]?.value.cooked ?? null;
       }
       return null;
   }
 };
 
 interface PropertyInfo {
-  real: any;
+  real: ESTree.Node;
   var: string;
   computed: boolean;
-  init: any;
+  init: ESTree.Node | undefined;
 }
 
-const getPropertyInfo = (prop: any): PropertyInfo | null => {
+const getPropertyInfo = (prop: ESTree.BindingProperty): PropertyInfo | null => {
   const valueName = getName(prop.value);
   if (valueName !== null) {
     return {
@@ -34,7 +37,7 @@ const getPropertyInfo = (prop: any): PropertyInfo | null => {
   return null;
 };
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -48,8 +51,7 @@ export default {
       noDestructure: "Destructuring component props breaks Solid's reactivity; use property access instead.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     const functionStack: Array<{ hasJSX: boolean }> = [];
     const currentFunction = () => {
       const fn = functionStack[functionStack.length - 1];
@@ -63,30 +65,30 @@ export default {
       functionStack.push({ hasJSX: false });
     };
 
-    const onFunctionExit = (node: any) => {
+    const onFunctionExit = (node: FunctionNode) => {
       if (node.params.length === 1) {
         const props = node.params[0];
         if (
-          props.type === "ObjectPattern" &&
+          props?.type === "ObjectPattern" &&
           currentFunction().hasJSX &&
-          node.parent?.type !== "JSXExpressionContainer"
+          node.parent.type !== "JSXExpressionContainer"
         ) {
           context.report({
             node: props,
             messageId: "noDestructure",
-            fix: (fixer: any) => fixDestructure(node, props, fixer),
+            fix: (fixer) => fixDestructure(node, props, fixer),
           });
         }
       }
       functionStack.pop();
     };
 
-    function* fixDestructure(func: any, props: any, fixer: any): Generator<any> {
+    function* fixDestructure(func: FunctionNode, props: ESTree.ObjectPattern, fixer: Fixer): Generator<Fix> {
       const propsName = "props";
       const properties = props.properties;
 
       const propertyInfo: Array<PropertyInfo> = [];
-      let rest: any = null;
+      let rest: ESTree.BindingRestElement | null = null;
 
       for (const property of properties) {
         if (property.type === "RestElement") {
@@ -102,7 +104,7 @@ export default {
       const origProps = !(hasDefaults || rest) ? propsName : "_" + propsName;
 
       if (props.typeAnnotation) {
-        const range = [props.range[0], props.typeAnnotation.range[0]] as const;
+        const range: [number, number] = [props.range[0], props.typeAnnotation.range[0]];
         yield fixer.replaceTextRange(range, origProps);
       } else {
         yield fixer.replaceText(props, origProps);
@@ -143,9 +145,12 @@ export default {
 
       if (lineToInsert) {
         const body = func.body;
-        if (body.type === "BlockStatement") {
-          if (body.body.length > 0) {
-            yield fixer.insertTextBefore(body.body[0], lineToInsert);
+        if (!body) {
+          // `declare function` (no body): nothing to insert into
+        } else if (body.type === "BlockStatement") {
+          const first = body.body[0];
+          if (first) {
+            yield fixer.insertTextBefore(first, lineToInsert);
           }
         } else {
           const maybeOpenParen = sourceCode.getTokenBefore(body);
@@ -203,4 +208,4 @@ export default {
       },
     };
   },
-};
+});

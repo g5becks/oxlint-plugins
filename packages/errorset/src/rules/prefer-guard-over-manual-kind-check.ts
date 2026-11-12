@@ -1,3 +1,4 @@
+import { defineRule } from "@oxlint/plugins";
 /**
  * Rule: prefer-guard-over-manual-kind-check
  *
@@ -13,7 +14,7 @@ import { readErrorsetSettings } from "../utils/settings.ts";
 import { createNarrowing, guardSetName } from "../utils/narrowing.ts";
 import { getKindEquality } from "../utils/pattern-helpers.ts";
 
-export default {
+export default defineRule({
   meta: {
     type: "suggestion" as const,
     docs: {
@@ -30,8 +31,7 @@ export default {
         'Use a kind-level guard instead of `.kind === "{{kindLiteral}}"`. Manual kind checks don\'t provide TypeScript type narrowing for `.data`.',
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     const tracker = createErrorsetImportTracker();
 
     return {
@@ -41,13 +41,13 @@ export default {
       Program() {
         tracker.reset(readErrorsetSettings(context));
       },
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
       },
-      VariableDeclaration(node: any) {
+      VariableDeclaration(node) {
         tracker.handleVariableDeclaration(node);
       },
-      BinaryExpression(node: any) {
+      BinaryExpression(node) {
         if (!tracker.hasErrorsetImport()) return;
 
         const equality = getKindEquality(node);
@@ -75,7 +75,7 @@ export default {
               {
                 messageId: "preferGuard",
                 data: { guardName, kind: kindLiteral, varName },
-                fix(fixer: any) {
+                fix(fixer) {
                   return fixer.replaceText(node, `${guardName}.${kindLiteral}(${sourceCode.getText(object)})`);
                 },
               },
@@ -91,4 +91,4 @@ export default {
       },
     };
   },
-};
+});

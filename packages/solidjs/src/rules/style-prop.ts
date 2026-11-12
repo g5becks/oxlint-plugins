@@ -1,5 +1,7 @@
+import { defineRule, type ESTree, type Scope } from "@oxlint/plugins";
 import { getStaticValue } from "../utils/static-value.ts";
 import { jsxPropName } from "../utils/jsx.ts";
+import { ruleOptions } from "../utils/options.ts";
 
 function toKebabCase(str: string): string {
   return str.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
@@ -22,10 +24,10 @@ function parseStyleString(str: string): Record<string, string> | undefined {
   return result;
 }
 
-function getPropertyName(node: any, scope?: any): string | null {
+function getPropertyName(node: ESTree.ObjectProperty, scope?: Scope): string | null {
   if (!node.computed) {
-    if (node.key?.type === "Identifier") return node.key.name;
-    if (node.key?.type === "Literal" && typeof node.key.value === "string") return node.key.value;
+    if (node.key.type === "Identifier") return node.key.name;
+    if (node.key.type === "Literal" && typeof node.key.value === "string") return node.key.value;
   }
   if (node.computed && node.key) {
     const val = getStaticValue(node.key, scope);
@@ -463,7 +465,7 @@ function buildCssPropertyList(): string[] {
 
 const lengthPercentageRegex = /\b(?:width|height|margin|padding|border-width|font-size)\b/i;
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -503,15 +505,16 @@ export default {
       stringStyle: "Use an object for the style prop instead of a string.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     return {
-      JSXAttribute(node: any) {
-        const allowString = Boolean(context.options?.[0]?.allowString);
-        const styleProps = context.options?.[0]?.styleProps || ["style"];
+      JSXAttribute(node) {
+        const options = ruleOptions<{ allowString?: boolean; styleProps?: Array<string> }>(context);
+        const allowString = Boolean(options?.allowString);
+        const styleProps = options?.styleProps || ["style"];
         if (styleProps.indexOf(jsxPropName(node)) === -1) return;
 
-        const style = node.value?.type === "JSXExpressionContainer" ? node.value.expression : node.value;
+        const valueNode = node.value;
+        const style = valueNode?.type === "JSXExpressionContainer" ? valueNode.expression : valueNode;
 
         if (!style) {
           return;
@@ -525,12 +528,15 @@ export default {
           context.report({
             node: style,
             messageId: "stringStyle",
-            fix: objectStyles && ((fixer: any) => fixer.replaceText(node.value, `{${JSON.stringify(objectStyles)}}`)),
+            fix:
+              objectStyles && valueNode
+                ? (fixer) => fixer.replaceText(valueNode, `{${JSON.stringify(objectStyles)}}`)
+                : undefined,
           });
         } else if (style.type === "TemplateLiteral" && !allowString) {
           context.report({ node: style, messageId: "stringStyle" });
         } else if (style.type === "ObjectExpression") {
-          const properties = style.properties.filter((p: any) => p.type === "Property");
+          const properties = style.properties.filter((p): p is ESTree.ObjectProperty => p.type === "Property");
           for (const prop of properties) {
             const scope = context.sourceCode.getScope(prop);
             const name: string | null = getPropertyName(prop, scope);
@@ -541,7 +547,7 @@ export default {
                   node: prop.key,
                   messageId: "kebabStyleProp",
                   data: { name, kebabName },
-                  fix: (fixer: any) => fixer.replaceText(prop.key, `"${kebabName}"`),
+                  fix: (fixer) => fixer.replaceText(prop.key, `"${kebabName}"`),
                 });
               } else {
                 context.report({
@@ -561,4 +567,4 @@ export default {
       },
     };
   },
-};
+});

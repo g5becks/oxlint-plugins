@@ -1,5 +1,7 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 import { shouldIgnorePattern } from "../utils/ignore.ts";
 import { hasReadonlyModifier } from "../utils/immutability.ts";
+import { ruleOptions } from "../utils/options.ts";
 
 type RuleOptions = [
   {
@@ -22,7 +24,7 @@ const READONLY_REFERENCES = new Set(["Readonly", "ReadonlyArray", "ReadonlyMap",
 /** Utility types whose result keeps the readonly-ness of their first type argument. */
 const PRESERVING_REFERENCES = new Set(["Partial", "Required", "Pick", "Omit", "NonNullable"]);
 
-function membersVerdict(members: Array<any>): Verdict {
+function membersVerdict(members: ReadonlyArray<ESTree.TSSignature>): Verdict {
   for (const member of members) {
     // ReadonlyShallow: the property itself must be readonly; its type may be mutable
     // (`readonly items: string[]` is accepted, as upstream does).
@@ -34,11 +36,13 @@ function membersVerdict(members: Array<any>): Verdict {
   return "readonly";
 }
 
-function typeArgs(node: any): Array<any> {
-  return (node.typeArguments ?? node.typeParameters)?.params ?? [];
+function typeArgs(node: ESTree.TSTypeReference): ReadonlyArray<ESTree.TSType> {
+  // `typeParameters`: the older ESTree name for the same node, read as before.
+  const legacy = (node as { typeParameters?: ESTree.TSTypeParameterInstantiation | null }).typeParameters;
+  return (node.typeArguments ?? legacy)?.params ?? [];
 }
 
-function verdictOf(node: any, depth = 0): Verdict {
+function verdictOf(node: ESTree.TSType | null | undefined, depth = 0): Verdict {
   if (!node || depth > 20) return "unknown";
   switch (node.type) {
     case "TSParenthesizedType":
@@ -56,12 +60,12 @@ function verdictOf(node: any, depth = 0): Verdict {
       return node.readonly === true || node.readonly === "+" ? "readonly" : "mutable";
     case "TSUnionType":
     case "TSIntersectionType": {
-      const verdicts = (node.types ?? []).map((t: any) => verdictOf(t, depth + 1));
+      const verdicts = node.types.map((t) => verdictOf(t, depth + 1));
       if (verdicts.includes("mutable")) return "mutable";
       return verdicts.includes("unknown") ? "unknown" : "readonly";
     }
     case "TSTypeReference": {
-      const name = node.typeName?.type === "Identifier" ? node.typeName.name : undefined;
+      const name = node.typeName.type === "Identifier" ? node.typeName.name : undefined;
       if (!name) return "unknown";
       if (MUTABLE_REFERENCES.has(name)) return "mutable";
       if (READONLY_REFERENCES.has(name)) return "readonly";
@@ -81,7 +85,7 @@ function shouldCheckName(name: string | undefined, identifiers?: string | Array<
   return !shouldIgnorePattern(name, identifiers);
 }
 
-export default {
+export default defineRule({
   meta: {
     type: "suggestion" as const,
     docs: {
@@ -103,13 +107,13 @@ export default {
     messages: {
       notReadonly: "Type declaration should be at least ReadonlyShallow.",
     },
+    defaultOptions: [{ ignoreInterfaces: false }],
   },
-  defaultOptions: [{ ignoreInterfaces: false }] as RuleOptions,
-  createOnce(context: any) {
-    const getOpts = () => (context.options?.[0] ?? {}) as RuleOptions[0];
+  createOnce(context) {
+    const getOpts = () => ruleOptions<NonNullable<RuleOptions[0]>>(context) ?? {};
 
     return {
-      TSTypeAliasDeclaration(node: any) {
+      TSTypeAliasDeclaration(node) {
         const option = getOpts();
         const name = node.id?.name;
         if (!shouldCheckName(name, option?.identifiers)) {
@@ -120,7 +124,7 @@ export default {
           context.report({ node, messageId: "notReadonly" });
         }
       },
-      TSInterfaceDeclaration(node: any) {
+      TSInterfaceDeclaration(node) {
         const option = getOpts();
         if (option?.ignoreInterfaces === true) {
           return;
@@ -137,4 +141,4 @@ export default {
       },
     };
   },
-};
+});

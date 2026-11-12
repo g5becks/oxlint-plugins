@@ -1,3 +1,7 @@
+import type { ESTree, Scope } from "@oxlint/plugins";
+
+type Child = ESTree.Node | null | undefined;
+
 /**
  * Static evaluation of simple expressions: a subset of eslint-utils' `getStaticValue`, which
  * upstream eslint-plugin-solid uses (via @typescript-eslint/utils). Handles literals, template
@@ -6,12 +10,14 @@
  * chain (so `const link = "javascrip" + "t:..."` evaluates). Returns null when the value isn't
  * statically known.
  */
-export function getStaticValue(node: any, scope?: any, depth = 0): { value: unknown } | null {
+export function getStaticValue(node: Child, scope?: Scope | null, depth = 0): { value: unknown } | null {
   if (!node || depth > 50) return null;
   switch (node.type) {
     case "Literal":
       // RegExp / BigInt literals: not useful here
-      return node.regex || node.bigint !== undefined ? null : { value: node.value };
+      return (node as { regex?: unknown }).regex || (node as { bigint?: unknown }).bigint !== undefined
+        ? null
+        : { value: node.value };
     case "TemplateLiteral": {
       let out = node.quasis[0]?.value?.cooked ?? "";
       for (let i = 0; i < node.expressions.length; i++) {
@@ -30,7 +36,8 @@ export function getStaticValue(node: any, scope?: any, depth = 0): { value: unkn
     case "UnaryExpression": {
       const v = getStaticValue(node.argument, scope, depth + 1);
       if (!v) return null;
-      const x = v.value as any;
+      // JS operators coerce at runtime (like eslint-utils); the casts only satisfy the type checker.
+      const x = v.value as number;
       switch (node.operator) {
         case "-":
           return { value: -x };
@@ -50,8 +57,8 @@ export function getStaticValue(node: any, scope?: any, depth = 0): { value: unkn
       const l = getStaticValue(node.left, scope, depth + 1);
       const r = l && getStaticValue(node.right, scope, depth + 1);
       if (!l || !r) return null;
-      const a = l.value as any;
-      const b = r.value as any;
+      const a = l.value as number;
+      const b = r.value as number;
       switch (node.operator) {
         case "+":
           return { value: a + b };
@@ -105,7 +112,8 @@ export function getStaticValue(node: any, scope?: any, depth = 0): { value: unkn
             variable.defs?.length === 1 &&
             def?.node?.type === "VariableDeclarator" &&
             def.node.id?.type === "Identifier" &&
-            def.node.parent?.kind === "const" &&
+            def.node.parent.type === "VariableDeclaration" &&
+            def.node.parent.kind === "const" &&
             def.node.init
           ) {
             return getStaticValue(def.node.init, scope, depth + 1);
@@ -122,7 +130,7 @@ export function getStaticValue(node: any, scope?: any, depth = 0): { value: unkn
 }
 
 /** The static value if it is a string, else null (eslint-utils' `getStringIfConstant`). */
-export function getStaticString(node: any, scope?: any): string | null {
+export function getStaticString(node: Child, scope?: Scope | null): string | null {
   const v = getStaticValue(node, scope);
   return v && typeof v.value === "string" ? v.value : null;
 }

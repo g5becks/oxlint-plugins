@@ -1,3 +1,4 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 import { pathAsFirstArgFunctions, pathAsPropertyFunctions, VALID_PARAM_NAME_REGEX } from "../utils/constants.ts";
 import { createTanstackRouterImportTracker } from "../utils/detect-router-imports.ts";
 
@@ -66,13 +67,13 @@ function getInvalidParams(path: string): Array<ExtractedParam> {
   return extractParamsFromPath(path).filter((param) => !param.isValid);
 }
 
-function getStringLiteralValue(node: any): string | null {
+function getStringLiteralValue(node: ESTree.Node | null | undefined): string | null {
   if (node?.type === "Literal" && typeof node.value === "string") {
     return node.value;
   }
 
-  if (node?.type === "TemplateLiteral" && node.quasis?.length === 1) {
-    const cooked = node.quasis[0]?.value?.cooked;
+  if (node?.type === "TemplateLiteral" && node.quasis.length === 1) {
+    const cooked = node.quasis[0]?.value.cooked;
     if (cooked != null) {
       return cooked;
     }
@@ -84,7 +85,7 @@ function getStringLiteralValue(node: any): string | null {
 const pathAsFirstArgSet = new Set<string>(pathAsFirstArgFunctions);
 const pathAsPropertySet = new Set<string>(pathAsPropertyFunctions);
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -97,11 +98,10 @@ export default {
     },
     schema: [],
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     const tracker = createTanstackRouterImportTracker();
 
-    const reportInvalidParams = (node: any, path: string) => {
+    const reportInvalidParams = (node: ESTree.Node, path: string) => {
       const invalidParams = getInvalidParams(path);
       for (const param of invalidParams) {
         context.report({
@@ -119,27 +119,27 @@ export default {
       Program() {
         tracker.reset();
       },
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
       },
-      CallExpression(node: any) {
-        if (node?.callee?.type === "Identifier") {
+      CallExpression(node) {
+        if (node.callee.type === "Identifier") {
           const funcName = node.callee.name;
           if (!tracker.isTanstackRouterImport(funcName)) {
             return;
           }
 
           if (pathAsPropertySet.has(funcName)) {
-            const arg = node.arguments?.[0];
+            const arg = node.arguments[0];
             if (arg?.type === "ObjectExpression") {
-              for (const prop of arg.properties ?? []) {
-                if (prop?.type !== "Property") {
+              for (const prop of arg.properties) {
+                if (prop.type !== "Property") {
                   continue;
                 }
 
                 const isPathKey =
-                  (prop.key?.type === "Identifier" && prop.key.name === "path") ||
-                  (prop.key?.type === "Literal" && prop.key.value === "path");
+                  (prop.key.type === "Identifier" && prop.key.name === "path") ||
+                  (prop.key.type === "Literal" && prop.key.value === "path");
 
                 if (isPathKey) {
                   const pathValue = getStringLiteralValue(prop.value);
@@ -153,19 +153,19 @@ export default {
           }
         }
 
-        if (node?.callee?.type === "CallExpression" && node.callee.callee?.type === "Identifier") {
+        if (node.callee.type === "CallExpression" && node.callee.callee.type === "Identifier") {
           const funcName = node.callee.callee.name;
           if (!tracker.isTanstackRouterImport(funcName) || !pathAsFirstArgSet.has(funcName)) {
             return;
           }
 
-          const pathArg = node.callee.arguments?.[0];
+          const pathArg = node.callee.arguments[0];
           const pathValue = getStringLiteralValue(pathArg);
-          if (pathValue != null) {
+          if (pathArg && pathValue != null) {
             reportInvalidParams(pathArg, pathValue);
           }
         }
       },
     };
   },
-};
+});

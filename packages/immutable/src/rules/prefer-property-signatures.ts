@@ -1,9 +1,12 @@
-function hasReadonlyWrapper(node: any): boolean {
-  let current = node?.parent;
+import { defineRule, type ESTree } from "@oxlint/plugins";
+import { ruleOptions } from "../utils/options.ts";
+
+function hasReadonlyWrapper(node: ESTree.Node): boolean {
+  let current: ESTree.Node | null = node.parent;
   while (current) {
     if (
       current.type === "TSTypeReference" &&
-      current.typeName?.type === "Identifier" &&
+      current.typeName.type === "Identifier" &&
       current.typeName.name === "Readonly"
     ) {
       return true;
@@ -15,7 +18,7 @@ function hasReadonlyWrapper(node: any): boolean {
 
 type RuleOptions = [{ ignoreIfReadonlyWrapped?: boolean }?];
 
-export default {
+export default defineRule({
   meta: {
     type: "suggestion" as const,
     docs: {
@@ -35,12 +38,13 @@ export default {
     messages: {
       generic: "Use a property signature instead of a method signature.",
     },
+    defaultOptions: [{ ignoreIfReadonlyWrapped: false }],
   },
-  defaultOptions: [{ ignoreIfReadonlyWrapped: false }] as RuleOptions,
-  createOnce(context: any) {
+  createOnce(context) {
     return {
-      TSMethodSignature(node: any) {
-        const ignoreIfReadonlyWrapped = context.options?.[0]?.ignoreIfReadonlyWrapped === true;
+      TSMethodSignature(node) {
+        const ignoreIfReadonlyWrapped =
+          ruleOptions<NonNullable<RuleOptions[0]>>(context)?.ignoreIfReadonlyWrapped === true;
         if (ignoreIfReadonlyWrapped && hasReadonlyWrapper(node)) {
           return;
         }
@@ -48,12 +52,12 @@ export default {
         context.report({
           node,
           messageId: "generic",
-          fix(fixer: any) {
+          fix(fixer) {
             const sourceCode = context.sourceCode;
             const keyText = sourceCode.getText(node.key);
             const optional = node.optional ? "?" : "";
             const typeParams = node.typeParameters ? sourceCode.getText(node.typeParameters) : "";
-            const params = node.params.map((param: any) => sourceCode.getText(param)).join(", ");
+            const params = node.params.map((param) => sourceCode.getText(param)).join(", ");
             const returnType = node.returnType ? sourceCode.getText(node.returnType.typeAnnotation) : "void";
             const replacement = `${keyText}${optional}: ${typeParams}(${params}) => ${returnType}`;
             return fixer.replaceText(node, replacement);
@@ -62,4 +66,4 @@ export default {
       },
     };
   },
-};
+});

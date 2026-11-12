@@ -1,3 +1,4 @@
+import type { ESTree } from "@oxlint/plugins";
 /**
  * Tracks imports from `@takinprofit/errorset` (and the re-export modules configured in
  * `settings.errorset.modules`) and errorset guard identifiers. Used by all errorset rules.
@@ -7,8 +8,8 @@ import { ERRORSET_SOURCE, type ErrorsetSettings, parseErrorsetSettings } from ".
 export type ErrorsetImportTracker = {
   /** Forget the previous file; optionally apply the file's `settings.errorset`. */
   reset(settings?: ErrorsetSettings): void;
-  handleImportDeclaration(node: any): void;
-  handleVariableDeclaration(node: any): void;
+  handleImportDeclaration(node: ESTree.ImportDeclaration): void;
+  handleVariableDeclaration(node: ESTree.VariableDeclaration): void;
   /** True once the file imports from @takinprofit/errorset, or a guard / errorset export from a configured module */
   hasErrorsetImport(): boolean;
   /** True if the given identifier name is a local errorset factory import (e.g. "errorSet") */
@@ -60,24 +61,22 @@ export function createErrorsetImportTracker(): ErrorsetImportTracker {
       if (next) settings = next;
     },
 
-    handleImportDeclaration(node: any) {
-      const source = node?.source?.value;
+    handleImportDeclaration(node) {
+      const source = node.source.value;
       if (typeof source !== "string" || !settings.modules.has(source)) return;
       // `import type { UserError } from "..."` provides no runtime guard.
       if (node.importKind === "type") return;
       const isLibrary = source === ERRORSET_SOURCE;
       if (isLibrary) importedFromErrorset = true;
 
-      for (const specifier of node.specifiers ?? []) {
+      for (const specifier of node.specifiers) {
         // Default and namespace imports (`import * as core`) are not tracked: rules match
         // guards by identifier, so `core.UserError` is not recognized (documented in the README).
-        if (specifier?.type !== "ImportSpecifier") continue;
+        if (specifier.type !== "ImportSpecifier") continue;
         if (specifier.importKind === "type") continue;
-        const localName: string = specifier.local?.name;
-        const importedName: string =
-          specifier.imported?.type === "Identifier"
-            ? specifier.imported.name
-            : (specifier.imported?.value ?? localName);
+        const localName = specifier.local.name;
+        const importedName =
+          specifier.imported.type === "Identifier" ? specifier.imported.name : (specifier.imported.value ?? localName);
         if (!localName) continue;
         if (isLibrary) {
           importedNames.set(localName, importedName);
@@ -96,16 +95,15 @@ export function createErrorsetImportTracker(): ErrorsetImportTracker {
       }
     },
 
-    handleVariableDeclaration(node: any) {
+    handleVariableDeclaration(node) {
       // Detect: const UserError = errorSet("...", [...]).init<T>()
       // The init() call is typed-erased, so at runtime the AST is just a CallExpression.
       // Pattern: VariableDeclarator where init is CallExpression
       //   callee: MemberExpression { object: CallExpression { callee: Identifier "errorSet" }, property: "init" }
-      if (node?.type !== "VariableDeclaration" || node.kind !== "const") return;
+      if (node.kind !== "const") return;
 
-      for (const decl of node.declarations ?? []) {
-        if (decl?.type !== "VariableDeclarator") continue;
-        if (decl.id?.type !== "Identifier") continue;
+      for (const decl of node.declarations) {
+        if (decl.id.type !== "Identifier") continue;
         const init = decl.init;
         if (!init) continue;
 
@@ -159,34 +157,30 @@ export function createErrorsetImportTracker(): ErrorsetImportTracker {
  * For `errorSet("Name", kinds).init<T>(...)` (array- or object-form kinds) returns the set
  * name ("" when the first argument isn't a string literal); null for anything else.
  */
-function errorsetInitChainName(node: any, importedNames: Map<string, string>): string | null {
-  if (node?.type !== "CallExpression") return null;
+function errorsetInitChainName(node: ESTree.Expression, importedNames: Map<string, string>): string | null {
+  if (node.type !== "CallExpression") return null;
   const callee = node.callee;
-  if (
-    callee?.type !== "MemberExpression" ||
-    callee.property?.type !== "Identifier" ||
-    callee.property.name !== "init"
-  ) {
+  if (callee.type !== "MemberExpression" || callee.property.type !== "Identifier" || callee.property.name !== "init") {
     return null;
   }
   const obj = callee.object;
-  if (obj?.type !== "CallExpression") return null;
+  if (obj.type !== "CallExpression") return null;
   const innerCallee = obj.callee;
-  if (innerCallee?.type !== "Identifier" || importedNames.get(innerCallee.name) !== "errorSet") return null;
-  const first = obj.arguments?.[0];
+  if (innerCallee.type !== "Identifier" || importedNames.get(innerCallee.name) !== "errorSet") return null;
+  const first = obj.arguments[0];
   return first?.type === "Literal" && typeof first.value === "string" ? first.value : "";
 }
 
 /** `merge(A, B, ...)` (imported merge) or `A.merge(B, ...)` where A is a known guard. */
-function isMergeCall(node: any, importedNames: Map<string, string>, guardNames: Set<string>): boolean {
-  if (node?.type !== "CallExpression") return false;
+function isMergeCall(node: ESTree.Expression, importedNames: Map<string, string>, guardNames: Set<string>): boolean {
+  if (node.type !== "CallExpression") return false;
   const callee = node.callee;
-  if (callee?.type === "Identifier") return importedNames.get(callee.name) === "merge";
+  if (callee.type === "Identifier") return importedNames.get(callee.name) === "merge";
   return (
-    callee?.type === "MemberExpression" &&
-    callee.property?.type === "Identifier" &&
+    callee.type === "MemberExpression" &&
+    callee.property.type === "Identifier" &&
     callee.property.name === "merge" &&
-    callee.object?.type === "Identifier" &&
+    callee.object.type === "Identifier" &&
     guardNames.has(callee.object.name)
   );
 }

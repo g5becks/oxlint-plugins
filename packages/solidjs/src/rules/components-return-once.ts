@@ -1,29 +1,31 @@
+import { defineRule, type ESTree, type Location } from "@oxlint/plugins";
+import type { FunctionNode } from "../utils/functions.ts";
 import { ensureSolidImports } from "../utils/fix-imports.ts";
-const getFunctionName = (node: any): string | null => {
+const getFunctionName = (node: FunctionNode): string | null => {
   if ((node.type === "FunctionDeclaration" || node.type === "FunctionExpression") && node.id != null) {
     return node.id.name;
   }
-  if (node.parent?.type === "VariableDeclarator" && node.parent.id.type === "Identifier") {
+  if (node.parent.type === "VariableDeclarator" && node.parent.id.type === "Identifier") {
     return node.parent.id.name;
   }
   return null;
 };
 
-const isNothing = (node?: any): boolean => {
+const isNothing = (node?: ESTree.Node | null): boolean => {
   if (!node) return true;
   switch (node.type) {
     case "Literal":
       return ([null, undefined, false, ""] as Array<unknown>).includes(node.value);
     case "JSXFragment":
-      return !node.children || node.children.every(isNothing);
+      return !node.children || node.children.every((child) => isNothing(child));
     default:
       return false;
   }
 };
 
-const getLineLength = (loc: any) => loc.end.line - loc.start.line + 1;
+const getLineLength = (loc: Location) => loc.end.line - loc.start.line + 1;
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -40,15 +42,14 @@ export default {
         "Solid components run once, so a conditional return breaks reactivity. Move the condition inside a JSX element, such as a fragment or <Show />.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     const functionStack: Array<{
       isComponent: boolean;
-      lastReturn: any;
-      earlyReturns: Array<any>;
+      lastReturn: ESTree.ReturnStatement | undefined;
+      earlyReturns: Array<ESTree.ReturnStatement>;
     }> = [];
 
-    const putIntoJSX = (node: any): string => {
+    const putIntoJSX = (node: ESTree.Node): string => {
       const text = context.sourceCode.getText(node);
       return node.type === "JSXElement" || node.type === "JSXFragment" ? text : `{${text}}`;
     };
@@ -61,10 +62,10 @@ export default {
       return fn;
     };
 
-    const onFunctionEnter = (node: any) => {
-      let lastReturn: any = undefined;
-      if (node.body.type === "BlockStatement") {
-        const last = node.body.body.findLast((n: any) => !n.type.endsWith("Declaration"));
+    const onFunctionEnter = (node: FunctionNode) => {
+      let lastReturn: ESTree.ReturnStatement | undefined = undefined;
+      if (node.body?.type === "BlockStatement") {
+        const last = node.body.body.findLast((n) => !n.type.endsWith("Declaration"));
         if (last && last.type === "ReturnStatement") {
           lastReturn = last;
         }
@@ -72,19 +73,22 @@ export default {
       functionStack.push({ isComponent: false, lastReturn, earlyReturns: [] });
     };
 
-    const onFunctionExit = (node: any) => {
+    const onFunctionExit = (node: FunctionNode) => {
+      const calleeName = (node.parent.type === "CallExpression" ? node.parent.callee : undefined) as
+        | { name?: string }
+        | undefined;
       if (
         getFunctionName(node)?.match(/^[a-z]/) ||
-        node.parent?.type === "JSXExpressionContainer" ||
-        (node.parent?.type === "CallExpression" &&
-          node.parent.arguments.some((n: any) => n === node) &&
-          !node.parent.callee?.name?.match(/^[A-Z]/))
+        node.parent.type === "JSXExpressionContainer" ||
+        (node.parent.type === "CallExpression" &&
+          node.parent.arguments.some((n) => n === node) &&
+          !calleeName?.name?.match(/^[A-Z]/))
       ) {
         currentFunction().isComponent = false;
       }
 
       if (currentFunction().isComponent) {
-        currentFunction().earlyReturns.forEach((earlyReturn: any) => {
+        currentFunction().earlyReturns.forEach((earlyReturn) => {
           context.report({
             node: earlyReturn,
             messageId: "noEarlyReturn",
@@ -97,9 +101,11 @@ export default {
           context.report({
             node: argument.parent,
             messageId: "noConditionalReturn",
-            fix: (fixer: any) => {
+            fix: (fixer) => {
               const { test, consequent, alternate } = argument;
-              const conditions = [{ test, consequent }];
+              const conditions: Array<{ test: ESTree.Expression; consequent: ESTree.Expression }> = [
+                { test, consequent },
+              ];
               let fallback = alternate;
 
               while (fallback.type === "ConditionalExpression") {
@@ -115,7 +121,7 @@ export default {
                     argument,
                     `<Switch${fallbackStr}>\n${conditions
                       .map(
-                        ({ test, consequent }: any) =>
+                        ({ test, consequent }) =>
                           `<Match when={${sourceCode.getText(test)}}>${putIntoJSX(consequent)}</Match>`,
                       )
                       .join("\n")}\n</Switch>`,
@@ -153,7 +159,7 @@ export default {
             context.report({
               node: argument,
               messageId: "noConditionalReturn",
-              fix: (fixer: any) => {
+              fix: (fixer) => {
                 const { left: test, right: consequent } = argument;
                 return [
                   ...ensureSolidImports(fixer, sourceCode, ["Show"]),
@@ -198,11 +204,11 @@ export default {
           currentFunction().isComponent = true;
         }
       },
-      ReturnStatement(node: any) {
+      ReturnStatement(node) {
         if (functionStack.length && node !== currentFunction().lastReturn) {
           currentFunction().earlyReturns.push(node);
         }
       },
     };
   },
-};
+});

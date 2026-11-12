@@ -1,8 +1,12 @@
-function isIdentifierTypeReference(node: any, name: string): boolean {
-  return node?.type === "TSTypeReference" && node.typeName?.type === "Identifier" && node.typeName.name === name;
+import type { ESTree } from "@oxlint/plugins";
+
+type TypeMember = ESTree.TSSignature;
+
+function isIdentifierTypeReference(node: ESTree.TSType, name: string): boolean {
+  return node.type === "TSTypeReference" && node.typeName.type === "Identifier" && node.typeName.name === name;
 }
 
-export function hasReadonlyModifier(property: any): boolean {
+export function hasReadonlyModifier(property: ESTree.Node | null | undefined): boolean {
   if (!property) {
     return false;
   }
@@ -12,7 +16,7 @@ export function hasReadonlyModifier(property: any): boolean {
   return false;
 }
 
-export function isReadonlyArrayType(typeNode: any): boolean {
+export function isReadonlyArrayType(typeNode: ESTree.TSType | null | undefined): boolean {
   if (!typeNode) {
     return false;
   }
@@ -24,7 +28,7 @@ export function isReadonlyArrayType(typeNode: any): boolean {
   if (
     typeNode.type === "TSTypeOperator" &&
     typeNode.operator === "readonly" &&
-    typeNode.typeAnnotation?.type === "TSArrayType"
+    typeNode.typeAnnotation.type === "TSArrayType"
   ) {
     return true;
   }
@@ -40,7 +44,7 @@ export function isReadonlyArrayType(typeNode: any): boolean {
   return false;
 }
 
-function isMemberReadonly(member: any): boolean {
+function isMemberReadonly(member: TypeMember | undefined): boolean {
   if (!member) {
     return true;
   }
@@ -67,21 +71,21 @@ function isMemberReadonly(member: any): boolean {
   return true;
 }
 
-export function isShallowReadonly(typeNode: any): boolean {
+export function isShallowReadonly(typeNode: ESTree.TSType | ESTree.TSInterfaceBody | null | undefined): boolean {
   if (!typeNode) {
     return false;
   }
 
-  if (isReadonlyArrayType(typeNode)) {
+  if (typeNode.type !== "TSInterfaceBody" && isReadonlyArrayType(typeNode)) {
     return true;
   }
 
   if (typeNode.type === "TSTypeLiteral") {
-    return typeNode.members.every((member: any) => isMemberReadonly(member));
+    return typeNode.members.every((member) => isMemberReadonly(member));
   }
 
   if (typeNode.type === "TSInterfaceBody") {
-    return typeNode.body.every((member: any) => isMemberReadonly(member));
+    return typeNode.body.every((member) => isMemberReadonly(member));
   }
 
   return false;

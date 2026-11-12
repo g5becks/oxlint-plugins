@@ -1,3 +1,12 @@
+import {
+  type Context,
+  defineRule,
+  type ESTree,
+  type Reference,
+  type ScopeManager,
+  type SourceCode,
+  type Suggestion,
+} from "@oxlint/plugins";
 import { createTanstackQueryImportTracker } from "../utils/detect-query-imports.ts";
 import { ASTUtils } from "../utils/ast-utils.ts";
 
@@ -8,15 +17,15 @@ function uniqueBy<T>(arr: Array<T>, fn: (x: T) => unknown): Array<T> {
   return arr.filter((x, i, a) => a.findIndex((y) => fn(x) === fn(y)) === i);
 }
 
-function isInstanceOfKind(node: any): boolean {
+function isInstanceOfKind(node: ESTree.Node | null | undefined): boolean {
   return node?.type === "BinaryExpression" && node.operator === "instanceof";
 }
 
 function isRelevantReference(params: {
-  sourceCode: any;
-  reference: any;
-  scopeManager: any;
-  node: any;
+  sourceCode: SourceCode;
+  reference: Reference;
+  scopeManager: ScopeManager;
+  node: ESTree.Node;
   filename: string;
 }): boolean {
   const { sourceCode, reference, scopeManager, node, filename } = params;
@@ -55,20 +64,20 @@ function isRelevantReference(params: {
   );
 }
 
-function getQueryFnRelevantNode(queryFn: any): any {
-  if (queryFn.value?.type !== "ConditionalExpression") {
+function getQueryFnRelevantNode(queryFn: ESTree.ObjectProperty): ESTree.Node {
+  if (queryFn.value.type !== "ConditionalExpression") {
     return queryFn.value;
   }
 
-  if (queryFn.value.consequent?.type === "Identifier" && queryFn.value.consequent.name === "skipToken") {
+  if (queryFn.value.consequent.type === "Identifier" && queryFn.value.consequent.name === "skipToken") {
     return queryFn.value.alternate;
   }
 
   return queryFn.value.consequent;
 }
 
-function dereferenceVariablesAndTypeAssertions(queryKeyNode: any, context: any): any {
-  const visitedNodes = new Set<any>();
+function dereferenceVariablesAndTypeAssertions(queryKeyNode: ESTree.Node, context: Context): ESTree.Node {
+  const visitedNodes = new Set<ESTree.Node>();
 
   for (let i = 0; i < 256; ++i) {
     if (visitedNodes.has(queryKeyNode)) {
@@ -99,7 +108,7 @@ function dereferenceVariablesAndTypeAssertions(queryKeyNode: any, context: any):
   return queryKeyNode;
 }
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -114,8 +123,7 @@ export default {
     fixable: "code" as const,
     schema: [],
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     const tracker = createTanstackQueryImportTracker();
 
     return {
@@ -127,11 +135,11 @@ export default {
         tracker.reset();
       },
 
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
       },
 
-      Property(node: any) {
+      Property(node) {
         if (!ASTUtils.isObjectExpression(node.parent) || !ASTUtils.isIdentifierWithName(node.key, QUERY_KEY)) {
           return;
         }
@@ -144,7 +152,7 @@ export default {
           return;
         }
 
-        const queryFnValueType = queryFn.value?.type;
+        const queryFnValueType = queryFn.value.type;
         if (
           queryFnValueType !== "ArrowFunctionExpression" &&
           queryFnValueType !== "FunctionExpression" &&
@@ -162,7 +170,7 @@ export default {
           node: queryFnNode,
         });
 
-        const relevantRefs = externalRefs.filter((reference: any) =>
+        const relevantRefs = externalRefs.filter((reference) =>
           isRelevantReference({
             sourceCode: context.sourceCode,
             reference,
@@ -172,33 +180,34 @@ export default {
           }),
         );
 
-        const existingKeys = ASTUtils.getNestedIdentifiers(queryKeyNode).map((identifier: any) =>
+        const existingKeys = ASTUtils.getNestedIdentifiers(queryKeyNode).map((identifier) =>
           ASTUtils.mapKeyNodeToBaseText(identifier, context.sourceCode),
         );
 
         const missingRefs = relevantRefs
-          .map((ref: any) => ({
+          .map((ref) => ({
             ref,
             text: ASTUtils.mapKeyNodeToBaseText(ref.identifier, context.sourceCode),
           }))
-          .filter(({ ref, text }: any) => {
+          .filter(({ ref, text }) => {
             return (
-              !ref.isTypeReference &&
+              // typescript-eslint's scope manager marks type-only references (not in oxlint's types).
+              !(ref as Reference & { isTypeReference?: boolean }).isTypeReference &&
               !ASTUtils.isAncestorIsCallee(ref.identifier) &&
-              !existingKeys.some((existingKey: string) => existingKey === text) &&
+              !existingKeys.some((existingKey) => existingKey === text) &&
               !existingKeys.includes(text.split(/[?.]/)[0] ?? "")
             );
           })
-          .map(({ ref, text }: any) => ({
+          .map(({ ref, text }) => ({
             identifier: ref.identifier,
             text,
           }));
 
-        const uniqueMissingRefs = uniqueBy(missingRefs, (x: any) => x.text);
+        const uniqueMissingRefs = uniqueBy(missingRefs, (x) => x.text);
 
         if (uniqueMissingRefs.length > 0) {
           const missingAsText = uniqueMissingRefs
-            .map((ref: any) => ASTUtils.mapKeyNodeToText(ref.identifier, context.sourceCode))
+            .map((ref) => ASTUtils.mapKeyNodeToText(ref.identifier, context.sourceCode))
             .join(", ");
 
           const queryKeyValue = context.sourceCode.getText(queryKeyNode);
@@ -206,13 +215,13 @@ export default {
           const existingWithMissing =
             queryKeyValue === "[]" ? `[${missingAsText}]` : queryKeyValue.replace(/\]$/, `, ${missingAsText}]`);
 
-          const suggestions: Array<any> = [];
+          const suggestions: Array<Suggestion> = [];
 
           if (queryKeyNode.type === "ArrayExpression") {
             suggestions.push({
               messageId: "fixTo",
               data: { result: existingWithMissing },
-              fix(fixer: any) {
+              fix(fixer) {
                 return fixer.replaceText(queryKeyNode, existingWithMissing);
               },
             });
@@ -224,7 +233,7 @@ export default {
             node: node.parent,
             messageId: "missingDeps",
             data: {
-              deps: uniqueMissingRefs.map((ref: any) => ref.text).join(", "),
+              deps: uniqueMissingRefs.map((ref) => ref.text).join(", "),
             },
             suggest: suggestions,
           });
@@ -232,4 +241,4 @@ export default {
       },
     };
   },
-};
+});

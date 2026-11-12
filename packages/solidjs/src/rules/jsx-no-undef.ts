@@ -1,5 +1,7 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 import { appendImports, insertImports } from "../utils/fix-imports.ts";
 import { isDOMElementName } from "../utils/jsx.ts";
+import { ruleOptions } from "../utils/options.ts";
 
 const AUTO_COMPONENTS = ["Show", "For", "Index", "Switch", "Match"];
 const SOURCE_MODULE = "solid-js";
@@ -15,7 +17,7 @@ const formatList = (strings: Array<string>): string => {
     .join(", ")}, and '${strings[last]}'`;
 };
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -52,17 +54,20 @@ export default {
       autoImport: "{{imports}} should be imported from '{{source}}'.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     const missingComponentsSet = new Set<string>();
+    const options = () =>
+      ruleOptions<{ allowGlobals?: boolean; autoImport?: boolean; typescriptEnabled?: boolean }>(context);
 
-    function checkIdentifierInJSX(node: any, opts: { isComponent?: boolean; isCustomDirective?: boolean } = {}) {
+    function checkIdentifierInJSX(
+      node: ESTree.JSXIdentifier,
+      opts: { isComponent?: boolean; isCustomDirective?: boolean } = {},
+    ) {
       let scope = context.sourceCode.getScope(node);
       if (!scope) return;
       const sourceCode = context.sourceCode;
       const sourceType = sourceCode.ast.sourceType;
-      const scopeUpperBound =
-        !(context.options?.[0]?.allowGlobals ?? false) && sourceType === "module" ? "module" : "global";
+      const scopeUpperBound = !(options()?.allowGlobals ?? false) && sourceType === "module" ? "module" : "global";
       const variables = [...scope.variables];
 
       if (node.name === "this") return;
@@ -71,20 +76,22 @@ export default {
         scope = scope.upper;
         variables.push(...scope.variables);
       }
-      if (scope.childScopes.length) {
-        variables.push(...scope.childScopes[0].variables);
-        if (scope.childScopes[0].childScopes.length) {
-          variables.push(...scope.childScopes[0].childScopes[0].variables);
+      const child = scope.childScopes[0];
+      if (child) {
+        variables.push(...child.variables);
+        const grandchild = child.childScopes[0];
+        if (grandchild) {
+          variables.push(...grandchild.variables);
         }
       }
 
-      if (variables.find((variable: any) => variable.name === node.name)) {
+      if (variables.find((variable) => variable.name === node.name)) {
         return;
       }
 
       if (
         opts.isComponent &&
-        context.options?.[0]?.autoImport !== false &&
+        options()?.autoImport !== false &&
         AUTO_COMPONENTS.includes(node.name) &&
         !missingComponentsSet.has(node.name)
       ) {
@@ -95,7 +102,7 @@ export default {
           messageId: "customDirectiveUndefined",
           data: { identifier: node.name },
         });
-      } else if (!(context.options?.[0]?.typescriptEnabled ?? false)) {
+      } else if (!(options()?.typescriptEnabled ?? false)) {
         context.report({
           node,
           messageId: "undefined",
@@ -109,8 +116,8 @@ export default {
       before() {
         missingComponentsSet.clear();
       },
-      JSXOpeningElement(node: any) {
-        let n: any;
+      JSXOpeningElement(node) {
+        let n: ESTree.Node;
         switch (node.name.type) {
           case "JSXIdentifier":
             if (!isDOMElementName(node.name.name)) {
@@ -118,11 +125,12 @@ export default {
             }
             break;
           case "JSXMemberExpression":
-            n = node.name;
-            do {
+            // The innermost object of `<a.b.c>` (a `this` object is not checked).
+            n = node.name.object;
+            while (n.type === "JSXMemberExpression") {
               n = n.object;
-            } while (n && n.type !== "JSXIdentifier");
-            if (n) {
+            }
+            if (n.type === "JSXIdentifier") {
               checkIdentifierInJSX(n);
             }
             break;
@@ -130,20 +138,21 @@ export default {
             break;
         }
       },
-      "JSXAttribute > JSXNamespacedName": (node: any) => {
+      "JSXAttribute > JSXNamespacedName": (node) => {
         if (
-          node.namespace?.type === "JSXIdentifier" &&
+          node.type === "JSXNamespacedName" &&
+          node.namespace.type === "JSXIdentifier" &&
           node.namespace.name === "use" &&
-          node.name?.type === "JSXIdentifier"
+          node.name.type === "JSXIdentifier"
         ) {
           checkIdentifierInJSX(node.name, { isCustomDirective: true });
         }
       },
-      "Program:exit": (programNode: any) => {
+      "Program:exit": (programNode) => {
         const missingComponents = Array.from(missingComponentsSet.values());
-        if (context.options?.[0]?.autoImport !== false && missingComponents.length) {
+        if (options()?.autoImport !== false && missingComponents.length) {
           const importNode = programNode.body.find(
-            (n: any) =>
+            (n): n is ESTree.ImportDeclaration =>
               n.type === "ImportDeclaration" &&
               n.importKind !== "type" &&
               n.source.type === "Literal" &&
@@ -157,7 +166,7 @@ export default {
                 imports: formatList(missingComponents),
                 source: SOURCE_MODULE,
               },
-              fix: (fixer: any) => {
+              fix: (fixer) => {
                 return appendImports(fixer, context.sourceCode, importNode, missingComponents);
               },
             });
@@ -169,7 +178,7 @@ export default {
                 imports: formatList(missingComponents),
                 source: SOURCE_MODULE,
               },
-              fix: (fixer: any) => {
+              fix: (fixer) => {
                 return insertImports(fixer, context.sourceCode, "solid-js", missingComponents);
               },
             });
@@ -178,4 +187,4 @@ export default {
       },
     };
   },
-};
+});

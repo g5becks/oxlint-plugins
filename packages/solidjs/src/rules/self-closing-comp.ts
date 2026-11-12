@@ -1,29 +1,36 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 import { isDOMElementName } from "../utils/jsx.ts";
+import { ruleOptions } from "../utils/options.ts";
 
 const voidDOMElementRegex = /^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/;
 
-function isComponent(node: any): boolean {
+function isComponent(node: ESTree.JSXOpeningElement): boolean {
   return (
-    (node.name?.type === "JSXIdentifier" && !isDOMElementName(node.name.name)) ||
-    node.name?.type === "JSXMemberExpression"
+    (node.name.type === "JSXIdentifier" && !isDOMElementName(node.name.name)) ||
+    node.name.type === "JSXMemberExpression"
   );
 }
 
-function childrenIsEmpty(node: any): boolean {
-  return (node.parent?.children?.length ?? 0) === 0;
+function childrenOf(node: ESTree.JSXOpeningElement): ReadonlyArray<ESTree.JSXChild> {
+  return node.parent.type === "JSXElement" ? node.parent.children : [];
 }
 
-function childrenIsMultilineSpaces(node: any): boolean {
-  const children = node.parent?.children ?? [];
+function childrenIsEmpty(node: ESTree.JSXOpeningElement): boolean {
+  return childrenOf(node).length === 0;
+}
+
+function childrenIsMultilineSpaces(node: ESTree.JSXOpeningElement): boolean {
+  const children = childrenOf(node);
+  const first = children[0];
   return (
     children.length === 1 &&
-    children[0].type === "JSXText" &&
-    children[0].value.indexOf("\n") !== -1 &&
-    children[0].value.replace(/(?!\xA0)\s/g, "") === ""
+    first?.type === "JSXText" &&
+    first.value.indexOf("\n") !== -1 &&
+    first.value.replace(/(?!\xA0)\s/g, "") === ""
   );
 }
 
-export default {
+export default defineRule({
   meta: {
     type: "layout" as const,
     docs: {
@@ -56,13 +63,13 @@ export default {
       dontSelfClose: "This element should not be self-closing.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
-    function shouldBeSelfClosedWhenPossible(node: any): boolean {
+  createOnce(context) {
+    const options = () => ruleOptions<{ component?: "all" | "none"; html?: "all" | "void" | "none" }>(context);
+    function shouldBeSelfClosedWhenPossible(node: ESTree.JSXOpeningElement): boolean {
       if (isComponent(node)) {
-        return (context.options[0]?.component ?? "all") === "all";
-      } else if (node.name?.type === "JSXIdentifier" && isDOMElementName(node.name.name)) {
-        const whichHtml = context.options[0]?.html ?? "all";
+        return (options()?.component ?? "all") === "all";
+      } else if (node.name.type === "JSXIdentifier" && isDOMElementName(node.name.name)) {
+        const whichHtml = options()?.html ?? "all";
         switch (whichHtml) {
           case "all":
             return true;
@@ -76,7 +83,7 @@ export default {
     }
 
     return {
-      JSXOpeningElement(node: any) {
+      JSXOpeningElement(node) {
         const canSelfClose = childrenIsEmpty(node) || childrenIsMultilineSpaces(node);
         if (canSelfClose) {
           const shouldSelfClose = shouldBeSelfClosedWhenPossible(node);
@@ -84,9 +91,10 @@ export default {
             context.report({
               node,
               messageId: "selfClose",
-              fix(fixer: any) {
+              fix(fixer) {
                 const openingElementEnding = node.range[1] - 1;
-                const closingElementEnding = node.parent?.closingElement?.range?.[1];
+                const closingElementEnding =
+                  node.parent.type === "JSXElement" ? node.parent.closingElement?.range[1] : undefined;
                 if (closingElementEnding == null) return null;
                 return fixer.replaceTextRange([openingElementEnding, closingElementEnding], " />");
               },
@@ -95,16 +103,17 @@ export default {
             context.report({
               node,
               messageId: "dontSelfClose",
-              fix(fixer: any) {
+              fix(fixer) {
                 const sourceCode = context.sourceCode;
                 const tagName = sourceCode.getText(node.name);
                 const selfCloseEnding = node.range[1];
                 const lastTokens = sourceCode.getLastTokens(node, { count: 3 });
-                const isSpaceBeforeSelfClose = sourceCode.isSpaceBetween?.(lastTokens[0], lastTokens[1]);
-                const range = [
+                const [first, second] = lastTokens; // a self-closing tag ends with `/` `>`: always present
+                const isSpaceBeforeSelfClose = first && second ? sourceCode.isSpaceBetween?.(first, second) : false;
+                const range: [number, number] = [
                   isSpaceBeforeSelfClose ? selfCloseEnding - 3 : selfCloseEnding - 2,
                   selfCloseEnding,
-                ] as const;
+                ];
                 return fixer.replaceTextRange(range, `></${tagName}>`);
               },
             });
@@ -113,4 +122,4 @@ export default {
       },
     };
   },
-};
+});

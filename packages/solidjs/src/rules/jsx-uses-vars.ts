@@ -1,4 +1,6 @@
-export default {
+import { defineRule, type ESTree } from "@oxlint/plugins";
+
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -8,15 +10,14 @@ export default {
     schema: [],
     messages: {},
   },
-  defaultOptions: [],
-  createOnce(context: any) {
-    const markUsed = (name: string, node: any) => {
+  createOnce(context) {
+    const markUsed = (name: string, node: ESTree.Node) => {
       context.sourceCode.markVariableAsUsed(name, node);
     };
 
     return {
-      JSXOpeningElement(node: any) {
-        switch (node.name?.type) {
+      JSXOpeningElement(node) {
+        switch (node.name.type) {
           case "JSXNamespacedName":
             return;
           case "JSXIdentifier":
@@ -34,15 +35,16 @@ export default {
           }
         }
       },
-      "JSXAttribute > JSXNamespacedName"(node: any) {
+      "JSXAttribute > JSXNamespacedName"(node) {
         if (
-          node.namespace?.type === "JSXIdentifier" &&
+          node.type === "JSXNamespacedName" &&
+          node.namespace.type === "JSXIdentifier" &&
           node.namespace.name === "use" &&
-          node.name?.type === "JSXIdentifier"
+          node.name.type === "JSXIdentifier"
         ) {
           markUsed(node.name.name, node.name);
         }
       },
     };
   },
-};
+});

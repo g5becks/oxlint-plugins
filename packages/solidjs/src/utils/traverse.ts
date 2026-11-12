@@ -1,5 +1,9 @@
-export function find(node: any, predicate: (node: any) => boolean): any | null {
-  let current = node;
+import type { ESTree } from "@oxlint/plugins";
+
+type Child = ESTree.Node | null | undefined;
+
+export function find(node: Child, predicate: (node: ESTree.Node) => boolean): ESTree.Node | null {
+  let current: Child = node;
 
   while (current) {
     if (predicate(current)) {
@@ -11,6 +15,6 @@ export function find(node: any, predicate: (node: any) => boolean): any | null {
   return null;
 }
 
-export function findParent(node: any, predicate: (node: any) => boolean): any | null {
+export function findParent(node: Child, predicate: (node: ESTree.Node) => boolean): ESTree.Node | null {
   return node?.parent ? find(node.parent, predicate) : null;
 }

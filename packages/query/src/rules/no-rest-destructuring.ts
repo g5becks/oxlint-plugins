@@ -1,16 +1,17 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 import { createTanstackQueryImportTracker } from "../utils/detect-query-imports.ts";
 import { queryHooks } from "../utils/constants.ts";
 
 const queryHookSet = new Set<string>(queryHooks);
 
-function isObjectRestDestructuring(node: any): boolean {
+function isObjectRestDestructuring(node: ESTree.Node | null | undefined): boolean {
   if (node?.type !== "ObjectPattern") {
     return false;
   }
-  return (node.properties ?? []).some((p: any) => p.type === "RestElement");
+  return node.properties.some((p) => p.type === "RestElement");
 }
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -23,8 +24,7 @@ export default {
     },
     schema: [],
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     const tracker = createTanstackQueryImportTracker();
     const queryResultVariables = new Set<string>();
 
@@ -39,11 +39,11 @@ export default {
         queryResultVariables.clear();
       },
 
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
       },
 
-      CallExpression(node: any) {
+      CallExpression(node) {
         if (node?.callee?.type !== "Identifier") {
           return;
         }
@@ -95,7 +95,7 @@ export default {
         }
       },
 
-      VariableDeclarator(node: any) {
+      VariableDeclarator(node) {
         if (
           node.init?.type === "Identifier" &&
           queryResultVariables.has(node.init.name) &&
@@ -108,7 +108,7 @@ export default {
         }
       },
 
-      SpreadElement(node: any) {
+      SpreadElement(node) {
         if (node.argument?.type === "Identifier" && queryResultVariables.has(node.argument.name)) {
           context.report({
             node,
@@ -118,4 +118,4 @@ export default {
       },
     };
   },
-};
+});

@@ -1,3 +1,4 @@
+import { defineRule, type ESTree } from "@oxlint/plugins";
 import { createTanstackQueryImportTracker } from "../utils/detect-query-imports.ts";
 
 const reactHookNames = ["useEffect", "useCallback", "useMemo"];
@@ -12,7 +13,7 @@ const useQueryHookNames = [
 const allHookNames = ["useMutation", ...useQueryHookNames];
 const allHookNameSet = new Set(allHookNames);
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -25,23 +26,22 @@ export default {
     },
     schema: [],
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     const tracker = createTanstackQueryImportTracker();
     const trackedVariables: Record<string, string> = {};
     const hookAliasMap: Record<string, string> = {};
 
-    function getReactHook(node: any): string | undefined {
-      if (node.callee?.type === "Identifier") {
+    function getReactHook(node: ESTree.CallExpression): string | undefined {
+      if (node.callee.type === "Identifier") {
         const calleeName = node.callee.name;
         if (reactHookNames.includes(calleeName) || calleeName in hookAliasMap) {
           return calleeName;
         }
       } else if (
-        node.callee?.type === "MemberExpression" &&
-        node.callee.object?.type === "Identifier" &&
+        node.callee.type === "MemberExpression" &&
+        node.callee.object.type === "Identifier" &&
         node.callee.object.name === "React" &&
-        node.callee.property?.type === "Identifier" &&
+        node.callee.property.type === "Identifier" &&
         reactHookNames.includes(node.callee.property.name)
       ) {
         return node.callee.property.name;
@@ -49,12 +49,12 @@ export default {
       return undefined;
     }
 
-    function hasCombineProperty(callExpression: any): boolean {
-      if (!callExpression.arguments?.length) return false;
+    function hasCombineProperty(callExpression: ESTree.CallExpression): boolean {
+      if (!callExpression.arguments.length) return false;
       const firstArg = callExpression.arguments[0];
       if (!firstArg || firstArg.type !== "ObjectExpression") return false;
-      return (firstArg.properties ?? []).some(
-        (prop: any) => prop.type === "Property" && prop.key?.type === "Identifier" && prop.key.name === "combine",
+      return firstArg.properties.some(
+        (prop) => prop.type === "Property" && prop.key.type === "Identifier" && prop.key.name === "combine",
       );
     }
 
@@ -71,7 +71,7 @@ export default {
         for (const key of Object.keys(hookAliasMap)) delete hookAliasMap[key];
       },
 
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
 
         if (
@@ -92,7 +92,7 @@ export default {
         }
       },
 
-      VariableDeclarator(node: any) {
+      VariableDeclarator(node) {
         if (
           node.init?.type === "CallExpression" &&
           node.init.callee?.type === "Identifier" &&
@@ -108,7 +108,7 @@ export default {
         }
       },
 
-      CallExpression(node: any) {
+      CallExpression(node) {
         const reactHook = getReactHook(node);
         if (reactHook !== undefined && node.arguments?.length > 1 && node.arguments[1]?.type === "ArrayExpression") {
           const depsArray = node.arguments[1].elements ?? [];
@@ -126,4 +126,4 @@ export default {
       },
     };
   },
-};
+});

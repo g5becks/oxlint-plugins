@@ -1,7 +1,8 @@
+import { defineRule, type Fixer } from "@oxlint/plugins";
 import { createTanstackQueryImportTracker } from "../utils/detect-query-imports.ts";
 import { ASTUtils } from "../utils/ast-utils.ts";
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -19,8 +20,7 @@ export default {
     fixable: "code" as const,
     schema: [],
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     const tracker = createTanstackQueryImportTracker();
     // Track how useState is available: "React.useState" (namespace) or a local name (named import).
     let useStateLocalName: string | null = null;
@@ -39,7 +39,7 @@ export default {
         reactNamespaceName = null;
       },
 
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
 
         if (node.source?.value !== "react" || node.importKind === "type") {
@@ -62,7 +62,7 @@ export default {
         }
       },
 
-      NewExpression(node: any) {
+      NewExpression(node) {
         if (
           node.callee?.type !== "Identifier" ||
           node.callee.name !== "QueryClient" ||
@@ -90,12 +90,13 @@ export default {
         //    (upstream autofixes this case too; see PARITY.md#query-stable-query-client-no-react-import).
         const useStateCall =
           useStateLocalName ?? (reactNamespaceName != null ? `${reactNamespaceName}.useState` : null);
+        const id = parent.id;
         const fixWith = (call: string) =>
-          parent.id?.type === "Identifier"
-            ? (fixer: any) =>
+          id?.type === "Identifier"
+            ? (fixer: Fixer) =>
                 fixer.replaceTextRange(
                   [parent.range[0], parent.range[1]],
-                  `[${parent.id.name}] = ${call}(() => ${sourceCode.getText(node)})`,
+                  `[${id.name}] = ${call}(() => ${sourceCode.getText(node)})`,
                 )
             : undefined;
 
@@ -112,4 +113,4 @@ export default {
       },
     };
   },
-};
+});

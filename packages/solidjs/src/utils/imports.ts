@@ -1,9 +1,11 @@
+import type { ESTree } from "@oxlint/plugins";
+
 export function trackImports(fromModule: RegExp = /^solid-js(?:\/?|\b)/) {
   const importMap = new Map<string, string>();
 
   return {
-    handleImportDeclaration(node: any) {
-      if (node?.type !== "ImportDeclaration" || typeof node.source?.value !== "string") {
+    handleImportDeclaration(node: ESTree.ImportDeclaration) {
+      if (typeof node.source.value !== "string") {
         return;
       }
 

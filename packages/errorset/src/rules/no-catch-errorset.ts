@@ -1,3 +1,4 @@
+import { type Context, defineRule, type ESTree } from "@oxlint/plugins";
 /**
  * Rule: no-catch-errorset
  *
@@ -14,14 +15,14 @@
 import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
 import { readErrorsetSettings } from "../utils/settings.ts";
 import { resolveVariable } from "../utils/narrowing.ts";
-import { isGuardCall, isErrorsetInstanceof, isIsErrCall } from "../utils/pattern-helpers.ts";
+import { isGuardCall, isErrorsetInstanceof, isIsErrCall, nodeName } from "../utils/pattern-helpers.ts";
 
 const PATTERN_TYPES = new Set(["ObjectPattern", "ArrayPattern", "Property", "AssignmentPattern", "RestElement"]);
 
 /** Whether a declared identifier is (part of) a catch clause parameter. */
-function isCatchParamIdentifier(id: any): boolean {
-  let child = id;
-  let current = id?.parent;
+function isCatchParamIdentifier(id: ESTree.Node): boolean {
+  let child: ESTree.Node = id;
+  let current: ESTree.Node | null = id.parent;
   while (current && PATTERN_TYPES.has(current.type)) {
     child = current;
     current = current.parent;
@@ -35,13 +36,12 @@ function isCatchParamIdentifier(id: any): boolean {
  * those (`const err = e`, transitively). Anything else in a catch block, such as the result
  * of a fallback call, may legitimately be an errorset value.
  */
-function isCaughtValue(context: any, id: any, depth = 0): boolean {
+function isCaughtValue(context: Context, id: ESTree.Node | null | undefined, depth = 0): boolean {
   if (id?.type !== "Identifier" || depth > 8) return false;
   const variable = resolveVariable(context, id);
   if (typeof variable === "string") return false;
-  const v = variable as { defs?: any[]; identifiers?: any[] };
-  if (v.defs?.some((d) => d?.type === "CatchClause")) return true;
-  for (const declared of v.identifiers ?? []) {
+  if (variable.defs?.some((d) => d?.type === "CatchClause")) return true;
+  for (const declared of variable.identifiers ?? []) {
     if (isCatchParamIdentifier(declared)) return true;
     const declarator = declared.parent;
     if (
@@ -55,7 +55,7 @@ function isCaughtValue(context: any, id: any, depth = 0): boolean {
   return false;
 }
 
-export default {
+export default defineRule({
   meta: {
     type: "problem" as const,
     docs: {
@@ -76,8 +76,7 @@ export default {
         "Accessing `.kind` on a caught error expecting an errorset is always wrong. Errorset values are returned, not thrown.",
     },
   },
-  defaultOptions: [],
-  createOnce(context: any) {
+  createOnce(context) {
     const tracker = createErrorsetImportTracker();
 
     return {
@@ -87,15 +86,15 @@ export default {
       Program() {
         tracker.reset(readErrorsetSettings(context));
       },
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
       },
-      VariableDeclaration(node: any) {
+      VariableDeclaration(node) {
         tracker.handleVariableDeclaration(node);
       },
-      CallExpression(node: any) {
+      CallExpression(node) {
         if (!tracker.hasErrorsetImport()) return;
-        if (!isCaughtValue(context, node.arguments?.[0])) return;
+        if (!isCaughtValue(context, node.arguments[0])) return;
 
         // isErr(e)
         if (isIsErrCall(node, (n) => tracker.isIsErrImport(n))) {
@@ -109,11 +108,14 @@ export default {
 
         if (isGuardCall(node, guardNames, tracker.mergedGuardNames())) {
           const callee = node.callee;
-          const name = callee?.type === "Identifier" ? callee.name : (callee?.object?.name ?? "ErrorSet");
+          const name =
+            callee.type === "Identifier"
+              ? callee.name
+              : ((callee.type === "MemberExpression" ? nodeName(callee.object) : undefined) ?? "ErrorSet");
           context.report({ node, messageId: "guardInCatch", data: { name } });
         }
       },
-      BinaryExpression(node: any) {
+      BinaryExpression(node) {
         if (!tracker.hasErrorsetImport()) return;
         if (node.operator !== "instanceof" || !isCaughtValue(context, node.left)) return;
 
@@ -121,18 +123,18 @@ export default {
 
         // value instanceof UserError
         if (isErrorsetInstanceof(node, guardNames)) {
-          const name = node.right?.name ?? "ErrorSet";
+          const name = nodeName(node.right) ?? "ErrorSet";
           context.report({ node, messageId: "instanceofInCatch", data: { name } });
         }
       },
-      MemberExpression(node: any) {
+      MemberExpression(node) {
         // catch (e) { ... e.kind ... }
         if (!tracker.hasErrorsetImport()) return;
-        if (node.property?.type !== "Identifier" || node.property.name !== "kind") return;
+        if (node.property.type !== "Identifier" || node.property.name !== "kind") return;
         if (isCaughtValue(context, node.object)) {
           context.report({ node, messageId: "kindInCatch" });
         }
       },
     };
   },
-};
+});

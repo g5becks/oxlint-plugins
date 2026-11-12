@@ -1,3 +1,5 @@
+import type { ESTree } from "@oxlint/plugins";
+
 const TANSTACK_QUERY_IMPORT = /^@tanstack\/.+-query$/;
 
 export function createTanstackQueryImportTracker() {
@@ -8,18 +10,14 @@ export function createTanstackQueryImportTracker() {
       localToSource.clear();
     },
 
-    handleImportDeclaration(node: any) {
-      if (node?.type !== "ImportDeclaration") {
-        return;
-      }
-
-      const source = node.source?.value;
+    handleImportDeclaration(node: ESTree.ImportDeclaration) {
+      const source = node.source.value;
       if (typeof source !== "string" || !TANSTACK_QUERY_IMPORT.test(source)) {
         return;
       }
 
-      for (const specifier of node.specifiers ?? []) {
-        if (specifier?.type === "ImportSpecifier" && specifier.local?.name) {
+      for (const specifier of node.specifiers) {
+        if (specifier.type === "ImportSpecifier" && specifier.local.name) {
           localToSource.set(specifier.local.name, source);
         }
       }
