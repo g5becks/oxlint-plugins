@@ -1,11 +1,11 @@
 ---
 id: TASK-030
 title: 'solidjs/reactivity: Iterative traversal and cached lookups (OX-31, P2)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-12T14:09:00Z'
+updated_date: '2026-11-12T14:15:00Z'
 labels:
   - solidjs
   - performance
@@ -37,7 +37,7 @@ Audit P2. `reactivity`'s `walkTree` (`reactivity.ts:88-108`) recursively walks `
 - [x] #1 No recursive walkTree remains; deep generated JSX does not overflow (test)
 - [x] #2 Diagnostics on the corpus are unchanged (diff)
 - [x] #3 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 - [x] #5 No measurable slowdown: Solid rule callback time with scope analysis isolated by the probe rule (median of 9 interleaved runs against the HEAD bundle) is within 3% of HEAD; method and numbers in the notes.
 <!-- AC:END -->
 
@@ -96,4 +96,6 @@ The original AC "The Solid plugin's corpus cost drops by at least 30% against th
 - Changeset .changeset/solidjs-reactivity-iterative-walk.md (solidjs patch).
 - AC #2 (diagnostics): re-diffed on the final code: 7218 diagnostics byte-identical.
 - `bun run gate`: exit 0; unit (Node) 301/301 (+3 walk tests), upstream query 1457 + 5 skipped, solid 462 + 4 skipped, compat 41, CLI 270/270 (+1), bench 6/6.
+
+Verified with scripts/ci-local.sh (7c7f1f1, PASS); GitHub Actions unavailable (billing lock). Incl. CLI deep-JSX test on oxlint 1.70.0 floor and pinned 1.93.0.
 <!-- SECTION:NOTES:END -->
