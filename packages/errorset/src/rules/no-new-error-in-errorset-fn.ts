@@ -14,7 +14,7 @@ import { defineRule, type ESTree } from "@oxlint/plugins";
  *      if (!id) return UserError.invalid`id is required`
  *    }
  */
-import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
+import { sharedTrackerHandle } from "../utils/shared-tracker.ts";
 import { readErrorsetSettings } from "../utils/settings.ts";
 import { isErrorsetCreation, getEnclosingFunction, CAPTURE_METHODS, nodeName } from "../utils/pattern-helpers.ts";
 import { ruleOptions } from "../utils/options.ts";
@@ -63,7 +63,8 @@ export default defineRule({
     },
   },
   createOnce(context) {
-    const tracker = createErrorsetImportTracker();
+    // The file's import tracker, shared with the other errorset rules (audit R6).
+    const tracker = sharedTrackerHandle();
 
     // Per-file: functions that contain at least one errorset creation expression.
     const errorsetFunctions = new Set<ESTree.Node>();
@@ -121,14 +122,17 @@ export default defineRule({
     return {
       before() {
         const settings = readErrorsetSettings(context);
-        tracker.reset(settings);
         errorsetFunctions.clear();
         pendingViolations.length = 0;
         // No import from a configured errorset module: nothing to report in this file (audit P3).
-        return mayImportConfiguredModule(context.sourceCode.text, settings);
+        if (!mayImportConfiguredModule(context.sourceCode.text, settings)) return false;
+        tracker.acquire(settings);
+        return true;
+      },
+      after() {
+        tracker.release();
       },
       Program() {
-        tracker.reset(readErrorsetSettings(context));
         errorsetFunctions.clear();
         pendingViolations.length = 0;
       },

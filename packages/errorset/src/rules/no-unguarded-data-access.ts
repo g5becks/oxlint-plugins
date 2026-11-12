@@ -24,7 +24,7 @@ import { defineRule, type ESTree } from "@oxlint/plugins";
  * ✅ const result = getUser(id)
  *    if (UserError(result)) { console.log(result.data.id) }
  */
-import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
+import { sharedTrackerHandle } from "../utils/shared-tracker.ts";
 import { readErrorsetSettings } from "../utils/settings.ts";
 import { createNarrowing, type VariableKey } from "../utils/narrowing.ts";
 import { ruleOptions } from "../utils/options.ts";
@@ -63,7 +63,8 @@ export default defineRule({
     },
   },
   createOnce(context) {
-    const tracker = createErrorsetImportTracker();
+    // The file's import tracker, shared with the other errorset rules (audit R6).
+    const tracker = sharedTrackerHandle();
     // Per file: candidate guard calls and property accesses, evaluated at Program:exit.
     const calls: Array<{ call: ESTree.CallExpression; subject: IdentifierNode }> = [];
     const accesses: Array<{ node: ESTree.MemberExpression; object: IdentifierNode; prop: string }> = [];
@@ -79,14 +80,17 @@ export default defineRule({
     return {
       before() {
         const settings = readErrorsetSettings(context);
-        tracker.reset(settings);
         calls.length = 0;
         accesses.length = 0;
         // No import from a configured errorset module: nothing to report in this file (audit P3).
-        return mayImportConfiguredModule(context.sourceCode.text, settings);
+        if (!mayImportConfiguredModule(context.sourceCode.text, settings)) return false;
+        tracker.acquire(settings);
+        return true;
+      },
+      after() {
+        tracker.release();
       },
       Program() {
-        tracker.reset(readErrorsetSettings(context));
         calls.length = 0;
         accesses.length = 0;
       },

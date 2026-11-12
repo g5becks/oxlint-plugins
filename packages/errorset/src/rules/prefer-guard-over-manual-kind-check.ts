@@ -9,7 +9,7 @@ import { defineRule } from "@oxlint/plugins";
  * ❌ if (result.kind === "not_found") { result.data.id }  // data is Record<string, unknown>
  * ✅ if (UserError.not_found(result)) { result.data.id }  // data is { id: string }
  */
-import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
+import { sharedTrackerHandle } from "../utils/shared-tracker.ts";
 import { readErrorsetSettings } from "../utils/settings.ts";
 import { createNarrowing, guardSetName } from "../utils/narrowing.ts";
 import { getKindEquality } from "../utils/pattern-helpers.ts";
@@ -33,17 +33,19 @@ export default defineRule({
     },
   },
   createOnce(context) {
-    const tracker = createErrorsetImportTracker();
+    // The file's import tracker, shared with the other errorset rules (audit R6).
+    const tracker = sharedTrackerHandle();
 
     return {
       before() {
         const settings = readErrorsetSettings(context);
-        tracker.reset(settings);
         // No import from a configured errorset module: nothing to report in this file (audit P3).
-        return mayImportConfiguredModule(context.sourceCode.text, settings);
+        if (!mayImportConfiguredModule(context.sourceCode.text, settings)) return false;
+        tracker.acquire(settings);
+        return true;
       },
-      Program() {
-        tracker.reset(readErrorsetSettings(context));
+      after() {
+        tracker.release();
       },
       ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);

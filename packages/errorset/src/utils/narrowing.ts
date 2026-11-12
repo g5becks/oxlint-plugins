@@ -12,7 +12,7 @@
  * set (`!==` is the negation). Merged guards (`merge(A, B)`, `A.merge(B)`) are set-level guards.
  */
 import type { Context, ESTree, Variable } from "@oxlint/plugins";
-import type { ErrorsetImportTracker } from "./detect-errorset-imports.ts";
+import type { SharedTrackerHandle as ErrorsetImportTracker } from "./shared-tracker.ts";
 import { isGuardCall, isIsErrCall } from "./pattern-helpers.ts";
 
 /** A scope Variable, or a name key for identifiers that don't resolve (globals). */

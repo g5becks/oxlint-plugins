@@ -12,7 +12,7 @@ import { type Context, defineRule, type ESTree } from "@oxlint/plugins";
  * ❌ catch (e) { if (e instanceof UserError) { ... } }
  * ❌ catch (e) { if (e.kind === "not_found") { ... } }
  */
-import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts";
+import { sharedTrackerHandle } from "../utils/shared-tracker.ts";
 import { readErrorsetSettings } from "../utils/settings.ts";
 import { resolveVariable } from "../utils/narrowing.ts";
 import { isGuardCall, isErrorsetInstanceof, isIsErrCall, nodeName } from "../utils/pattern-helpers.ts";
@@ -78,17 +78,19 @@ export default defineRule({
     },
   },
   createOnce(context) {
-    const tracker = createErrorsetImportTracker();
+    // The file's import tracker, shared with the other errorset rules (audit R6).
+    const tracker = sharedTrackerHandle();
 
     return {
       before() {
         const settings = readErrorsetSettings(context);
-        tracker.reset(settings);
         // No import from a configured errorset module: nothing to report in this file (audit P3).
-        return mayImportConfiguredModule(context.sourceCode.text, settings);
+        if (!mayImportConfiguredModule(context.sourceCode.text, settings)) return false;
+        tracker.acquire(settings);
+        return true;
       },
-      Program() {
-        tracker.reset(readErrorsetSettings(context));
+      after() {
+        tracker.release();
       },
       ImportDeclaration(node) {
         tracker.handleImportDeclaration(node);
