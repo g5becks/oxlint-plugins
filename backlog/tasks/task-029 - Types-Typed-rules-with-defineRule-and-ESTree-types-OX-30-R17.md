@@ -1,11 +1,11 @@
 ---
 id: TASK-029
 title: 'Types: Typed rules with defineRule and ESTree types (OX-30, R17)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-12T13:37:00Z'
+updated_date: '2026-11-12T13:46:00Z'
 labels:
   - types
 milestone: m-3
@@ -35,7 +35,7 @@ Audit R17. The 59 shipped rule and util files contain 454 `: any`, no `defineRul
 - [x] #1 Every rule is wrapped in defineRule and visitors use @oxlint/plugins ESTree types
 - [x] #2 noImplicitAny is on for package sources; ': any' in shipped code is at most 45 (from 454), counted with the recorded command
 - [x] #3 Behavior unchanged: unit, CLI, parity and bench diagnostic counts match
-- [ ] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -76,4 +76,6 @@ Audit R17. The 59 shipped rule and util files contain 454 `: any`, no `defineRul
 
 ## Consumer-visible
 - meta.defaultOptions declared (immutable, solidjs): patch changeset .changeset/typed-rules-default-options.md. No lint result changes.
+
+Verified with scripts/ci-local.sh (e3ce3fa, PASS); GitHub Actions unavailable (billing lock). Incl. unit/CLI on oxlint 1.70.0 floor and eslint-compat 9/10.
 <!-- SECTION:NOTES:END -->
