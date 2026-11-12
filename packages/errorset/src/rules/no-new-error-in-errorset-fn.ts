@@ -18,6 +18,7 @@ import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts
 import { readErrorsetSettings } from "../utils/settings.ts";
 import { isErrorsetCreation, getEnclosingFunction, CAPTURE_METHODS, nodeName } from "../utils/pattern-helpers.ts";
 import { ruleOptions } from "../utils/options.ts";
+import { mayImportConfiguredModule } from "../utils/early-exit.ts";
 
 type Options = [{ allowedBuiltins?: string[] }?];
 
@@ -119,9 +120,12 @@ export default defineRule({
 
     return {
       before() {
-        tracker.reset(readErrorsetSettings(context));
+        const settings = readErrorsetSettings(context);
+        tracker.reset(settings);
         errorsetFunctions.clear();
         pendingViolations.length = 0;
+        // No import from a configured errorset module: nothing to report in this file (audit P3).
+        return mayImportConfiguredModule(context.sourceCode.text, settings);
       },
       Program() {
         tracker.reset(readErrorsetSettings(context));

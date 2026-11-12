@@ -2,6 +2,7 @@ import { defineRule } from "@oxlint/plugins";
 import { getStaticString } from "../utils/static-value.ts";
 import { jsxPropName } from "../utils/jsx.ts";
 import { ruleOptions } from "../utils/options.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 function isHtmlLike(str: string): boolean {
   return /<[a-z][\s\S]*>/i.test(str.trim());
@@ -43,6 +44,10 @@ export default defineRule({
   },
   createOnce(context) {
     return {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
       JSXAttribute(node) {
         const allowStatic = Boolean(ruleOptions<{ allowStatic?: boolean }>(context)?.allowStatic ?? true);
         if (jsxPropName(node) === "dangerouslySetInnerHTML") {

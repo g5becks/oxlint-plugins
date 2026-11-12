@@ -1,5 +1,6 @@
 import { defineRule, type ESTree, type Fix, type Fixer } from "@oxlint/plugins";
 import type { FunctionNode } from "../utils/functions.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 const getName = (node: ESTree.Node): string | null => {
   switch (node.type) {
@@ -189,6 +190,8 @@ export default defineRule({
       // can't leave entries for the next file (createOnce runs once per worker).
       before() {
         functionStack.length = 0;
+        // JSX-only rule: skip files that can't contain JSX (audit P3).
+        return !cannotContainJSX(context.filename);
       },
       FunctionDeclaration: onFunctionEnter,
       FunctionExpression: onFunctionEnter,

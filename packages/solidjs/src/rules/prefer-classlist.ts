@@ -1,6 +1,7 @@
 import { defineRule } from "@oxlint/plugins";
 import { jsxHasProp, jsxPropName } from "../utils/jsx.ts";
 import { ruleOptions } from "../utils/options.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 export default defineRule({
   meta: {
@@ -35,6 +36,10 @@ export default defineRule({
   },
   createOnce(context) {
     return {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
       JSXAttribute(node) {
         const classnames = ruleOptions<{ classnames?: Array<string> }>(context)?.classnames ?? [
           "cn",

@@ -1,4 +1,5 @@
 import { defineRule, type ESTree } from "@oxlint/plugins";
+import { cannotContainJSX } from "../utils/files.ts";
 
 export default defineRule({
   meta: {
@@ -16,6 +17,10 @@ export default defineRule({
     };
 
     return {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
       JSXOpeningElement(node) {
         switch (node.name.type) {
           case "JSXNamespacedName":

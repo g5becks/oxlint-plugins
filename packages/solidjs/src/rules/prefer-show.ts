@@ -1,5 +1,6 @@
 import { defineRule, type ESTree } from "@oxlint/plugins";
 import { isJSXElementOrFragment } from "../utils/jsx.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 const EXPENSIVE_TYPES = ["JSXElement", "JSXFragment", "Identifier"];
 
@@ -59,6 +60,10 @@ export default defineRule({
     };
 
     return {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
       JSXExpressionContainer(node) {
         if (!isJSXElementOrFragment(node.parent)) {
           return;

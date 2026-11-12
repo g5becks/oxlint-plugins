@@ -2,6 +2,7 @@ import { defineRule, type ESTree } from "@oxlint/plugins";
 import { appendImports, insertImports } from "../utils/fix-imports.ts";
 import { isDOMElementName } from "../utils/jsx.ts";
 import { ruleOptions } from "../utils/options.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 const AUTO_COMPONENTS = ["Show", "For", "Index", "Switch", "Match"];
 const SOURCE_MODULE = "solid-js";
@@ -115,6 +116,8 @@ export default defineRule({
       // createOnce runs once per worker; per-file state must be reset for every file (audit R9).
       before() {
         missingComponentsSet.clear();
+        // JSX-only rule: skip files that can't contain JSX (audit P3).
+        return !cannotContainJSX(context.filename);
       },
       JSXOpeningElement(node) {
         let n: ESTree.Node;

@@ -16,6 +16,7 @@ import { createErrorsetImportTracker } from "../utils/detect-errorset-imports.ts
 import { readErrorsetSettings } from "../utils/settings.ts";
 import { resolveVariable } from "../utils/narrowing.ts";
 import { isGuardCall, isErrorsetInstanceof, isIsErrCall, nodeName } from "../utils/pattern-helpers.ts";
+import { mayImportConfiguredModule } from "../utils/early-exit.ts";
 
 const PATTERN_TYPES = new Set(["ObjectPattern", "ArrayPattern", "Property", "AssignmentPattern", "RestElement"]);
 
@@ -81,7 +82,10 @@ export default defineRule({
 
     return {
       before() {
-        tracker.reset(readErrorsetSettings(context));
+        const settings = readErrorsetSettings(context);
+        tracker.reset(settings);
+        // No import from a configured errorset module: nothing to report in this file (audit P3).
+        return mayImportConfiguredModule(context.sourceCode.text, settings);
       },
       Program() {
         tracker.reset(readErrorsetSettings(context));

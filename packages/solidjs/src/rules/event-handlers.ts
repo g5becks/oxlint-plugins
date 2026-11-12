@@ -2,6 +2,7 @@ import { defineRule } from "@oxlint/plugins";
 import { getStaticValue } from "../utils/static-value.ts";
 import { isDOMElementName } from "../utils/jsx.ts";
 import { ruleOptions } from "../utils/options.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 const COMMON_EVENTS = [
   "onAnimationEnd",
@@ -117,6 +118,10 @@ export default defineRule({
   createOnce(context) {
     const options = () => ruleOptions<{ ignoreCase?: boolean; warnOnSpread?: boolean }>(context);
     return {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
       JSXAttribute(node) {
         const openingElement = node.parent;
         if (

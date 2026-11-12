@@ -1,6 +1,7 @@
 import { defineRule } from "@oxlint/plugins";
 import { isDOMElementName } from "../utils/jsx.ts";
 import { ruleOptions } from "../utils/options.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 const knownNamespaces = ["on", "oncapture", "use", "prop", "attr", "bool"];
 const styleNamespaces = ["style", "class"];
@@ -42,6 +43,10 @@ export default defineRule({
   },
   createOnce(context) {
     return {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
       "JSXAttribute > JSXNamespacedName"(node) {
         if (node.type !== "JSXNamespacedName") return; // guaranteed by the selector
         const explicitlyAllowedNamespaces = ruleOptions<{ allowedNamespaces?: Array<string> }>(

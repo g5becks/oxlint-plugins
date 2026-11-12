@@ -1,6 +1,7 @@
 import { defineRule, type ESTree } from "@oxlint/plugins";
 import { isJSXElementOrFragment } from "../utils/jsx.ts";
 import { type FunctionNode, isFunctionNode } from "../utils/functions.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 function getPropertyName(memberExpr: ESTree.MemberExpression): string | null {
   if (!memberExpr?.property) return null;
@@ -50,6 +51,10 @@ export default defineRule({
     };
 
     return {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
       CallExpression(node) {
         const callOrChain: ESTree.Node = node.parent.type === "ChainExpression" ? node.parent : node;
         if (

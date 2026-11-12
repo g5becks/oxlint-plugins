@@ -1,5 +1,6 @@
 import { defineRule } from "@oxlint/plugins";
 import { getStaticString } from "../utils/static-value.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 // Control characters are intentional: browsers ignore leading C0 controls and embedded
 // tab/CR/LF in URLs, so they must be matched to catch `javascript:` (same as upstream).
 const isJavaScriptProtocol =
@@ -20,6 +21,10 @@ export default defineRule({
   },
   createOnce(context) {
     return {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
       JSXAttribute(node) {
         if (node.name?.type === "JSXIdentifier" && node.value) {
           const valueNode = node.value.type === "JSXExpressionContainer" ? node.value.expression : node.value;

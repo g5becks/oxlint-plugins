@@ -1,6 +1,7 @@
 import { defineRule, type ESTree } from "@oxlint/plugins";
 import { isDOMElementName } from "../utils/jsx.ts";
 import { ruleOptions } from "../utils/options.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 const voidDOMElementRegex = /^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/;
 
@@ -83,6 +84,10 @@ export default defineRule({
     }
 
     return {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
       JSXOpeningElement(node) {
         const canSelfClose = childrenIsEmpty(node) || childrenIsMultilineSpaces(node);
         if (canSelfClose) {

@@ -1,6 +1,7 @@
 import { defineRule } from "@oxlint/plugins";
 import { isDOMElementName } from "../utils/jsx.ts";
 import { trace } from "../utils/trace.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 export default defineRule({
   meta: {
@@ -16,6 +17,10 @@ export default defineRule({
   },
   createOnce(context) {
     return {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
       JSXAttribute(node) {
         const openingElement = node.parent;
         if (

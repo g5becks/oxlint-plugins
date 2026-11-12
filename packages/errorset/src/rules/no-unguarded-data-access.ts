@@ -31,6 +31,7 @@ import { ruleOptions } from "../utils/options.ts";
 
 type IdentifierNode = Extract<ESTree.Node, { type: "Identifier" }>;
 import { ERRORSET_PROPERTIES } from "../utils/pattern-helpers.ts";
+import { mayImportConfiguredModule } from "../utils/early-exit.ts";
 
 type Options = [{ properties?: string[] }?];
 
@@ -77,9 +78,12 @@ export default defineRule({
 
     return {
       before() {
-        tracker.reset(readErrorsetSettings(context));
+        const settings = readErrorsetSettings(context);
+        tracker.reset(settings);
         calls.length = 0;
         accesses.length = 0;
+        // No import from a configured errorset module: nothing to report in this file (audit P3).
+        return mayImportConfiguredModule(context.sourceCode.text, settings);
       },
       Program() {
         tracker.reset(readErrorsetSettings(context));

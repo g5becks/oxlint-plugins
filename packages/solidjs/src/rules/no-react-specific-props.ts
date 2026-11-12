@@ -1,5 +1,6 @@
 import { defineRule, type Fixer } from "@oxlint/plugins";
 import { isDOMElementName, jsxGetProp, jsxHasProp } from "../utils/jsx.ts";
+import { cannotContainJSX } from "../utils/files.ts";
 
 const reactSpecificProps = [
   { from: "className", to: "class" },
@@ -22,6 +23,10 @@ export default defineRule({
   },
   createOnce(context) {
     return {
+      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      before() {
+        return !cannotContainJSX(context.filename);
+      },
       JSXOpeningElement(node) {
         for (const { from, to } of reactSpecificProps) {
           const classNameAttribute = jsxGetProp(node.attributes ?? [], from);

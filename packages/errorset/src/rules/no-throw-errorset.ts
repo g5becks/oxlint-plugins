@@ -16,6 +16,7 @@ import {
   CAPTURE_METHODS,
   nodeName,
 } from "../utils/pattern-helpers.ts";
+import { mayImportConfiguredModule } from "../utils/early-exit.ts";
 
 /**
  * Returns true when the ThrowStatement's argument is an errorset creation expression
@@ -123,7 +124,10 @@ export default defineRule({
 
     return {
       before() {
-        tracker.reset(readErrorsetSettings(context));
+        const settings = readErrorsetSettings(context);
+        tracker.reset(settings);
+        // No import from a configured errorset module: nothing to report in this file (audit P3).
+        return mayImportConfiguredModule(context.sourceCode.text, settings);
       },
       Program() {
         tracker.reset(readErrorsetSettings(context));
