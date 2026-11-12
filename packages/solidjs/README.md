@@ -93,7 +93,7 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 | `jsx-no-undef` | Disallow undefined variables in JSX | error |
 | `jsx-no-script-url` | Disallow `javascript:` URLs in JSX | error |
 | `jsx-uses-vars` | Mark JSX variables as used (ESLint only; a no-op under oxlint, see note above) | error |
-| `no-innerhtml` | Disallow `innerHTML`/`outerHTML` | error |
+| `no-innerhtml` | Disallow `innerHTML` with dynamic content (a security risk) and React's `dangerouslySetInnerHTML` | error |
 | `no-unknown-namespaces` | Disallow unknown JSX namespace prefixes | error |
 | `self-closing-comp` | Enforce self-closing tags for components without children | warn |
 
@@ -101,10 +101,10 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 
 | Rule | Description | Recommended |
 |---|---|---|
-| `no-proxy-apis` | Disallow proxy-incompatible APIs | error |
+| `no-proxy-apis` | Disallow proxy-incompatible APIs | — |
 | `no-react-deps` | Disallow React-style dependency arrays | warn |
 | `no-react-specific-props` | Disallow React-specific props (`className`, `htmlFor`) | warn |
-| `no-array-handlers` | Disallow array index as event handler | warn |
+| `no-array-handlers` | Disallow array-form event handlers (`onClick={[handler, data]}`), which are type-unsafe | — |
 | `event-handlers` | Enforce correct event handler naming conventions | warn |
 | `imports` | Enforce importing from the correct `solid-js` sub-path | warn |
 | `style-prop` | Validate the `style` prop (CSS property names and values) | warn |
@@ -115,7 +115,30 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 |---|---|---|
 | `prefer-for` | Prefer `<For>` over `.map()` in JSX | error |
 | `prefer-show` | Prefer `<Show>` over ternaries/`&&` in JSX | — |
-| `prefer-classlist` | Prefer `classList` object over ternary `class` strings | — |
+| `prefer-classlist` | Prefer the `classList` prop over a classnames helper (`cn`, `clsx`, `classnames`) in `class` | — |
+
+## Options
+
+Options go in the rule's config entry, e.g. `"solidjs/reactivity": ["warn", { "customReactiveFunctions": ["track"] }]`.
+They are validated against each rule's schema: an unknown key or a wrong type stops oxlint with
+"Options validation failed". Same names and defaults as eslint-plugin-solid 0.14.5.
+
+| Rule | Option | Default | Effect |
+|---|---|---|---|
+| `reactivity` | `customReactiveFunctions` (string[]) | `[]` | Extra functions that may receive signals as arguments (all `create*` and `use*` functions already can) |
+| `event-handlers` | `ignoreCase` (boolean) | `false` | Don't report ambiguously named handlers like `onclick` |
+| `event-handlers` | `warnOnSpread` (boolean) | `false` | Report event handlers spread into JSX (for Solid < 1.6) |
+| `jsx-no-duplicate-props` | `ignoreCase` (boolean) | `false` | Treat prop names that differ only by case as duplicates |
+| `jsx-no-undef` | `allowGlobals` (boolean) | `false` | Look up components in the global scope too |
+| `jsx-no-undef` | `autoImport` (boolean) | `true` | Fix missing `Show`, `For`, `Switch`, ... with an import from `solid-js` |
+| `jsx-no-undef` | `typescriptEnabled` (boolean) | `false` | Don't report undefined variables (leave that to TypeScript); only custom directives and auto-imports |
+| `no-innerhtml` | `allowStatic` (boolean) | `true` | Allow `innerHTML` set to a static HTML string |
+| `no-unknown-namespaces` | `allowedNamespaces` (string[], at least one) | none | Extra namespace prefixes to allow |
+| `prefer-classlist` | `classnames` (string[], at least one) | `["cn", "clsx", "classnames"]` | Helper names to treat as classnames functions |
+| `self-closing-comp` | `component` (`"all"` \| `"none"`) | `"all"` | Which components should self-close when they have no children |
+| `self-closing-comp` | `html` (`"all"` \| `"void"` \| `"none"`) | `"all"` | Which native elements should self-close (`"void"`: only void elements like `<br />`) |
+| `style-prop` | `styleProps` (string[], at least one) | `["style"]` | Props to treat as style objects |
+| `style-prop` | `allowString` (boolean) | `false` | Allow string styles (otherwise reported, with a fix to an object) |
 
 ## Parity with upstream
 
