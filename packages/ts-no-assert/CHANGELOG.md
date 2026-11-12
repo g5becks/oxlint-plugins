@@ -1,5 +1,11 @@
 # oxlint-plugin-ts-no-assert
 
+## 0.2.1
+
+### Patch Changes
+
+- 118fd0d: The package now ships `THIRD_PARTY_NOTICES.md` with the copyright and MIT license notice of the upstream ESLint plugin its rules are ported from (eslint-plugin-functional, eslint-plugin-no-type-assertion, @tanstack/eslint-plugin-query, @tanstack/eslint-plugin-router, eslint-plugin-solid), as the MIT license requires.
+
 ## 0.2.0
 
 ### Minor Changes

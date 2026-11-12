@@ -1,5 +1,18 @@
 # oxlint-plugin-query
 
+## 0.3.0
+
+### Minor Changes
+
+- 6051ec5: **Behavior change** in `stable-query-client`: when the file imports neither `useState` nor a React namespace from `react`, the rule still reports but no longer autofixes to `React.useState(...)` (that fix referenced an undefined `React` unless one was global). It offers the same rewrite as a suggestion instead. Files that import `useState` (also aliased) or `React` / `* as R` keep the autofix, using the local name.
+  
+  Migration: nothing to change in config. If you relied on `oxlint --fix` for files without a React import, add `import { useState } from "react"` (the autofix then applies) or apply the suggestion in your editor. See PARITY.md#query-stable-query-client-no-react-import.
+- 5498c62: `exhaustive-deps` now reports on the `useQuery({ ... })` options object instead of the `queryKey` property, like upstream `@tanstack/eslint-plugin-query` 5.107+ (audit R12), so editor squiggles and `oxlint-disable-next-line` placement match upstream. Migration: a `// oxlint-disable-next-line query/exhaustive-deps` comment placed above the `queryKey` line must move above the line that opens the options object (usually `useQuery({`). `no-unstable-deps` also tracks aliased React hooks imported from `"React"`, as upstream does (in addition to `"react"`). The upstream test suites now run against the ports; differences are listed in PARITY.md; `stable-query-client` is documented as React-only.
+
+### Patch Changes
+
+- 118fd0d: The package now ships `THIRD_PARTY_NOTICES.md` with the copyright and MIT license notice of the upstream ESLint plugin its rules are ported from (eslint-plugin-functional, eslint-plugin-no-type-assertion, @tanstack/eslint-plugin-query, @tanstack/eslint-plugin-router, eslint-plugin-solid), as the MIT license requires.
+
 ## 0.2.0
 
 ### Minor Changes

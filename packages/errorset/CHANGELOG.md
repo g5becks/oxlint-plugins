@@ -1,5 +1,16 @@
 # oxlint-plugin-errorset
 
+## 0.2.1
+
+### Patch Changes
+
+- 58a58df: Per-file early exits (rules return `false` from `before()`, which makes oxlint skip them for that file):
+  
+  - errorset: all rules skip files whose source never mentions a configured errorset module (`@takinprofit/errorset` or `settings.errorset.modules`); those files couldn't produce reports. On a 76-file corpus with few errorset users, linting with the errorset plugin got 30% faster (88 → 62 ms, single-threaded). A module specifier spelled with escape sequences (`"\u0040takinprofit/errorset"`) is no longer recognized.
+  - solidjs: the 16 JSX-only rules skip `.ts`, `.mts` and `.cts` files, which can't contain JSX. Lint results are unchanged.
+- 7472057: Internal: the five errorset rules share one import tracker per file instead of running five, using the per-file shared-cache pattern documented by `@oxlint/plugins` (acquire in `before()`, release in `after()`). Lint results are unchanged; there is no measurable speed difference.
+- f2fbffe: README corrections. solidjs: `no-proxy-apis` and `no-array-handlers` are off in the `recommended` preset (the table said `error` and `warn`); corrected descriptions of `no-array-handlers`, `no-innerhtml` and `prefer-classlist`; new "Options" section documenting every rule option with its default. errorset: notes that files never mentioning a configured module are skipped.
+
 ## 0.2.0
 
 ### Minor Changes

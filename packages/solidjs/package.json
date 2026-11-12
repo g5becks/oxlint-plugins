@@ -1,6 +1,6 @@
 {
   "name": "oxlint-plugin-solidjs",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "SolidJS lint rules ported from eslint-plugin-solid to Oxlint's JS plugin API. Also compatible with ESLint flat config. Published as oxlint-plugin-solidjs.",
   "license": "MIT",

@@ -1,5 +1,22 @@
 # oxlint-plugin-immutable
 
+## 0.3.0
+
+### Minor Changes
+
+- dd26164: `no-let` gains eslint-plugin-functional's `allowInFunctions` (allow `let` inside function bodies) and `ignoreIdentifierPattern` (skip a declaration when every declared name matches the pattern or patterns), both off by default, with the same behavior as eslint-plugin-functional 10.0.1. The README now maps every immutable rule's options to eslint-plugin-functional's, including `no-throw-statements`' `allowInAsyncFunctions` (upstream `allowToRejectPromises`, with narrower semantics) and `type-declaration-immutability`'s `identifiers` (an ignore pattern, equivalent to upstream `ignoreIdentifierPattern`). Not breaking: existing configs keep working unchanged.
+- 6051ec5: **Breaking (config):** `prefer-immutable-types` now validates its per-category options. `parameters`, `returnTypes` and `variables` accept only `enforcement` (`"ReadonlyShallow"`, or `"None"` / `false` to turn the category off) and `ignoreNamePattern` (string or array of strings). Previously any object was accepted, and upstream-only values such as `enforcement: "Immutable"` silently disabled the category; now oxlint stops with "Options validation failed for rule 'immutable/prefer-immutable-types'".
+  
+  Migration: replace `enforcement: "Immutable"` / `"ReadonlyDeep"` with `"ReadonlyShallow"` (the only level implemented without type information) or `"None"` to keep the category off as before, and remove other upstream keys (`ignoreInferredTypes`, `ignoreClasses`, `fixer`, `suggestions`, ...) from the category objects.
+- 5684a6b: `type-declaration-immutability` now checks union members, top-level arrays and tuples (`T[]`, `Array<T>`, `[A, B]`), mapped types without `readonly`, index signatures, `Map`/`Set`/`WeakMap`/`WeakSet`/`Record`, and `Partial`/`Required`/`Pick`/`Omit`/`NonNullable` over a literal (audit R7); previously only object literals, intersections and interfaces were checked. `{ readonly items: string[] }` is now accepted (ReadonlyShallow, as upstream). On a 22-declaration probe the rule now agrees with upstream eslint-plugin-functional 10.0.1 on 22 of 22 (was 13).
+  
+  **This reports more declarations.** Migration: make them readonly (`readonly T[]`, `ReadonlyArray<T>`, `readonly [A, B]`, `ReadonlyMap`, `ReadonlySet`, `Readonly<Record<K, V>>`, `{ readonly [K in X]: T }`) or suppress with `// oxlint-disable-next-line immutable/type-declaration-immutability`. The README lists what the rule can't see without type information.
+
+### Patch Changes
+
+- 118fd0d: The package now ships `THIRD_PARTY_NOTICES.md` with the copyright and MIT license notice of the upstream ESLint plugin its rules are ported from (eslint-plugin-functional, eslint-plugin-no-type-assertion, @tanstack/eslint-plugin-query, @tanstack/eslint-plugin-router, eslint-plugin-solid), as the MIT license requires.
+- e3ce3fa: Rules now declare their defaults in `meta.defaultOptions`, where oxlint, ESLint and documentation tools read them (they were previously in an ignored top-level `defaultOptions`). The declared values are the ones the rules already used, so lint results don't change. `immutable/immutable-data` now documents `ignoreImmediateMutation: false`, its actual default; the earlier declaration said `true` (eslint-plugin-functional's default) but was never applied.
+
 ## 0.2.0
 
 ### Minor Changes
