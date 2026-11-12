@@ -1,11 +1,11 @@
 ---
 id: TASK-032
 title: 'errorset: One shared import tracker per file (OX-33, R6)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-11T16:39:00Z'
-updated_date: '2026-11-12T14:28:00Z'
+updated_date: '2026-11-12T14:32:00Z'
 labels:
   - errorset
   - performance
@@ -34,7 +34,7 @@ Share one tracker per file across the errorset rules (for example a WeakMap keye
 - [x] #1 One tracker computation per file is shared by all errorset rules in oxlint and ESLint (tests prove the sharing)
 - [x] #2 Behavior unchanged (unit, CLI, compat); bench numbers recorded
 - [x] #3 A changeset in .changeset/ covers every affected package with the right bump; breaking changes say so and include migration steps
-- [ ] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
+- [x] #4 bash scripts/ci-local.sh HEAD prints RESULT: PASS (GitHub Actions is billing-locked; note 'Verified with scripts/ci-local.sh (<sha>, PASS)')
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -72,4 +72,6 @@ Share one tracker per file across the errorset rules (for example a WeakMap keye
 
 ## Consumer-visible
 - None beyond an internal change (errorset patch changeset .changeset/errorset-shared-tracker.md).
+
+Verified with scripts/ci-local.sh (7472057, PASS); GitHub Actions unavailable (billing lock). Shared-tracker CLI test passes on oxlint 1.70.0 floor and 1.93.0; compat tests on ESLint 9 and 10.
 <!-- SECTION:NOTES:END -->
