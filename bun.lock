@@ -28,7 +28,7 @@
     },
     "packages/errorset": {
       "name": "oxlint-plugin-errorset",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "peerDependencies": {
         "eslint": ">=9",
         "oxlint": ">=1.70.0 <2",

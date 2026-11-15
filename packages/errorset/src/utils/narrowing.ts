@@ -10,6 +10,13 @@
  *   if (!G(r)) return | throw | continue | break;  <here, later in the block>
  * plus set checks (errorset >= 0.4 errors carry `set`): `r.set === "UserError"` narrows to that
  * set (`!==` is the negation). Merged guards (`merge(A, B)`, `A.merge(B)`) are set-level guards.
+ *
+ * With `{ broad: true }` (no-unguarded-data-access) two more forms narrow, because they prove
+ * the value has the accessed property even though they don't say which set it belongs to:
+ *   r instanceof C                       (a native Error, or a set guard via Symbol.hasInstance)
+ *   A(r) || B(r)                         (both sides narrow; also `instanceof Error || isErr(r)`)
+ * prefer-guard-over-manual-kind-check keeps the narrow forms: inside `e instanceof Error` a
+ * `.kind` check isn't about an error set, and after `A(r) || B(r)` no single kind guard fits.
  */
 import type { Context, ESTree, Variable } from "@oxlint/plugins";
 import type { SharedTrackerHandle as ErrorsetImportTracker } from "./shared-tracker.ts";
@@ -88,6 +95,11 @@ export interface Narrowing {
   isGuardLike(call: ESTree.Node): boolean;
   /** The guard call that narrows `key` at `node`, or null when it isn't narrowed. */
   narrowingCall(node: ESTree.Node, key: VariableKey): ESTree.Node | null;
+  /**
+   * The inverse: the guard call that proves `key` is NOT an error-set value at `node` (the else
+   * branch of `if (G(r))`, or after `if (G(r)) return`), or null.
+   */
+  successCall(node: ESTree.Node, key: VariableKey): ESTree.Node | null;
 }
 
 /** The scope Variable an identifier refers to (or a name key for unresolved globals). */
@@ -101,7 +113,17 @@ export function resolveVariable(context: Context, id: IdentifierNode): VariableK
   return `global:${id.name}`;
 }
 
-export function createNarrowing(context: Context, tracker: ErrorsetImportTracker): Narrowing {
+export interface NarrowingOptions {
+  /** Also narrow on `instanceof` and on `||` of narrowing tests (see the module comment). */
+  broad?: boolean;
+}
+
+export function createNarrowing(
+  context: Context,
+  tracker: ErrorsetImportTracker,
+  options: NarrowingOptions = {},
+): Narrowing {
+  const broad = options.broad === true;
   const resolve = (id: IdentifierNode): VariableKey => resolveVariable(context, id);
 
   const isGuardLike = (call: ESTree.Node): boolean =>
@@ -114,6 +136,13 @@ export function createNarrowing(context: Context, tracker: ErrorsetImportTracker
     const arg0 = n.arguments[0];
     if (arg0?.type !== "Identifier") return null;
     return isGuardLike(n) && resolve(arg0) === key ? n : null;
+  };
+
+  /** `r instanceof C` on the variable. */
+  const instanceofOn = (node: ESTree.Node, key: VariableKey): ESTree.Node | null => {
+    if (node.type !== "BinaryExpression" || node.operator !== "instanceof") return null;
+    const left = unwrap(node.left);
+    return left?.type === "Identifier" && resolve(left) === key ? node : null;
   };
 
   /** `r.set === "Name"` on the variable (negated: `!==`). */
@@ -131,10 +160,14 @@ export function createNarrowing(context: Context, tracker: ErrorsetImportTracker
   const positive = (test: Child, key: VariableKey): ESTree.Node | null => {
     const t = unwrap(test);
     if (!t) return null;
-    const call = guardCallOn(t, key) ?? setCheckOn(t, key, false);
+    const call = guardCallOn(t, key) ?? setCheckOn(t, key, false) ?? (broad ? instanceofOn(t, key) : null);
     if (call) return call;
     if (t.type === "LogicalExpression" && t.operator === "&&") {
       return positive(t.right, key) ?? positive(t.left, key);
+    }
+    if (broad && t.type === "LogicalExpression" && t.operator === "||") {
+      const left = positive(t.left, key);
+      return left && positive(t.right, key) ? left : null;
     }
     return null;
   };
@@ -153,7 +186,46 @@ export function createNarrowing(context: Context, tracker: ErrorsetImportTracker
     return null;
   };
 
-  const narrowingCall = (node: ESTree.Node, key: VariableKey): ESTree.Node | null => {
+  /**
+   * For successCall: `test` false (or true) implies the variable is NOT an error-set value.
+   * `instanceof` is left out: a failed `instanceof Error` doesn't rule out an error-set error.
+   */
+  const notErrWhenFalse = (test: Child, key: VariableKey): ESTree.Node | null => {
+    const t = unwrap(test);
+    if (!t) return null;
+    const atom = guardCallOn(t, key) ?? setCheckOn(t, key, false);
+    if (atom) return atom;
+    if (t.type === "UnaryExpression" && t.operator === "!") return notErrWhenTrue(t.argument, key);
+    if (t.type === "LogicalExpression" && t.operator === "||") {
+      return notErrWhenFalse(t.left, key) ?? notErrWhenFalse(t.right, key);
+    }
+    if (t.type === "LogicalExpression" && t.operator === "&&") {
+      const left = notErrWhenFalse(t.left, key);
+      return left && notErrWhenFalse(t.right, key) ? left : null;
+    }
+    return null;
+  };
+
+  const notErrWhenTrue = (test: Child, key: VariableKey): ESTree.Node | null => {
+    const t = unwrap(test);
+    if (!t) return null;
+    const setCheck = setCheckOn(t, key, true);
+    if (setCheck) return setCheck;
+    if (t.type === "UnaryExpression" && t.operator === "!") return notErrWhenFalse(t.argument, key);
+    if (t.type === "LogicalExpression" && t.operator === "&&") {
+      return notErrWhenTrue(t.right, key) ?? notErrWhenTrue(t.left, key);
+    }
+    if (t.type === "LogicalExpression" && t.operator === "||") {
+      const left = notErrWhenTrue(t.left, key);
+      return left && notErrWhenTrue(t.right, key) ? left : null;
+    }
+    return null;
+  };
+
+  type Test = (test: Child, key: VariableKey) => ESTree.Node | null;
+
+  /** Walks up from `node`; `whenTrue` holds where the narrowing is wanted, `whenFalse` is its inverse. */
+  const narrowedBy = (node: ESTree.Node, key: VariableKey, whenTrue: Test, whenFalse: Test): ESTree.Node | null => {
     let child: ESTree.Node = node;
     let current: ESTree.Node | null = node.parent;
     while (current) {
@@ -162,9 +234,9 @@ export function createNarrowing(context: Context, tracker: ErrorsetImportTracker
         case "ConditionalExpression": {
           const call =
             child === current.consequent
-              ? positive(current.test, key)
+              ? whenTrue(current.test, key)
               : child === current.alternate
-                ? negative(current.test, key)
+                ? whenFalse(current.test, key)
                 : null;
           if (call) return call;
           break;
@@ -173,9 +245,9 @@ export function createNarrowing(context: Context, tracker: ErrorsetImportTracker
           if (child === current.right) {
             const call =
               current.operator === "&&"
-                ? positive(current.left, key)
+                ? whenTrue(current.left, key)
                 : current.operator === "||"
-                  ? negative(current.left, key)
+                  ? whenFalse(current.left, key)
                   : null;
             if (call) return call;
           }
@@ -186,7 +258,7 @@ export function createNarrowing(context: Context, tracker: ErrorsetImportTracker
             for (const stmt of list) {
               if (stmt === child) break;
               if (stmt.type === "IfStatement" && !stmt.alternate && exits(stmt.consequent)) {
-                const call = negative(stmt.test, key);
+                const call = whenFalse(stmt.test, key);
                 if (call) return call;
               }
             }
@@ -199,5 +271,10 @@ export function createNarrowing(context: Context, tracker: ErrorsetImportTracker
     return null;
   };
 
-  return { resolve, isGuardLike, narrowingCall };
+  const narrowingCall = (node: ESTree.Node, key: VariableKey): ESTree.Node | null =>
+    narrowedBy(node, key, positive, negative);
+  const successCall = (node: ESTree.Node, key: VariableKey): ESTree.Node | null =>
+    narrowedBy(node, key, notErrWhenTrue, notErrWhenFalse);
+
+  return { resolve, isGuardLike, narrowingCall, successCall };
 }

@@ -1,6 +1,6 @@
 {
   "name": "oxlint-plugin-errorset",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "description": "Oxlint plugin that enforces correct usage of @takinprofit/errorset. Catches throws, catch-block misuse, and unguarded data access.",
   "license": "MIT",
