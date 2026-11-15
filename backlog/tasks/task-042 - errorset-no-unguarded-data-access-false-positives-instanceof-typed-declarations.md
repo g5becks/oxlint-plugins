@@ -7,7 +7,7 @@ status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-14T23:47:00Z'
-updated_date: '2026-11-15T02:18:00Z'
+updated_date: '2026-11-15T02:34:00Z'
 labels:
   - errorset
   - bug
@@ -50,4 +50,6 @@ Verification: new tests 10 of 11 valid cases failed before (and the instanceof-b
 Owner delegated the pattern (a) decision: default unchanged (existing wrong-branch tests still assert it), plus opt-in option allowOnSuccessValue. Narrowing.successCall walks the same forms with dedicated inverse tests (notErrWhenTrue/notErrWhenFalse): if (G(r)) return, else branch, G(r) ? x : r.data, !G(r) && r.data, G(r) || r.data, r.set === 'X' guard clause; if (A(r) && ok) return proves nothing; a failed instanceof proves nothing (errorset errors aren't Error instances). Tests: 13 valid / 5 invalid added. bun run gate PASS (oxlint-plugins-release/errorset-0.2.2/gate-4.log). agentx clone, all 16 suppressions removed: option off -> the same 7 pattern-(a) reports; option on in both .oxlintrc.json and server/.oxlintrc.json -> 0 reports, all other lint output identical. So agentx can drop all 16 suppressions after the release by setting the option in both configs.
 
 Release 0.3.1 prepared (2026-11-14): bun scripts/release-prepare.ts 0.3.1 PASS on release/0.3.1; release commit f5b4e8a (chore(release): 0.3.1), local tag oxlint-plugin-errorset@0.2.2 (not pushed); ci-local on f5b4e8a: RESULT PASS (all 15 legs); tarball, SHA512SUMS, RELEASE_NOTES.md, NOTES and MAINTAINER_COMMANDS.md in ../oxlint-plugins-release/0.3.1/. Maintainer: push the tag, npm publish ./oxlint-plugin-errorset-0.2.2.tgz --access public, gh release create (commands in MAINTAINER_COMMANDS.md).
+
+Merged 2026-11-14: ci-local on the branch head f92b75a PASS (all 15 legs; ../oxlint-plugins-release/ci-local-f92b75a.log, table in PR #3's comment). PR #3 merged with a merge commit (23e34db); local tag oxlint-plugin-errorset@0.2.2 (release commit f5b4e8a) is an ancestor of main, not pushed. Maintainer: git push origin oxlint-plugin-errorset@0.2.2; cd ../oxlint-plugins-release/0.3.1 && shasum -a 512 -c SHA512SUMS && npm publish ./oxlint-plugin-errorset-0.2.2.tgz --access public; gh release create oxlint-plugin-errorset@0.2.2 --verify-tag --title oxlint-plugin-errorset@0.2.2 --notes-file ../oxlint-plugins-release/0.3.1/NOTES-oxlint-plugin-errorset@0.2.2.md.
 <!-- SECTION:NOTES:END -->
