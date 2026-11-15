@@ -316,8 +316,36 @@ The rule tracks variables that are passed to an errorset guard (`UserError(r)`, 
 | `G(r) ? r.data : …` / `!G(r) ? … : r.data` | the guarded branch |
 | `G(r) && r.data` | the right-hand side (also inside larger `&&` chains) |
 | `!G(r) \|\| r.data` | the right-hand side |
+| `r instanceof C` (and `!(r instanceof C)` in the forms above) | like `G(r)`: `r` is a native `Error` (which has `.message` and `.cause`) or, with `C` a set guard, an error of that set |
+| `G(r) \|\| H(r)` (each side any narrowing test, e.g. `e instanceof Error \|\| isErr(e)`) | like `G(r)`; only when both sides narrow |
 
 Narrowing carries into callbacks written inside the narrowed region.
+
+A variable or parameter declared with an error-set type (`(e: UserError) => …`,
+`e: UserError | OrderError`) holds an error wherever it is read, so accesses on it are never
+reported, even after a kind guard's early exit such as `if (UserError.cancelled(e)) return`.
+
+The rule has no type information, so by default an access where the value is proven **not** to
+be an error is still reported: the `else` branch of `if (G(r))`, `G(r) ? … : r.data`, and
+`r.data` after `if (G(r)) return r`. If your success types have their own `data`, `message`,
+`kind` or `cause` (an HTTP response body, say), set `allowOnSuccessValue`:
+
+```jsonc
+"errorset/no-unguarded-data-access": ["warn", { "allowOnSuccessValue": true }]
+```
+
+With it on, an access is allowed wherever a guard proves the value is not an error, using the
+inverse of every form in the table (`if (G(r)) return`, the `else` branch, `G(r) ? … : r.data`,
+`!G(r) && r.data`, `G(r) || r.data`). Accesses with no guard in sight are still reported.
+
+**Options**
+
+```json5
+// Which properties to check (default: all four)
+{ "properties": ["data", "kind"] }
+// Allow accesses where a guard proves the value is not an error (default: false)
+{ "allowOnSuccessValue": true }
+```
 
 **❌ Incorrect**
 
