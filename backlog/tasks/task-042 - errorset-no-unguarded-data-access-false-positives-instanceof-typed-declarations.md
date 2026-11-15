@@ -7,7 +7,7 @@ status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-14T23:47:00Z'
-updated_date: '2026-11-15T02:13:00Z'
+updated_date: '2026-11-15T02:18:00Z'
 labels:
   - errorset
   - bug
@@ -48,4 +48,6 @@ Fix: createNarrowing gets { broad: true } (used only by no-unguarded-data-access
 Verification: new tests 10 of 11 valid cases failed before (and the instanceof-before-guard invalid case passed vacuously); 18/18 after. bun run gate PASS (oxlint-plugins-release/errorset-0.2.2/gate-3.log), including bench thresholds. agentx temp clone with the built dist: 0 reports before and after with suppressions kept (no other rule changed); with all 16 suppressions removed, 7 reports remain, all pattern (a): infra keygen-client.ts:205/241/310, plugin-manager/downloader.ts:538/541/552, server coinmarketcap.ts:155. The 9 suppressions for (b)-(e) can be removed in agentx after the release.
 
 Owner delegated the pattern (a) decision: default unchanged (existing wrong-branch tests still assert it), plus opt-in option allowOnSuccessValue. Narrowing.successCall walks the same forms with dedicated inverse tests (notErrWhenTrue/notErrWhenFalse): if (G(r)) return, else branch, G(r) ? x : r.data, !G(r) && r.data, G(r) || r.data, r.set === 'X' guard clause; if (A(r) && ok) return proves nothing; a failed instanceof proves nothing (errorset errors aren't Error instances). Tests: 13 valid / 5 invalid added. bun run gate PASS (oxlint-plugins-release/errorset-0.2.2/gate-4.log). agentx clone, all 16 suppressions removed: option off -> the same 7 pattern-(a) reports; option on in both .oxlintrc.json and server/.oxlintrc.json -> 0 reports, all other lint output identical. So agentx can drop all 16 suppressions after the release by setting the option in both configs.
+
+Release 0.3.1 prepared (2026-11-14): bun scripts/release-prepare.ts 0.3.1 PASS on release/0.3.1; release commit f5b4e8a (chore(release): 0.3.1), local tag oxlint-plugin-errorset@0.2.2 (not pushed); ci-local on f5b4e8a: RESULT PASS (all 15 legs); tarball, SHA512SUMS, RELEASE_NOTES.md, NOTES and MAINTAINER_COMMANDS.md in ../oxlint-plugins-release/0.3.1/. Maintainer: push the tag, npm publish ./oxlint-plugin-errorset-0.2.2.tgz --access public, gh release create (commands in MAINTAINER_COMMANDS.md).
 <!-- SECTION:NOTES:END -->
