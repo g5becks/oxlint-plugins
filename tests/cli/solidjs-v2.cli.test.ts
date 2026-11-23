@@ -72,6 +72,7 @@ const FIX_FIXTURES = readdirSync(FIX_DIR)
 const FIXABLE_MESSAGES: Record<string, RegExp> = {
   "no-removed-apis": /^`\w+` is `\w+` in Solid 2\.0\.$|^In Solid 2\.0 a context is its own provider: use/,
   "effect-split": /returns a value that isn't a cleanup function/,
+  imports: /^Prefer importing \w+ from|is "[^"]+" in Solid 2\.0\.$/,
 };
 
 describe("version-2 autofixes are idempotent", () => {
@@ -97,6 +98,44 @@ describe("version-2 autofixes are idempotent", () => {
         const pattern = FIXABLE_MESSAGES[rule];
         expect(pattern).toBeDefined();
         expect(second.diagnostics.filter((d) => pattern!.test(d.message)).map((d) => d.message)).toEqual([]);
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+  }
+});
+
+// Several version-2 rules fix one file together (TASK-048): their fixes may overlap, so oxlint --fix
+// can need one run per rule; the result must reach a fixed point within that many runs and then stay.
+describe("version-2 codemod rules converge together", () => {
+  const CODEMOD_RULES = ["imports", "no-removed-apis"];
+  const DIR_C = join(ROOT, "tests", "cli", "fixtures", "solidjs-v2-codemod");
+  for (const name of readdirSync(DIR_C).filter((f) => f.endsWith(".tsx"))) {
+    test(`${name}: converges within ${CODEMOD_RULES.length} --fix runs`, async () => {
+      await buildPlugin("solidjs");
+      const configPath = await writeOxlintConfig({
+        plugins: ["solidjs"],
+        rules: Object.fromEntries(CODEMOD_RULES.map((r) => [`solidjs/${r}`, "error"])),
+        settings: { solidjs: { version: 2 } },
+      });
+      configs.push(configPath);
+      const dir = await mkdtemp(join(tmpdir(), "solidjs-v2-codemod-"));
+      try {
+        const file = join(dir, name);
+        let text = await Bun.file(join(DIR_C, name)).text();
+        const history = [text];
+        for (let run = 0; run <= CODEMOD_RULES.length; run++) {
+          await Bun.write(file, text);
+          text = (await runOxlintWithFix({ configPath, files: [file] })).fixedFiles[name] ?? "";
+          history.push(text);
+        }
+        // The last run changed nothing, and it was at most the (rules + 1)th run.
+        expect(history.at(-1)).toBe(history.at(-2));
+        expect(history.at(-1)).not.toBe(history[0]);
+        const final = history.at(-1)!;
+        expect(final).not.toContain("solid-js/store");
+        expect(final).toContain("<Loading");
+        expect(final).toContain("onSettled(() => { measure(); })");
       } finally {
         await rm(dir, { recursive: true, force: true });
       }

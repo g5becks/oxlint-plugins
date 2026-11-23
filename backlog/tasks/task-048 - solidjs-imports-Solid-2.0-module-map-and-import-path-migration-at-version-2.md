@@ -1,9 +1,11 @@
 ---
 id: TASK-048
 title: 'solidjs/imports: Solid 2.0 module map and import-path migration at version 2'
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-11-23T20:29:00Z'
+updated_date: '2026-11-23T21:16:00Z'
 labels:
   - solidjs
   - solid2
@@ -34,10 +36,25 @@ At version 2, `imports` uses the 2.0 module map, and it owns the import-path mig
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
-- [ ] #2 At version 1 (no setting, or settings.solidjs.version: 1) the rule's existing unit, CLI and upstream-parity tests pass unchanged
-- [ ] #3 Fixtures for every path in the Import paths list, the store merge into an existing solid-js import, JSX type moves, and a v1 file that keeps solid-js/web untouched at version 1
-- [ ] #4 Idempotence and fix-safety are covered for the path fixes, including together with no-removed-apis on one file (unwrap from solid-js/store)
-- [ ] #5 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
-- [ ] #6 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
+- [x] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
+- [x] #2 At version 1 (no setting, or settings.solidjs.version: 1) the rule's existing unit, CLI and upstream-parity tests pass unchanged
+- [x] #3 Fixtures for every path in the Import paths list, the store merge into an existing solid-js import, JSX type moves, and a v1 file that keeps solid-js/web untouched at version 1
+- [x] #4 Idempotence and fix-safety are covered for the path fixes, including together with no-removed-apis on one file (unwrap from solid-js/store)
+- [x] #5 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
+- [x] #6 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+oxlint --fix applies one pass per run and every import fix sits in the import block, so separate fixes took one run each (3 runs on the fix fixture). At version 2 the file's fixable import reports share one combined fix (same design as no-removed-apis); one run is a fixed point (idempotence test). Combined with no-removed-apis on one file (tests/cli/fixtures/solidjs-v2-codemod/store-and-renames.tsx), the two rules converge within 2 runs (their fixes overlap across the import block), then stay.
+The version-2 specifier move is new code (lone specifier: source rewrite; else merge into the target import or split out); the 1.x move code is untouched. Note for a later look, not changed here: at version 1, moving an inline `type X` specifier builds `import type { type X }`.
+Preview on agentx client/src at version 2: 38 reports: JSX from solid-js 31, solid-js/web 4, solid-js/store 2, JSXElement 1.
+Version 1: all-rules diff vs the 2fd695f build 71 = 71, 20 = 20; upstream suite 462/462; gate PASS.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+imports at version 2: the 2.0 module map (solid-js incl. stores; @solidjs/web for the DOM runtime and JSX types), import-path migration (solid-js/web, /store with merge, /h, /html, /universal, jsx-runtime) and the removed JSXElement type. Fixes share one combined per-file fix. Docs: packages/solidjs/docs/rules/imports.md.
+<!-- SECTION:FINAL_SUMMARY:END -->
