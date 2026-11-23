@@ -108,9 +108,18 @@ export default [
   [Solid 2.0 migration guide](https://github.com/solidjs/solid/blob/cd201ce390e234c46a6d29e8689364e26a14eccb/documentation/solid-2.0/MIGRATION.md)
   and its RFCs. The **Solid 2** column in the rule tables below says what changes.
 - Rules marked "2.0 only" report nothing at version 1.
-- `configs["recommended-v2"]` is `configs.recommended` with `settings.solidjs.version: 2`, plus
-  `event-handlers` at `error`: in 2.0 a function passed to a lowercase `on*` is stringified into an
-  attribute. oxlint doesn't load presets, so copy its `settings` and `rules` into `.oxlintrc.json`.
+- `configs["recommended-v2"]` is `configs.recommended` plus `settings.solidjs.version: 2` and:
+  - `event-handlers` at `error`: in 2.0 a function passed to a lowercase `on*` is stringified into
+    an attribute;
+  - the 2.0-only rules: `no-removed-apis`, `effect-split`, `no-write-in-reactive-scope`,
+    `no-classlist` and `no-cleanup-in-ref` at `error`, and `reconcile-key` and
+    `for-keyed-literal` at `warn`.
+
+  oxlint doesn't load presets, so copy its `settings` and `rules` into `.oxlintrc.json`.
+- **Migrating an app from 1.x:** the autofixes of `no-removed-apis`, `imports` and the other
+  version-2 rules are a codemod. See the
+  [Solid 2.0 migration guide](https://github.com/g5becks/oxlint-plugins/blob/main/docs/migration-solid2.md)
+  for the steps.
 
 ## Rules
 

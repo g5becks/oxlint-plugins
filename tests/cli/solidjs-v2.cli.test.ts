@@ -13,6 +13,8 @@ import {
   runOxlintWithFix,
   writeOxlintConfig,
 } from "./helpers/cli-runner";
+import { diagnostics, introducedDiagnostics } from "./helpers/ts-diagnostics.ts";
+import solidjs from "../../packages/solidjs/src/index.ts";
 
 // Solid 2.0 (TASK-043 onward): each tests/cli/fixtures/solidjs-v2/<rule>.tsx is linted by real oxlint
 // with only that rule and settings.solidjs.version 2; the reported lines must equal the lines
@@ -117,37 +119,58 @@ describe("version-2 autofixes are idempotent", () => {
   }
 });
 
-// Several version-2 rules fix one file together (TASK-048): their fixes may overlap, so oxlint --fix
-// can need one run per rule; the result must reach a fixed point within that many runs and then stay.
-describe("version-2 codemod rules converge together", () => {
-  const CODEMOD_RULES = ["imports", "no-removed-apis"];
+// The version-2 codemod (TASK-048, TASK-060): every fixable rule of recommended-v2 fixes one file
+// together. Rules' fixes may overlap, so oxlint --fix can need more than one run; the result must
+// reach a fixed point within CODEMOD_RUNS runs, then stay, and parse and type-check (no new
+// TypeScript errors). CODEMOD_RUNS is the bound documented in docs/migration-solid2.md: oxlint
+// applies one non-overlapping set of fixes per run, and several rules' fixes touch the import block,
+// so the worst-case fixture (full-migration.tsx, every rule on one file) needs 3 runs; agentx's
+// client (6a54ef4) needed 2.
+const CODEMOD_RUNS = 3;
+const presets = (solidjs as unknown as { configs: Record<string, { rules: Record<string, string> }> }).configs;
+const pluginRules = (solidjs as unknown as { rules: Record<string, { meta?: { fixable?: string } }> }).rules;
+const CODEMOD_RULES = Object.entries(presets["recommended-v2"]!.rules)
+  .filter(([key, severity]) => severity !== "off" && pluginRules[key.slice("solidjs/".length)]?.meta?.fixable)
+  .map(([key]) => key);
+
+describe("version-2 codemod converges", () => {
+  test("covers every fixable recommended-v2 rule", () => {
+    expect(CODEMOD_RULES).toContain("solidjs/no-removed-apis");
+    expect(CODEMOD_RULES).toContain("solidjs/imports");
+    expect(CODEMOD_RULES.length).toBeGreaterThanOrEqual(10);
+  });
+
   const DIR_C = join(ROOT, "tests", "cli", "fixtures", "solidjs-v2-codemod");
   for (const name of readdirSync(DIR_C).filter((f) => f.endsWith(".tsx"))) {
-    test(`${name}: converges within ${CODEMOD_RULES.length} --fix runs`, async () => {
+    test(`${name}: a fixed point within ${CODEMOD_RUNS} --fix runs, and it type-checks`, async () => {
       await buildPlugin("solidjs");
       const configPath = await writeOxlintConfig({
         plugins: ["solidjs"],
-        rules: Object.fromEntries(CODEMOD_RULES.map((r) => [`solidjs/${r}`, "error"])),
+        rules: Object.fromEntries(CODEMOD_RULES.map((r) => [r, "error"])),
         settings: { solidjs: { version: 2 } },
       });
       configs.push(configPath);
       const dir = await mkdtemp(join(tmpdir(), "solidjs-v2-codemod-"));
       try {
         const file = join(dir, name);
-        let text = await Bun.file(join(DIR_C, name)).text();
+        const input = await Bun.file(join(DIR_C, name)).text();
+        let text = input;
         const history = [text];
-        for (let run = 0; run <= CODEMOD_RULES.length; run++) {
+        for (let run = 0; run < CODEMOD_RUNS + 1; run++) {
           await Bun.write(file, text);
           text = (await runOxlintWithFix({ configPath, files: [file] })).fixedFiles[name] ?? "";
           history.push(text);
         }
-        // The last run changed nothing, and it was at most the (rules + 1)th run.
+        // Run CODEMOD_RUNS + 1 changed nothing: the fixed point was reached within the bound.
         expect(history.at(-1)).toBe(history.at(-2));
-        expect(history.at(-1)).not.toBe(history[0]);
+        expect(history.at(-1)).not.toBe(input);
+        const before = diagnostics(`/virtual/input.tsx`, input);
+        const after = diagnostics(`/virtual/output.tsx`, history.at(-1)!);
+        expect(after.syntactic).toEqual([]);
+        expect(introducedDiagnostics(before, after)).toEqual([]);
         const final = history.at(-1)!;
         expect(final).not.toContain("solid-js/store");
         expect(final).toContain("<Loading");
-        expect(final).toContain("onSettled(() => { measure(); })");
       } finally {
         await rm(dir, { recursive: true, force: true });
       }
