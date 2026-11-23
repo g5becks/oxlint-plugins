@@ -22,6 +22,12 @@ export interface ModuleEntry extends Cited {
 /** Modules a 1.x app imports Solid APIs from (the sources whose names the 2.0 rules check). */
 export const SOLID1_MODULES: ReadonlySet<string> = new Set(["solid-js", "solid-js/web", "solid-js/store"]);
 
+/**
+ * Solid's modules on either major version, for `trackImports` at version 2: `solid-js` and its 1.x
+ * subpaths (still matched so the 2.0 rules can report them), plus `@solidjs/web`.
+ */
+export const SOLID_ANY_MODULE = /^(?:solid-js(?:\/.*)?|@solidjs\/web)$/;
+
 /** Modules a 2.0 app imports Solid APIs from. */
 export const SOLID2_MODULES: ReadonlySet<string> = new Set(["solid-js", "@solidjs/web"]);
 

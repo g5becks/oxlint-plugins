@@ -9,6 +9,8 @@ import {
   type Variable,
 } from "@oxlint/plugins";
 import { trackImports } from "../utils/imports.ts";
+import { readSolidVersion } from "../utils/settings.ts";
+import { SOLID_ANY_MODULE } from "../utils/solid2.ts";
 import { isDOMElementName, isJSXElementOrFragment } from "../utils/jsx.ts";
 import { trace } from "../utils/trace.ts";
 import { findParent } from "../utils/traverse.ts";
@@ -100,7 +102,16 @@ interface ReactiveVariable {
 
 interface TrackedScope {
   node: ESTree.Node;
-  expect: "function" | "called-function" | "expression";
+  // "apply" and "untracked" exist only at settings.solidjs.version 2 (TASK-044): the apply half of a
+  // split effect, and control-flow callback bodies. Reads lifted out of them are reported.
+  expect: "function" | "called-function" | "expression" | "apply" | "untracked";
+}
+
+/** A reactive read lifted out of a function into its parent scope (version 2 only). */
+interface LiftedRead {
+  node: ESTree.Node;
+  name: string;
+  start: number;
 }
 
 class ScopeStackItem {
@@ -108,6 +119,10 @@ class ScopeStackItem {
   trackedScopes: TrackedScope[] = [];
   unnamedDerivedSignals = new Set<FunctionNode>();
   hasJSX = false;
+  // Version 2 only: reads that made a child function an unnamed derived signal, and the end of this
+  // function's first await (reads after it aren't tracked; RFC 08 UNTRACKED_READ_AFTER_AWAIT).
+  liftedReads = new Map<ESTree.Node, LiftedRead[]>();
+  firstAwaitEnd: number | undefined = undefined;
   constructor(node: ESTree.Node) {
     this.node = node;
   }
@@ -118,6 +133,8 @@ class ScopeStack {
   private signals: ReactiveVariable[] = [];
   private props: ReactiveVariable[] = [];
   syncCallbacks = new Set<ESTree.Node>();
+  /** Version 2 only: the end of each finished function's first await. */
+  awaitBoundaries = new Map<ESTree.Node, number>();
 
   // ---- Stack operations ----
 
@@ -239,6 +256,72 @@ const getReturnedVar = (id: ESTree.Node, context: Context): Variable | null => {
   return null;
 };
 
+// ---- Version 2 helpers (TASK-044) ----
+
+/**
+ * 1.x APIs that 2.0 removed. A version-2 file that still uses them keeps their 1.x treatment, so
+ * reactivity adds no noise to what no-removed-apis reports (TASK-044).
+ */
+const REMOVED_KNOWN_TO_V1 = [
+  "on",
+  "createComputed",
+  "createSelector",
+  "createResource",
+  "createMutable",
+  "observable",
+  "indexArray",
+  "onMount",
+  "onError",
+  "mergeProps",
+  "splitProps",
+  "useTransition",
+  "batch",
+  "produce",
+  "Index",
+];
+
+/** Calls whose function argument runs in place (version 2). */
+const SYNC_V2 = ["flush", "isPending", "latest", "batch", "produce"];
+/** Primitives whose second tuple element is a setter taking a callback (version 2). */
+const SETTER_SOURCES_V2 = ["createSignal", "createStore", "createOptimistic", "createOptimisticStore"];
+
+/**
+ * A list's keying mode (RFC 03 §List rendering): "default" (no keyed), a literal true/false, a key
+ * function, or a dynamic value whose callback shape can't be known.
+ */
+type KeyedMode = "default" | true | false | "fn" | "dynamic";
+
+function keyedValue(value: Child): KeyedMode {
+  if (value?.type === "Literal" && typeof value.value === "boolean") return value.value;
+  if (isFunctionNode(value)) return "fn";
+  return "dynamic";
+}
+
+/** The `keyed` option of `mapArray(list, fn, options)`. */
+function keyedOption(options: Child): KeyedMode {
+  if (!options) return "default";
+  if (options.type !== "ObjectExpression") return "dynamic";
+  const keyed = options.properties.find(
+    (p): p is Extract<ESTree.ObjectExpression["properties"][number], { type: "Property" }> =>
+      p.type === "Property" && !p.computed && p.key.type === "Identifier" && p.key.name === "keyed",
+  );
+  return keyed ? keyedValue(keyed.value) : "default";
+}
+
+/** The `keyed` prop of a JSX element (`<For keyed>` is `true`). */
+function keyedAttribute(element: ESTree.JSXElement): KeyedMode {
+  let mode: KeyedMode = "default";
+  for (const attr of element.openingElement.attributes) {
+    if (attr.type === "JSXSpreadAttribute") return "dynamic";
+    if (attr.name.type !== "JSXIdentifier" || attr.name.name !== "keyed") continue;
+    if (attr.value === null) mode = true;
+    else if (attr.value.type === "JSXExpressionContainer" && attr.value.expression.type !== "JSXEmptyExpression") {
+      mode = keyedValue(attr.value.expression);
+    } else mode = "dynamic";
+  }
+  return mode;
+}
+
 // ---- Rule export ----
 
 export default defineRule({
@@ -247,7 +330,7 @@ export default defineRule({
     docs: {
       description:
         "Enforce that reactivity (props, signals, memos, etc.) is properly used, so changes in those values will be tracked and update the view as expected.",
-      url: "https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/reactivity.md",
+      url: "https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/reactivity.md",
     },
     schema: [
       {
@@ -277,6 +360,10 @@ export default defineRule({
         "For proper analysis, array destructuring should be used to capture the {{nth}}result of this function call.",
       shouldAssign: "For proper analysis, a variable should be used to capture the result of this function call.",
       noAsyncTrackedScope: "This tracked scope should not be async. Solid's reactivity only tracks synchronously.",
+      readInApply:
+        "The reactive variable '{{name}}' is read in the effect's apply function, which isn't tracked. Read it in the compute function and use the value passed to apply.",
+      readAfterAwait:
+        "The reactive variable '{{name}}' is first read after an await, so it isn't a dependency of this computation. Read it before the first await, or wrap the read in untrack() if a one-time value is intended.",
     },
     defaultOptions: [{ customReactiveFunctions: [] }],
   },
@@ -298,9 +385,15 @@ export default defineRule({
     let scopeStack = new ScopeStack();
     let currentScope = scopeStack.currentScope;
     let parentScope = scopeStack.parentScope;
-    const imports = trackImports();
-    const matchImport = imports.matchImport;
-    const handleImportDeclaration = imports.handleImportDeclaration;
+    // settings.solidjs.version 2 (TASK-044) switches to the Solid 2.0 model; it also recognizes
+    // imports from @solidjs/web. Version 1 uses the 1.x tracker and code paths, unchanged.
+    let v2 = false;
+    const importsV1 = trackImports();
+    const importsV2 = trackImports(SOLID_ANY_MODULE);
+    let imports = importsV1;
+    // Rebound per file in before(), so version 1 calls the 1.x tracker directly.
+    let matchImport = importsV1.matchImport;
+    const handleImportDeclaration = (node: ESTree.ImportDeclaration) => imports.handleImportDeclaration(node);
 
     const markPropsOnCondition = (node: any, cb: (props: any) => boolean) => {
       if (
@@ -327,6 +420,8 @@ export default defineRule({
       switch (trackedScope.expect) {
         case "function":
         case "called-function":
+        case "apply":
+        case "untracked":
           return node === trackedScope.node;
         case "expression":
           return Boolean(findInScope(node, currentScope().node, (n) => n === trackedScope.node));
@@ -358,8 +453,10 @@ export default defineRule({
         } else {
           if (!parentScope() || !isFunctionNode(currentScopeNode)) return;
 
-          const pushUnnamedDerivedSignal = () =>
+          const pushUnnamedDerivedSignal = () => {
             (parentScope().unnamedDerivedSignals ??= new Set()).add(currentScopeNode);
+            if (v2) recordLiftedRead(parentScope(), currentScopeNode, identifier);
+          };
 
           if (currentScopeNode.type === "FunctionDeclaration") {
             const functionVariable = context.sourceCode.scopeManager?.getDeclaredVariables(currentScopeNode)?.[0];
@@ -377,7 +474,8 @@ export default defineRule({
               pushUnnamedDerivedSignal();
             }
           } else if (currentScopeNode.parent?.type === "Property") {
-            // ignore for now
+            // ignore for now (version 2 still records the read, for EffectBundle apply functions)
+            if (v2) recordLiftedRead(parentScope(), currentScopeNode, identifier);
           } else {
             pushUnnamedDerivedSignal();
           }
@@ -502,22 +600,87 @@ export default defineRule({
       const { unnamedDerivedSignals } = currentScope();
       if (unnamedDerivedSignals) {
         for (const node of unnamedDerivedSignals) {
-          if (!currentScope().trackedScopes.find((ts) => matchTrackedScope(ts, node))) {
+          const trackedScope = currentScope().trackedScopes.find((ts) => matchTrackedScope(ts, node));
+          if (!trackedScope) {
             context.report({
               loc: getFunctionHeadLoc(node, context.sourceCode),
               messageId: "badUnnamedDerivedSignal",
             });
+          } else if (v2) {
+            checkLiftedReads(node, trackedScope);
           }
         }
       }
+      if (v2) {
+        // Functions in object properties (EffectBundle { effect, error }) aren't derived signals.
+        for (const fn of currentScope().liftedReads.keys()) {
+          if (unnamedDerivedSignals?.has(fn as FunctionNode) || !isFunctionNode(fn)) continue;
+          const trackedScope = currentScope().trackedScopes.find((ts) => matchTrackedScope(ts, fn));
+          if (trackedScope) checkLiftedReads(fn, trackedScope);
+        }
+      }
 
+      if (v2 && currentScope().firstAwaitEnd !== undefined) {
+        scopeStack.awaitBoundaries.set(currentScopeNode, currentScope().firstAwaitEnd!);
+      }
       scopeStack.pop();
+    };
+
+    // ---- Version 2: reads lifted out of apply functions, callback bodies and async computations ----
+    const recordLiftedRead = (parent: ScopeStackItem, fn: ESTree.Node, identifier: any) => {
+      let member: any = null;
+      if (identifier.parent?.type === "MemberExpression") {
+        member = identifier.parent;
+        while (member?.parent?.type === "MemberExpression") member = member.parent;
+      }
+      const call = identifier.parent?.type === "CallExpression" ? identifier.parent : null;
+      const reads = parent.liftedReads.get(fn) ?? [];
+      reads.push({
+        node: member ?? call ?? identifier,
+        name: member ? context.sourceCode.getText(member) : identifier.name,
+        start: identifier.range[0],
+      });
+      parent.liftedReads.set(fn, reads);
+    };
+
+    const checkLiftedReads = (fn: FunctionNode, trackedScope: TrackedScope) => {
+      const reads = currentScope().liftedReads.get(fn);
+      if (!reads) return;
+      const reported = new Set<ESTree.Node>();
+      const report = (read: LiftedRead, messageId: "readInApply" | "untrackedReactive" | "readAfterAwait") => {
+        if (reported.has(read.node)) return;
+        reported.add(read.node);
+        context.report({ node: read.node, messageId, data: { name: read.name } });
+      };
+      if (trackedScope.expect === "apply") {
+        for (const read of reads) report(read, "readInApply");
+      } else if (trackedScope.expect === "untracked") {
+        for (const read of reads) report(read, "untrackedReactive");
+      } else if (trackedScope.expect === "function" && fn.async && !fn.generator) {
+        const boundary = scopeStack.awaitBoundaries.get(fn);
+        if (boundary === undefined) return;
+        const readBefore = new Set(reads.filter((r) => r.start < boundary).map((r) => r.name));
+        const seen = new Set<string>();
+        for (const read of [...reads].sort((a, b) => a.start - b.start)) {
+          if (read.start < boundary || readBefore.has(read.name) || seen.has(read.name)) continue;
+          seen.add(read.name);
+          report(read, "readAfterAwait");
+        }
+      }
+    };
+
+    const markAwait = (end: number) => {
+      if (!v2 || !scopeStack.length) return;
+      const scope = currentScope();
+      if (scope.firstAwaitEnd === undefined || end < scope.firstAwaitEnd) scope.firstAwaitEnd = end;
     };
 
     // ---- Sync callback detection ----
     const checkForSyncCallbacks = (node: any) => {
       if (node.arguments.length === 1 && isFunctionNode(node.arguments[0]) && !node.arguments[0].async) {
-        if (node.callee.type === "Identifier" && matchImport(["batch", "produce"], node.callee.name)) {
+        // Version 2: batch/produce are gone; flush(fn) runs fn in place, and isPending(fn)/latest(fn)
+        // evaluate fn where they're called (MIGRATION §Initial loading vs in-flight changes).
+        if (node.callee.type === "Identifier" && matchImport(v2 ? SYNC_V2 : ["batch", "produce"], node.callee.name)) {
           scopeStack.syncCallbacks.add(node.arguments[0]);
         } else if (
           node.callee.type === "MemberExpression" &&
@@ -532,7 +695,7 @@ export default defineRule({
       }
       if (node.callee.type === "Identifier") {
         if (
-          matchImport(["createSignal", "createStore"], node.callee.name) &&
+          matchImport(v2 ? SETTER_SOURCES_V2 : ["createSignal", "createStore"], node.callee.name) &&
           node.parent?.type === "VariableDeclarator"
         ) {
           const setter = getNthDestructuredVar(node.parent.id, 1, context);
@@ -548,7 +711,9 @@ export default defineRule({
               }
             }
           }
-        } else if (matchImport(["mapArray", "indexArray"], node.callee.name)) {
+        } else if (
+          matchImport(v2 ? ["mapArray", "repeat", "indexArray"] : ["mapArray", "indexArray"], node.callee.name)
+        ) {
           const arg1 = node.arguments[1];
           if (isFunctionNode(arg1)) scopeStack.syncCallbacks.add(arg1);
         }
@@ -561,6 +726,7 @@ export default defineRule({
     // ---- Reactive assignment detection ----
     const checkForReactiveAssignment = (id: ESTree.Node | null, init: ESTree.Node) => {
       init = ignoreTransparentWrappers(init);
+      if (v2 && !usesRemovedApi(init)) return checkForReactiveAssignmentV2(id, init);
       if (init.type === "CallExpression" && init.callee.type === "Identifier") {
         const { callee } = init;
         if (matchImport(["createSignal", "useTransition"], callee.name)) {
@@ -629,11 +795,83 @@ export default defineRule({
       }
     };
 
+    // Version 2 (RFC 04, MIGRATION §New function forms): 2.0's reactive sources.
+    const checkForReactiveAssignmentV2 = (id: ESTree.Node | null, init: ESTree.Node) => {
+      if (init.type !== "CallExpression" || init.callee.type !== "Identifier") return;
+      const { callee } = init;
+      if (matchImport(["createSignal", "createOptimistic"], callee.name)) {
+        const signal = id && getNthDestructuredVar(id, 0, context);
+        if (signal) scopeStack.pushSignal(signal, currentScope().node);
+        else warnShouldDestructure(id ?? init, "first");
+      } else if (matchImport(["createMemo", "createDeferred"], callee.name)) {
+        const memo = id && getReturnedVar(id, context);
+        if (memo) scopeStack.pushSignal(memo, currentScope().node);
+        else warnShouldAssign(id ?? init);
+      } else if (matchImport(["createStore", "createOptimisticStore"], callee.name)) {
+        const store = id && getNthDestructuredVar(id, 0, context);
+        if (store) scopeStack.pushProps(store, currentScope().node);
+        else warnShouldDestructure(id ?? init, "first");
+      } else if (matchImport(["createProjection", "merge", "omit"], callee.name)) {
+        const store = id && getReturnedVar(id, context);
+        if (store) scopeStack.pushProps(store, currentScope().node);
+        else warnShouldAssign(id ?? init);
+      } else if (matchImport("mapArray", callee.name)) {
+        // RFC 03 §List rendering: keyed (default) passes an index accessor, keyed: false an item
+        // accessor, a key function both.
+        const fn = init.arguments[1];
+        if (!isFunctionNode(fn)) return;
+        const mode = keyedOption(init.arguments[2]);
+        const params = mode === "default" ? [1] : mode === false ? [0] : mode === "fn" ? [0, 1] : [];
+        for (const i of params) {
+          const param = fn.params[i];
+          if (param?.type === "Identifier") {
+            const variable = findVariable(context, param);
+            if (variable) scopeStack.pushSignal(variable);
+          }
+        }
+      }
+    };
+
+    // Version 2: a context provider is the context itself (MIGRATION §Context providers).
+    const isProviderElement = (opening: ESTree.JSXOpeningElement): boolean => {
+      const { name } = opening;
+      if (name.type === "JSXMemberExpression") return name.property.name === "Provider";
+      if (name.type !== "JSXIdentifier") return false;
+      if (name.name.endsWith("Provider")) return true;
+      const variable = findVariable(context, name as unknown as IdentifierNode);
+      const decl = variable?.defs[0]?.node;
+      return (
+        decl?.type === "VariableDeclarator" &&
+        decl.init?.type === "CallExpression" &&
+        decl.init.callee.type === "Identifier" &&
+        Boolean(matchImport("createContext", decl.init.callee.name))
+      );
+    };
+
+    const usesRemovedApi = (call: ESTree.Node): boolean =>
+      call.type === "CallExpression" &&
+      call.callee.type === "Identifier" &&
+      Boolean(matchImport(REMOVED_KNOWN_TO_V1, call.callee.name));
+
+    // Version 2: Solid's control-flow components with function children.
+    const isFlowElement = (node: ESTree.Node): boolean =>
+      node.type === "JSXElement" &&
+      node.openingElement.name.type === "JSXIdentifier" &&
+      Boolean(matchImport(["For", "Show", "Match", "Repeat"], node.openingElement.name.name));
+
     // ---- Tracked scope detection ----
     const checkForTrackedScopes = (node: any) => {
-      const pushTrackedScope = (n: ESTree.Node, expect: TrackedScope["expect"]) => {
+      // allowAsync (version 2 only): computations that accept async functions (RFC 05).
+      const pushTrackedScope = (n: ESTree.Node, expect: TrackedScope["expect"], allowAsync = false) => {
         currentScope().trackedScopes.push({ node: n, expect });
-        if (expect !== "called-function" && isFunctionNode(n) && n.async) {
+        if (
+          expect !== "called-function" &&
+          expect !== "apply" &&
+          expect !== "untracked" &&
+          !allowAsync &&
+          isFunctionNode(n) &&
+          n.async
+        ) {
           context.report({ node: n, messageId: "noAsyncTrackedScope" });
         }
       };
@@ -653,7 +891,135 @@ export default defineRule({
         });
       };
 
-      if (node.type === "JSXExpressionContainer") {
+      const trackRunWithOwner = (arg0: any, arg1: any) => {
+        if (arg1) {
+          let isTrackedScope = true;
+          const owner = arg0.type === "Identifier" && findVariable(context, arg0);
+          if (owner) {
+            const decl = owner.defs[0];
+            if (
+              decl?.node.type === "VariableDeclarator" &&
+              decl.node.init?.type === "CallExpression" &&
+              decl.node.init.callee.type === "Identifier" &&
+              matchImport("getOwner", decl.node.init.callee.name)
+            ) {
+              const ownerFunction = findParent(decl.node, isProgramOrFunctionNode);
+              const scopeStackIndex = scopeStack.findIndex(({ node }) => ownerFunction === node);
+              if (
+                (scopeStackIndex >= 1 &&
+                  !scopeStack
+                    .at(scopeStackIndex - 1)!
+                    .trackedScopes.some((ts) => ts.expect === "function" && ts.node === ownerFunction)) ||
+                scopeStackIndex === 0
+              ) {
+                isTrackedScope = false;
+              }
+            }
+          }
+          if (isTrackedScope) pushTrackedScope(arg1, "function");
+        }
+      };
+
+      // ---- Version 2 (TASK-044): JSX expressions ----
+      const trackJSXExpressionV2 = (node: any) => {
+        const attr = node.parent?.type === "JSXAttribute" ? node.parent : null;
+        const opening = attr?.parent?.type === "JSXOpeningElement" ? attr.parent : null;
+        const attrName = attr ? context.sourceCode.getText(attr.name) : "";
+        const isComponent = opening?.name.type === "JSXIdentifier" && !isDOMElementName(opening.name.name);
+        const isNative = opening?.name.type === "JSXIdentifier" && isDOMElementName(opening.name.name);
+        if (isNative && /^on[A-Z]/.test(attrName)) {
+          // Only `on` + an uppercase letter is an event handler; a lowercase on* is an attribute
+          // (MIGRATION §Attributes & events).
+          pushTrackedScope(node.expression, "called-function");
+        } else if (opening && attrName === "value" && isProviderElement(opening)) {
+          // Provider value: read once (solid-js 2.0.3 createContext reads props.value once)
+        } else if (isComponent && /^static[A-Z]/.test(attrName)) {
+          // Static prop: do nothing
+        } else if (attr && attrName === "ref") {
+          // Ref callbacks are unowned and run once (MIGRATION §Ref callbacks); arrays compose them
+          // (RFC 07 §Directives via ref).
+          const expr = node.expression;
+          if (isFunctionNode(expr)) {
+            pushTrackedScope(expr, "called-function");
+          } else {
+            if (expr?.type === "ArrayExpression") {
+              for (const el of expr.elements) if (isFunctionNode(el)) pushTrackedScope(el, "called-function");
+            }
+            pushTrackedScope(expr, "expression");
+          }
+        } else if (isJSXElementOrFragment(node.parent) && isFunctionNode(node.expression)) {
+          // Control-flow callback bodies build structure: reads directly in them aren't tracked
+          // (RFC 01 §Strict top-level access). Other render functions keep the 1.x treatment.
+          pushTrackedScope(node.expression, isFlowElement(node.parent) ? "untracked" : "function");
+        } else {
+          pushTrackedScope(node.expression, "expression");
+        }
+      };
+
+      // ---- Version 2 (TASK-044): calls ----
+      const trackCallV2 = (node: any) => {
+        const {
+          callee,
+          arguments: { 0: arg0, 1: arg1 },
+        } = node;
+        const name: string = callee.name;
+        if (matchImport(["createEffect", "createRenderEffect"], name)) {
+          // RFC 01 §Split tracking from effect: compute tracked (async allowed), apply untracked.
+          pushTrackedScope(arg0, "function", true);
+          if (isFunctionNode(arg1)) {
+            pushTrackedScope(arg1, "apply");
+          } else if (arg1?.type === "ObjectExpression") {
+            // EffectBundle { effect, error } (RFC 01 §createEffect error handling).
+            for (const property of arg1.properties) {
+              if (property.type === "Property" && isFunctionNode(property.value)) {
+                pushTrackedScope(property.value, "apply");
+              }
+            }
+          } else if (arg1) {
+            pushTrackedScope(arg1, "called-function");
+          }
+        } else if (matchImport(["createMemo", "createDeferred"], name)) {
+          pushTrackedScope(arg0, "function", true);
+        } else if (
+          isFunctionNode(arg0) &&
+          matchImport(
+            ["createSignal", "createOptimistic", "createStore", "createOptimisticStore", "createProjection"],
+            name,
+          )
+        ) {
+          // MIGRATION §New function forms; RFC 04 §Derived stores.
+          pushTrackedScope(arg0, "function", true);
+        } else if (
+          matchImport(["createTrackedEffect", "children", "untrack", "resolve", "until", "mapArray", "repeat"], name)
+        ) {
+          pushTrackedScope(arg0, "function");
+        } else if (
+          matchImport(["onSettled", "onFlush", "onCleanup", "action"], name) ||
+          ["setInterval", "setTimeout", "setImmediate", "requestAnimationFrame", "requestIdleCallback"].includes(name)
+        ) {
+          // onSettled/onFlush reads aren't tracked (solid-js 2.0.3 signals.d.ts); actions are
+          // imperative (RFC 06).
+          pushTrackedScope(arg0, "called-function");
+        } else if (matchImport("createStore", name) && arg0?.type === "ObjectExpression") {
+          for (const property of arg0.properties) {
+            if (property.type === "Property" && property.kind === "get" && isFunctionNode(property.value)) {
+              pushTrackedScope(property.value, "function");
+            }
+          }
+        } else if (matchImport("runWithOwner", name)) {
+          trackRunWithOwner(arg0, arg1);
+        } else if (/^(?:use|create)[A-Z]/.test(name) || getCustomReactiveFunctions().includes(name)) {
+          for (const arg of node.arguments) {
+            permissivelyTrackNode(arg);
+          }
+        }
+      };
+
+      if (v2 && node.type === "JSXExpressionContainer") {
+        trackJSXExpressionV2(node);
+      } else if (v2 && node.type === "CallExpression" && node.callee.type === "Identifier" && !usesRemovedApi(node)) {
+        trackCallV2(node);
+      } else if (node.type === "JSXExpressionContainer") {
         if (
           node.parent?.type === "JSXAttribute" &&
           context.sourceCode.getText(node.parent.name).startsWith("on") &&
@@ -769,32 +1135,7 @@ export default defineRule({
               }
             }
           } else if (matchImport("runWithOwner", callee.name)) {
-            if (arg1) {
-              let isTrackedScope = true;
-              const owner = arg0.type === "Identifier" && findVariable(context, arg0);
-              if (owner) {
-                const decl = owner.defs[0];
-                if (
-                  decl?.node.type === "VariableDeclarator" &&
-                  decl.node.init?.type === "CallExpression" &&
-                  decl.node.init.callee.type === "Identifier" &&
-                  matchImport("getOwner", decl.node.init.callee.name)
-                ) {
-                  const ownerFunction = findParent(decl.node, isProgramOrFunctionNode);
-                  const scopeStackIndex = scopeStack.findIndex(({ node }) => ownerFunction === node);
-                  if (
-                    (scopeStackIndex >= 1 &&
-                      !scopeStack
-                        .at(scopeStackIndex - 1)!
-                        .trackedScopes.some((ts) => ts.expect === "function" && ts.node === ownerFunction)) ||
-                    scopeStackIndex === 0
-                  ) {
-                    isTrackedScope = false;
-                  }
-                }
-              }
-              if (isTrackedScope) pushTrackedScope(arg1, "function");
-            }
+            trackRunWithOwner(arg0, arg1);
           } else if (/^(?:use|create)[A-Z]/.test(callee.name) || getCustomReactiveFunctions().includes(callee.name)) {
             for (const arg of node.arguments) {
               permissivelyTrackNode(arg);
@@ -865,7 +1206,18 @@ export default defineRule({
         scopeStack = new ScopeStack();
         currentScope = scopeStack.currentScope;
         parentScope = scopeStack.parentScope;
-        imports.clear();
+        v2 = readSolidVersion(context) === 2;
+        imports = v2 ? importsV2 : importsV1;
+        matchImport = imports.matchImport;
+        importsV1.clear();
+        importsV2.clear();
+      },
+      AwaitExpression(node) {
+        markAwait(node.range[1]);
+      },
+      ForOfStatement(node) {
+        // `for await`: the body runs after an await.
+        if (node.await) markAwait(node.right.range[1]);
       },
       ImportDeclaration: handleImportDeclaration,
       JSXExpressionContainer(node) {
@@ -907,7 +1259,28 @@ export default defineRule({
           node.parent.parent?.type === "JSXElement"
         ) {
           const element = node.parent.parent;
-          if (element.openingElement.name.type === "JSXIdentifier") {
+          if (
+            v2 &&
+            element.openingElement.name.type === "JSXIdentifier" &&
+            !matchImport("Index", element.openingElement.name.name)
+          ) {
+            // RFC 03 §List rendering and §Conditionals; MIGRATION §Function children may receive accessors.
+            const tagName = element.openingElement.name.name;
+            const mode = keyedAttribute(element);
+            let params: number[] = [];
+            if (matchImport("For", tagName)) {
+              params = mode === "default" || mode === true ? [1] : mode === false ? [0] : mode === "fn" ? [0, 1] : [];
+            } else if (matchImport(["Show", "Match"], tagName)) {
+              params = mode === "default" || mode === false ? [0] : [];
+            }
+            for (const i of params) {
+              const param = node.params[i];
+              if (param?.type === "Identifier") {
+                const variable = findVariable(context, param);
+                if (variable) scopeStack.pushSignal(variable, currentScope().node);
+              }
+            }
+          } else if (element.openingElement.name.type === "JSXIdentifier") {
             const tagName = element.openingElement.name.name;
             const [first, second] = node.params;
             if (matchImport("For", tagName) && node.params.length === 2 && second?.type === "Identifier") {

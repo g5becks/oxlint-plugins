@@ -120,7 +120,7 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 
 | Rule | Description | Recommended | Solid 2 |
 |---|---|---|---|
-| `reactivity` | Detect reactive variables used outside of tracked scopes | warn | same |
+| `reactivity` | Detect reactive variables used outside of tracked scopes | warn | 2.0 tracking model: split effects, async computations, `readInApply`, `readAfterAwait` ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/reactivity.md)) |
 | `no-destructure` | Disallow destructuring props — breaks reactivity, use `splitProps` instead | error | same |
 | `components-return-once` | Component functions should have a single return path | warn | same |
 
