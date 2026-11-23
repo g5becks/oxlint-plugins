@@ -73,8 +73,18 @@ describe("fix safety: oxlint --fix output parses and type-checks", () => {
       const dedicated = candidates
         .filter((c) => c.file.includes("/fix-safety/"))
         .find((c) => Bun.file(c.file).size > 0);
-      const { ext, file } = dedicated ?? candidates.find((c) => Bun.file(c.file).size > 0) ?? { ext: "ts", file: "" };
-      const configPath = await writeOxlintConfig({ plugins: [plugin], rules: { [`${plugin}/${rule}`]: "error" } });
+      // Solid 2.0 rules (TASK-045 onward) fix only at settings.solidjs.version 2: a fixture in
+      // fix-safety/solidjs-v2/<rule>.tsx runs with that setting.
+      const v2File = plugin === "solidjs" ? ruleFixture("fix-safety/solidjs-v2", rule, "tsx") : "";
+      const v2 = v2File !== "" && Bun.file(v2File).size > 0;
+      const { ext, file } = v2
+        ? { ext: "tsx", file: v2File }
+        : (dedicated ?? candidates.find((c) => Bun.file(c.file).size > 0) ?? { ext: "ts", file: "" });
+      const configPath = await writeOxlintConfig({
+        plugins: [plugin],
+        rules: { [`${plugin}/${rule}`]: "error" },
+        ...(v2 ? { settings: { solidjs: { version: 2 } } } : {}),
+      });
       configs.push(configPath);
       const input = await Bun.file(file).text();
       const result = await runOxlintWithFix({ configPath, files: [file] });

@@ -13,6 +13,7 @@ import noInnerhtml from "./rules/no-innerhtml.ts";
 import noProxyApis from "./rules/no-proxy-apis.ts";
 import noReactDeps from "./rules/no-react-deps.ts";
 import noReactSpecificProps from "./rules/no-react-specific-props.ts";
+import noRemovedApis from "./rules/no-removed-apis.ts";
 import noUnknownNamespaces from "./rules/no-unknown-namespaces.ts";
 import preferClasslist from "./rules/prefer-classlist.ts";
 import preferFor from "./rules/prefer-for.ts";
@@ -60,6 +61,7 @@ const plugin = {
     "no-proxy-apis": noProxyApis,
     "no-react-deps": noReactDeps,
     "no-react-specific-props": noReactSpecificProps,
+    "no-removed-apis": noRemovedApis,
     "no-unknown-namespaces": noUnknownNamespaces,
     "prefer-classlist": preferClasslist,
     "prefer-for": preferFor,
@@ -78,6 +80,7 @@ const plugin = {
         ...RECOMMENDED,
         // In 2.0 a function on a lowercase on* is a stringified attribute: a runtime bug.
         "event-handlers": "error",
+        "no-removed-apis": "error",
       }),
     },
   },

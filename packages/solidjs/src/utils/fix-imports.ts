@@ -90,3 +90,26 @@ export function ensureSolidImports(fixer: Fixer, sourceCode: SourceCode, names: 
     : insertImports(fixer, sourceCode, "solid-js", missing);
   return fix ? [fix] : [];
 }
+
+/**
+ * Remove one specifier from an import declaration, with its comma; the whole declaration when it is
+ * the only specifier. Returns null when the expected comma token is missing.
+ */
+export function removeImportSpecifier(
+  fixer: Fixer,
+  sourceCode: SourceCode,
+  specifier: ESTree.ImportDeclarationSpecifier,
+  declaration: ESTree.ImportDeclaration,
+): Fix | null {
+  const specifiers: ReadonlyArray<ESTree.ImportDeclarationSpecifier> = declaration.specifiers ?? [];
+  if (specifiers.length === 1) return fixer.remove(declaration);
+  const index = specifiers.indexOf(specifier);
+  if (index === specifiers.length - 1) {
+    const tokenBefore = sourceCode.getTokenBefore(specifier);
+    return tokenBefore ? fixer.removeRange([tokenBefore.range[0], specifier.range[1]]) : null;
+  }
+  const comma = sourceCode.getTokenAfter(specifier);
+  const next = comma && sourceCode.getTokenAfter(comma);
+  // Up to the next specifier, so `{ A, B }` without A is `{ B }`.
+  return comma && next ? fixer.removeRange([specifier.range[0], next.range[0]]) : null;
+}

@@ -3,9 +3,11 @@ id: TASK-045
 title: >-
   solidjs/no-removed-apis: Report 1.x APIs removed in Solid 2.0, autofix the 1:1
   renames
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-11-23T20:29:00Z'
+updated_date: '2026-11-23T21:01:00Z'
 labels:
   - solidjs
   - solid2
@@ -46,11 +48,31 @@ New rule (version 2 only): APIs that 1.x had and 2.0 doesn't. It matches only na
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
-- [ ] #2 Each rename is fixed with before/after fixtures from the cited section, including aliased imports, an existing import of the new name, and JSX opening/closing tags
-- [ ] #3 Every no-fix condition (name collision, destructured Errored param, unmappable Reveal props, unsafe onMount body, non-project Provider import) reports without a fix, with a test each
-- [ ] #4 Idempotence: a CLI test runs oxlint --fix on a fixture with every fixable case; a second --fix changes nothing and leaves no fixable report; fix-safety (parse + typecheck) covers the rule
-- [ ] #5 Report-only entries name their replacement in the message; nothing is reported at version 1
-- [ ] #6 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
-- [ ] #7 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
+- [x] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
+- [x] #2 Each rename is fixed with before/after fixtures from the cited section, including aliased imports, an existing import of the new name, and JSX opening/closing tags
+- [x] #3 Every no-fix condition (name collision, destructured Errored param, unmappable Reveal props, unsafe onMount body, non-project Provider import) reports without a fix, with a test each
+- [x] #4 Idempotence: a CLI test runs oxlint --fix on a fixture with every fixable case; a second --fix changes nothing and leaves no fixable report; fix-safety (parse + typecheck) covers the rule
+- [x] #5 Report-only entries name their replacement in the message; nothing is reported at version 1
+- [x] #6 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
+- [x] #7 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Decisions from agentx-pm (2026-11-23, plan review): (a) Index -> <For keyed={false}> is an autofix; test that (item, i) usages survive unchanged. (b) The extra report-only removals (createSelector, onError, catchError, indexArray, observable, resetErrorBoundaries, enableScheduling, writeSignal, createDynamic, clearDelegatedEvents, /*@once*/) are in. (d) unwrap -> snapshot is a suggestion, not an autofix (behavior differs for code that mutated the result; the codemod must never change behavior silently). mergeProps -> merge stays a suggestion.
+
+Implementation notes:
+- oxlint --fix applies one pass per run, and each rename spans its specifier and every use, so per-report fixes overlapped (8 runs for the fix fixture). Every fixable report of a file now carries one combined fix (combinedFix): one run applies all safe renames; a rename whose edits would overlap ones already taken waits for the next pass. Test: tests/cli/solidjs-v2.cli.test.ts "version-2 autofixes are idempotent" (second --fix changes nothing, no fixable report left).
+- fix-safety.cli.test.ts runs a solidjs rule at version 2 when fixtures/fix-safety/solidjs-v2/<rule>.tsx exists.
+- Found on agentx (read-only preview): a context with a same-named TypeScript type (components/ui/sidebar.tsx) resolved to the type def; Provider resolution now uses the value definition (regression case).
+- Index -> For keyed={false}: (item, i) callbacks are unchanged (unit + fix fixture).
+Preview on agentx client/src at version 2 (scratch config, so components/ui not ignored): 60 reports: splitProps 31, mergeProps 8 (suggestion), ErrorBoundary 4, Suspense 4, Provider 7 (6 fixable), onMount 3 (1 not fixed: async callback), createResource 1, on 1, unwrap 1 (suggestion), produce 1. TASK-060 reruns with agentx config.
+Version 1: all-rules diff vs the 2fd695f build still 71 = 71 (fixtures+corpus), 20 = 20 (agentx); gate PASS.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+New rule no-removed-apis (version 2 only, error in recommended-v2): autofixes Suspense, ErrorBoundary (err -> err()), SuspenseList (order/collapsed), Index (For keyed={false}), onMount (when safe), equalFn, getListener and Ctx.Provider in one combined per-file fix; suggestions for mergeProps and unwrap; reports the removed APIs and /*@once*/. Docs: packages/solidjs/docs/rules/no-removed-apis.md.
+<!-- SECTION:FINAL_SUMMARY:END -->
