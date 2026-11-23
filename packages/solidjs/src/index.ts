@@ -1,6 +1,7 @@
 import { eslintCompatPlugin } from "@oxlint/plugins";
 import { PACKAGE_NAME, presetRules } from "./plugin-meta.ts";
 import componentsReturnOnce from "./rules/components-return-once.ts";
+import effectSplit from "./rules/effect-split.ts";
 import eventHandlers from "./rules/event-handlers.ts";
 import importsRule from "./rules/imports.ts";
 import jsxNoDuplicateProps from "./rules/jsx-no-duplicate-props.ts";
@@ -49,6 +50,7 @@ const plugin = {
   meta: { name: PACKAGE_NAME },
   rules: {
     "components-return-once": componentsReturnOnce,
+    "effect-split": effectSplit,
     "event-handlers": eventHandlers,
     imports: importsRule,
     "jsx-no-duplicate-props": jsxNoDuplicateProps,
@@ -81,6 +83,7 @@ const plugin = {
         // In 2.0 a function on a lowercase on* is a stringified attribute: a runtime bug.
         "event-handlers": "error",
         "no-removed-apis": "error",
+        "effect-split": "error",
       }),
     },
   },

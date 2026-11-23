@@ -132,6 +132,12 @@ onSettled(() => {});`,
       output: null,
       errors: [{ messageId: "renamedNoFix" }],
     })),
+    // A parenthesized object body stays an object (not a block with a label).
+    {
+      code: `import { onMount } from "solid-js";\nonMount(() => ({ ready: true }));`,
+      output: `import { onSettled } from "solid-js";\nonSettled(() => { ({ ready: true }); });`,
+      errors: [{ messageId: "renamed" }],
+    },
     // A cleanup that only runs later (inside a nested function) is fine.
     {
       code: `import { onMount, onCleanup } from "solid-js";\nonMount(() => { button.addEventListener("click", () => onCleanup(stop)); });`,

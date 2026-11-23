@@ -234,7 +234,8 @@ export default defineRule({
           const arrow = sourceCode().getTokenBefore(callback.body, { filter: (t) => t.value === "=>" });
           if (!arrow) return { reason: "its callback couldn't be rewritten" };
           const start = sourceCode().getTokenAfter(arrow)!.range[0];
-          const text = sourceCode().getText(callback.body);
+          // As written, parentheses included: `() => ({ a })` must stay an object, not become a block.
+          const text = sourceCode().text.slice(start, callback.range[1]);
           edits.push((fixer) => fixer.replaceTextRange([start, callback.range[1]], `{ ${text}; }`));
         }
       }

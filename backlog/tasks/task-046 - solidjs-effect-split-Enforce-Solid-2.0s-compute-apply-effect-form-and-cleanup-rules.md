@@ -3,9 +3,11 @@ id: TASK-046
 title: >-
   solidjs/effect-split: Enforce Solid 2.0's compute/apply effect form and
   cleanup rules
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-11-23T20:29:00Z'
+updated_date: '2026-11-23T21:05:00Z'
 labels:
   - solidjs
   - solid2
@@ -36,10 +38,26 @@ Only the function's own body and its synchronous callbacks count, not nested fun
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
-- [ ] #2 Fixtures: the guide's 1.x/2.0 effect pairs (single function, initialValue, onCleanup → returned cleanup), EffectBundle, identifier compute, createTrackedEffect, onCleanup in compute (valid)
-- [ ] #3 Invalid-cleanup-return fixtures with the block-wrap autofix; fix-safety covers it; calls are not flagged
-- [ ] #4 Nothing is reported at version 1
-- [ ] #5 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
-- [ ] #6 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
+- [x] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
+- [x] #2 Fixtures: the guide's 1.x/2.0 effect pairs (single function, initialValue, onCleanup → returned cleanup), EffectBundle, identifier compute, createTrackedEffect, onCleanup in compute (valid)
+- [x] #3 Invalid-cleanup-return fixtures with the block-wrap autofix; fix-safety covers it; calls are not flagged
+- [x] #4 Nothing is reported at version 1
+- [x] #5 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
+- [x] #6 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Decision from agentx-pm (plan review, item c): include the primitives check (create* directly in createTrackedEffect / onSettled throws PRIMITIVE_IN_FORBIDDEN_SCOPE).
+
+Found while testing: the block-wrap fix must keep the parenthesized source (`() => ({ ready: true })`); the same bug in no-removed-apis onMount was fixed in this commit. Identifiers and calls are not flagged as invalid cleanups (they may be functions).
+Preview on agentx client/src at version 2: 49 reports: missingApply createEffect 44, createRenderEffect 1, cleanupInLegacyEffect 4.
+Version 1: all-rules diff vs the 2fd695f build 71 = 71 (fixtures+corpus), 20 = 20 (agentx); gate PASS.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+New rule effect-split (version 2 only, error in recommended-v2): missingApply (MISSING_EFFECT_FN), initialValue / memoInitialValue, invalidCleanup (autofix wraps expression bodies, parens kept) and asyncCallback for apply/createTrackedEffect/onSettled, cleanupInScope / cleanupInLegacyEffect, primitiveInLeaf. onCleanup in a compute stays valid. Docs: packages/solidjs/docs/rules/effect-split.md.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -7,7 +7,7 @@ status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-23T20:29:00Z'
-updated_date: '2026-11-23T21:01:00Z'
+updated_date: '2026-11-23T21:05:00Z'
 labels:
   - solidjs
   - solid2
@@ -69,6 +69,8 @@ Implementation notes:
 - Index -> For keyed={false}: (item, i) callbacks are unchanged (unit + fix fixture).
 Preview on agentx client/src at version 2 (scratch config, so components/ui not ignored): 60 reports: splitProps 31, mergeProps 8 (suggestion), ErrorBoundary 4, Suspense 4, Provider 7 (6 fixable), onMount 3 (1 not fixed: async callback), createResource 1, on 1, unwrap 1 (suggestion), produce 1. TASK-060 reruns with agentx config.
 Version 1: all-rules diff vs the 2fd695f build still 71 = 71 (fixtures+corpus), 20 = 20 (agentx); gate PASS.
+
+Follow-up in the TASK-046 commit: the onMount expression-body wrap used getText(body), which drops parentheses, so `() => ({ a })` became `{ { a }; }` (a block). It now keeps the source after `=>` as written; regression case added.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

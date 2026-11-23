@@ -23,7 +23,7 @@ const FIXTURES = readdirSync(DIR)
   .map((f) => ({ rule: f.replace(/\.tsx$/, ""), file: join(DIR, f) }));
 
 /** Rules that report nothing at version 1 (TASK-043: nothing is "removed" on 1.x). */
-export const V2_ONLY_RULES = new Set<string>(["no-removed-apis"]);
+export const V2_ONLY_RULES = new Set<string>(["no-removed-apis", "effect-split"]);
 
 const configs: string[] = [];
 afterAll(async () => {
@@ -71,6 +71,7 @@ const FIX_FIXTURES = readdirSync(FIX_DIR)
 /** Messages of reports that carry a fix, per rule; none may remain after --fix. */
 const FIXABLE_MESSAGES: Record<string, RegExp> = {
   "no-removed-apis": /^`\w+` is `\w+` in Solid 2\.0\.$|^In Solid 2\.0 a context is its own provider: use/,
+  "effect-split": /returns a value that isn't a cleanup function/,
 };
 
 describe("version-2 autofixes are idempotent", () => {
