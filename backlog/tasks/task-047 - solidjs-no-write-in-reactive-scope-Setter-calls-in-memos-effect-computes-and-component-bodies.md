@@ -7,7 +7,7 @@ status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-23T20:29:00Z'
-updated_date: '2026-11-23T21:09:00Z'
+updated_date: '2026-11-23T21:13:00Z'
 labels:
   - solidjs
   - solid2
@@ -52,6 +52,8 @@ New rule (version 2 only): the static form of REACTIVE_WRITE_IN_OWNED_SCOPE. Wri
 <!-- SECTION:NOTES:BEGIN -->
 Preview on agentx client/src at version 2: 73 reports, all writes inside 1.x single-function createEffect bodies copying props/server data into form signals (settings/*Page.tsx 63, StrategyBuilderSheet 3, WatchlistSheet 3, command-menu 2, AlertSheet 1, ActivateAlertForm 1). The first preview labeled them "an effect's compute function", which is wrong for an unsplit effect; they now get writeInLegacyEffect, which points at createSignal(() => ...) or a split effect's apply (agentx-pm asked that the message name the alternatives). No component-body or memo writes found.
 Version 1: all-rules diff vs the 2fd695f build 71 = 71, 20 = 20; gate PASS.
+
+Runtime evidence (agentx-pm request, 2026-11-23): packages/solidjs/tests/no-write-in-reactive-scope-runtime.test.ts runs the development build of @solidjs/signals 2.0.3 (new exact devDependency; not consumer-visible, so no changeset). Compute write: REACTIVE_WRITE_IN_OWNED_SCOPE reported. Same write in apply: no error, and the write lands (b: 0 -> 1). Memo, createSignal(fn), owner body, untrack() in owner body: throw. onSettled, ownedWrite: true: fine. Matches the rule. Caveat found while probing: an apply forced by flush() inside an owned body runs under that owner and throws (documented). Docs cite RFC 08 §REACTIVE_WRITE_IN_OWNED_SCOPE "(effect compute, memo, component body)" plus RFC 01 §Stores in the compute phase, §onFlush, MIGRATION, RFC 08 §EFFECT_WRITES_OWN_SOURCE.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

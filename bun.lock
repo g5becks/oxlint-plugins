@@ -8,6 +8,7 @@
         "@biomejs/biome": "2.6.6",
         "@changesets/cli": "3.0.3",
         "@oxlint/plugins": "1.93.0",
+        "@solidjs/signals": "2.0.3",
         "@takinprofit/errorset": "0.5.0",
         "@tanstack/eslint-plugin-query": "5.107.1",
         "@tanstack/eslint-plugin-router": "1.162.0",
@@ -231,6 +232,8 @@
     "@oxlint/plugins": ["@oxlint/plugins@1.93.0", "", {}, "sha512-bKWQI1g9jn8bWUZsvhbOLfgva576Fbp1KwoTNSUCMdT9tlTAvQS2JkifX1UrhPPdyN4GHvM20HhvIMqqU1yotQ=="],
 
     "@pnpm/deps.graph-sequencer": ["@pnpm/deps.graph-sequencer@1100.0.1", "", {}, "sha512-pOr5+q1fLYKwFN3LAJuGZEnfXDcQ73zqgDHMtGy+K+uIoUqyY+6MeDCWFwfu+4EFuq76I5EPFofoNAI+Bmmq4A=="],
+
+    "@solidjs/signals": ["@solidjs/signals@2.0.3", "", {}, "sha512-M6+kiJflqSvJRHRcmdsdIXpPLPkQrY817zWKKfxZ3z3ZRE5eEtddtWPrDXY4IM1Wz3zAqG+3Fx/HQIkAtpRwnA=="],
 
     "@takinprofit/errorset": ["@takinprofit/errorset@0.5.0", "", {}, "sha512-LYkb2sclZnmUG8jRlgmyDIe/FaDWPx5Gru4GjXnZLHyTiUZLXyUKaMwSlvUnH6Dl+NCi5r+Xqvp5ZwsynblrNg=="],
 

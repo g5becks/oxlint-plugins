@@ -36,6 +36,31 @@ IIFE. Writes in functions that run later are fine: event handlers, effect apply 
 `onSettled`, timers, promise callbacks and `action` bodies. Writes through a projection's own draft
 parameter aren't setter calls.
 
+## Why writes in an effect's apply function are allowed
+
+RFC 01 §No writes under owned scope lists "effect" among the scopes where a write throws. The other
+lines of the docs, and the runtime, show that this means the compute half:
+
+- RFC 08 §REACTIVE_WRITE_IN_OWNED_SCOPE: "Writing to reactive state or invalidating a reactive source
+  inside a reactive scope (**effect compute**, memo, component body) throws."
+- RFC 01 §Stores in the compute phase: "The effect callback (back half) runs in an **untracked scope**."
+- RFC 01 §Keeping a write out of another update's hold: `onFlush` exists to make writes, and you
+  should "call it from event handlers and effect callbacks". In a component body or computation it
+  warns `ON_FLUSH_IN_OWNED_SCOPE`.
+- MIGRATION §"Write inside reactive scope": "return cleanup from effect apply functions (instead of
+  writing during tracking)".
+- RFC 08 §EFFECT_WRITES_OWN_SOURCE treats "an effect's callback wrote a signal or store" as a
+  performance finding, not an error.
+- **The runtime:** `packages/solidjs/tests/no-write-in-reactive-scope-runtime.test.ts` runs the
+  development build of `@solidjs/signals` 2.0.3. A write in a compute is reported as
+  `REACTIVE_WRITE_IN_OWNED_SCOPE`. The same write in the apply function isn't, and it lands. Writes
+  in a memo, a derived signal, an owner body and `untrack()` inside it throw; `onSettled` and
+  `{ ownedWrite: true }` don't.
+
+One runtime caveat: the apply phase must run after the owned body returns, which is what happens
+normally (effects flush on a microtask). An apply phase forced by `flush()` from inside a component
+body still runs under that owner, and its writes throw.
+
 ## What to do instead
 
 - **Derive the value:** `createMemo(() => count() * 2)`.
