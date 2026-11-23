@@ -22,6 +22,7 @@ import preferClasslist from "./rules/prefer-classlist.ts";
 import preferFor from "./rules/prefer-for.ts";
 import preferShow from "./rules/prefer-show.ts";
 import reactivity from "./rules/reactivity.ts";
+import reconcileKey from "./rules/reconcile-key.ts";
 import selfClosingComp from "./rules/self-closing-comp.ts";
 import styleProp from "./rules/style-prop.ts";
 
@@ -73,6 +74,7 @@ const plugin = {
     "prefer-for": preferFor,
     "prefer-show": preferShow,
     reactivity,
+    "reconcile-key": reconcileKey,
     "self-closing-comp": selfClosingComp,
     "style-prop": styleProp,
   },
@@ -90,6 +92,7 @@ const plugin = {
         "effect-split": "error",
         "no-write-in-reactive-scope": "error",
         "no-classlist": "error",
+        "reconcile-key": "warn",
       }),
     },
   },

@@ -1,9 +1,11 @@
 ---
 id: TASK-055
 title: 'solidjs/reconcile-key: Require an explicit reconcile key (Solid 2.0)'
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-11-23T20:29:00Z'
+updated_date: '2026-11-23T21:39:00Z'
 labels:
   - solidjs
   - solid2
@@ -32,9 +34,21 @@ Only `reconcile` imported from solid-js (or solid-js/store) is checked.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
-- [ ] #2 Fixtures: the RFC's draft-setter examples, missing key (both suggestions), { key } object (fixed), { merge: false } (report only)
-- [ ] #3 Nothing is reported at version 1
-- [ ] #4 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
-- [ ] #5 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
+- [x] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
+- [x] #2 Fixtures: the RFC's draft-setter examples, missing key (both suggestions), { key } object (fixed), { merge: false } (report only)
+- [x] #3 Nothing is reported at version 1
+- [x] #4 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
+- [x] #5 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+agentx client at version 2: 3 reports, StrategyBuilderSheet.tsx:478, :487, :517: the _id-keyed reconcile calls agentx-pm's plan (§4.6) named. Version 1 all-rules diff 71 = 71, 19 = 19; gate PASS.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+New rule reconcile-key (version 2 only, warn in recommended-v2): missingKey with "id"/null suggestions, the 1.x { key } options object autofixed to the key argument, merge: false reported. Docs: packages/solidjs/docs/rules/reconcile-key.md.
+<!-- SECTION:FINAL_SUMMARY:END -->

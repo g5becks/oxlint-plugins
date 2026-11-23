@@ -159,6 +159,7 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 | `prefer-show` | Prefer `<Show>` over ternaries/`&&` in JSX | — | same |
 | `prefer-classlist` | Prefer the `classList` prop over a classnames helper (`cn`, `clsx`, `classnames`) in `class` | — | retired: reports nothing (`classList` is removed in 2.0; see `no-classlist`) |
 | `no-classlist` | Disallow `classList` (removed in Solid 2.0); fix it into `class` object/array values ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-classlist.md)) | — | 2.0 only (`error` in recommended-v2) |
+| `reconcile-key` | Require an explicit `reconcile` key (2.0 defaults to `"id"`); fix 1.x `{ key }` options ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/reconcile-key.md)) | — | 2.0 only (`warn` in recommended-v2) |
 
 ## Options
 
