@@ -142,7 +142,7 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 
 | Rule | Description | Recommended | Solid 2 |
 |---|---|---|---|
-| `no-proxy-apis` | Disallow proxy-incompatible APIs | — | same |
+| `no-proxy-apis` | Disallow proxy-incompatible APIs | — | store APIs from `solid-js`, function sources of `merge` (`omit` falls back to copying) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-proxy-apis.md)) |
 | `no-react-deps` | Disallow React-style dependency arrays | warn | same |
 | `no-react-specific-props` | Disallow React-specific props (`className`, `htmlFor`) | warn | same |
 | `no-removed-apis` | Disallow 1.x APIs removed in Solid 2.0; fix the 1:1 renames (`Suspense`, `ErrorBoundary`, `SuspenseList`, `Index`, `onMount`, `Ctx.Provider`, …) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-removed-apis.md)) | — | 2.0 only (`error` in recommended-v2) |
