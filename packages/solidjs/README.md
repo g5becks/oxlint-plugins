@@ -123,6 +123,7 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 | `reactivity` | Detect reactive variables used outside of tracked scopes | warn | 2.0 tracking model: split effects, async computations, `readInApply`, `readAfterAwait` ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/reactivity.md)) |
 | `no-destructure` | Disallow destructuring props — breaks reactivity, use `splitProps` instead | error | same |
 | `components-return-once` | Component functions should have a single return path | warn | same |
+| `no-write-in-reactive-scope` | Disallow signal/store writes and `refresh()` in component bodies, memos, effect computes and derive functions (Solid 2.0's `REACTIVE_WRITE_IN_OWNED_SCOPE`) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-write-in-reactive-scope.md)) | — | 2.0 only (`error` in recommended-v2) |
 | `effect-split` | Enforce Solid 2.0's compute/apply effects and cleanup rules (`MISSING_EFFECT_FN`, invalid cleanup returns, `onCleanup` and primitives in leaf scopes) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/effect-split.md)) | — | 2.0 only (`error` in recommended-v2) |
 
 ### JSX & DOM

@@ -23,7 +23,7 @@ const FIXTURES = readdirSync(DIR)
   .map((f) => ({ rule: f.replace(/\.tsx$/, ""), file: join(DIR, f) }));
 
 /** Rules that report nothing at version 1 (TASK-043: nothing is "removed" on 1.x). */
-export const V2_ONLY_RULES = new Set<string>(["no-removed-apis", "effect-split"]);
+export const V2_ONLY_RULES = new Set<string>(["no-removed-apis", "effect-split", "no-write-in-reactive-scope"]);
 
 const configs: string[] = [];
 afterAll(async () => {

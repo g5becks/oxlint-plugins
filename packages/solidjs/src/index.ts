@@ -16,6 +16,7 @@ import noReactDeps from "./rules/no-react-deps.ts";
 import noReactSpecificProps from "./rules/no-react-specific-props.ts";
 import noRemovedApis from "./rules/no-removed-apis.ts";
 import noUnknownNamespaces from "./rules/no-unknown-namespaces.ts";
+import noWriteInReactiveScope from "./rules/no-write-in-reactive-scope.ts";
 import preferClasslist from "./rules/prefer-classlist.ts";
 import preferFor from "./rules/prefer-for.ts";
 import preferShow from "./rules/prefer-show.ts";
@@ -65,6 +66,7 @@ const plugin = {
     "no-react-specific-props": noReactSpecificProps,
     "no-removed-apis": noRemovedApis,
     "no-unknown-namespaces": noUnknownNamespaces,
+    "no-write-in-reactive-scope": noWriteInReactiveScope,
     "prefer-classlist": preferClasslist,
     "prefer-for": preferFor,
     "prefer-show": preferShow,
@@ -84,6 +86,7 @@ const plugin = {
         "event-handlers": "error",
         "no-removed-apis": "error",
         "effect-split": "error",
+        "no-write-in-reactive-scope": "error",
       }),
     },
   },

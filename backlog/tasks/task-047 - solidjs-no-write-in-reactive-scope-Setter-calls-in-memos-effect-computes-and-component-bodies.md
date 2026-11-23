@@ -3,9 +3,11 @@ id: TASK-047
 title: >-
   solidjs/no-write-in-reactive-scope: Setter calls in memos, effect computes and
   component bodies
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-11-23T20:29:00Z'
+updated_date: '2026-11-23T21:09:00Z'
 labels:
   - solidjs
   - solid2
@@ -38,9 +40,22 @@ New rule (version 2 only): the static form of REACTIVE_WRITE_IN_OWNED_SCOPE. Wri
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
-- [ ] #2 Fixtures from the cited examples: createMemo(() => setDoubled(...)), createComputed→createSignal(fn), untrack(() => setX()) still reported, event handler / onSettled / apply writes valid, ownedWrite: true valid, refresh() in a memo reported
-- [ ] #3 Nothing is reported at version 1
-- [ ] #4 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
-- [ ] #5 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
+- [x] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
+- [x] #2 Fixtures from the cited examples: createMemo(() => setDoubled(...)), createComputed→createSignal(fn), untrack(() => setX()) still reported, event handler / onSettled / apply writes valid, ownedWrite: true valid, refresh() in a memo reported
+- [x] #3 Nothing is reported at version 1
+- [x] #4 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
+- [x] #5 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Preview on agentx client/src at version 2: 73 reports, all writes inside 1.x single-function createEffect bodies copying props/server data into form signals (settings/*Page.tsx 63, StrategyBuilderSheet 3, WatchlistSheet 3, command-menu 2, AlertSheet 1, ActivateAlertForm 1). The first preview labeled them "an effect's compute function", which is wrong for an unsplit effect; they now get writeInLegacyEffect, which points at createSignal(() => ...) or a split effect's apply (agentx-pm asked that the message name the alternatives). No component-body or memo writes found.
+Version 1: all-rules diff vs the 2fd695f build 71 = 71, 20 = 20; gate PASS.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+New rule no-write-in-reactive-scope (version 2 only, error in recommended-v2): setter calls of createSignal/createOptimistic/createStore/createOptimisticStore and refresh() that run synchronously (including through untrack, flush, array callbacks, IIFEs) in a component body, memo, effect compute, derive function, or 1.x single-function effect (writeInLegacyEffect). ownedWrite: true exempts signals. Messages name the alternatives. Docs: packages/solidjs/docs/rules/no-write-in-reactive-scope.md.
+<!-- SECTION:FINAL_SUMMARY:END -->
