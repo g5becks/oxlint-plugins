@@ -132,7 +132,7 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 | Rule | Description | Recommended | Solid 2 |
 |---|---|---|---|
 | `jsx-no-duplicate-props` | Disallow duplicate props on JSX elements | error | same |
-| `jsx-no-undef` | Disallow undefined variables in JSX | error | same |
+| `jsx-no-undef` | Disallow undefined variables in JSX | error | auto-imports `Show`, `For`, `Switch`, `Match`, `Loading`, `Errored`, `Repeat`, `Reveal` (no `Index`) |
 | `jsx-no-script-url` | Disallow `javascript:` URLs in JSX | error | same |
 | `jsx-uses-vars` | Mark JSX variables as used (ESLint only; a no-op under oxlint, see note above) | error | same |
 | `no-innerhtml` | Disallow `innerHTML` with dynamic content (a security risk) and React's `dangerouslySetInnerHTML` | error | same |
