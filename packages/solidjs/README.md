@@ -155,7 +155,7 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 
 | Rule | Description | Recommended | Solid 2 |
 |---|---|---|---|
-| `prefer-for` | Prefer `<For>` over `.map()` in JSX | error | same |
+| `prefer-for` | Prefer `<For>` over `.map()` in JSX | error | no `<Index>`: `<For keyed={false}>`, and `<Repeat>` for count-based lists ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/prefer-for.md)) |
 | `prefer-show` | Prefer `<Show>` over ternaries/`&&` in JSX | — | same |
 | `prefer-classlist` | Prefer the `classList` prop over a classnames helper (`cn`, `clsx`, `classnames`) in `class` | — | retired: reports nothing (`classList` is removed in 2.0; see `no-classlist`) |
 | `no-classlist` | Disallow `classList` (removed in Solid 2.0); fix it into `class` object/array values ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-classlist.md)) | — | 2.0 only (`error` in recommended-v2) |
