@@ -282,9 +282,9 @@ export default defineRule({
                   );
 
                   const specText = sourceCode.getText(specifier);
-                  // Never build `import type { type X }` (TS2206, TASK-061). A type-only declaration's
-                  // specifier merged into a value import keeps upstream 0.14.5's output (no `type`),
-                  // which its vendored test asserts.
+                  // Keep the `type` modifier exactly once: never `import type { type X }` (TS2206,
+                  // TASK-061), and inline inside a value import, so the result compiles under
+                  // verbatimModuleSyntax too (TASK-062; an intentional divergence from upstream).
                   const inlineType = specifier.importKind === "type";
                   const declarationType = node.importKind === "type";
 
@@ -292,7 +292,12 @@ export default defineRule({
                     const removeResult = removeSpecifierFromNode(fixer, sourceCode, specifier, node);
                     if (!removeResult) return null;
                     const targetIsType = correctDeclaration.importKind === "type";
-                    const text = targetIsType && inlineType ? specText.replace(/^type\s+/, "") : specText;
+                    const text =
+                      targetIsType && inlineType
+                        ? specText.replace(/^type\s+/, "")
+                        : !targetIsType && declarationType
+                          ? `type ${specText}`
+                          : specText;
                     // Works for `import "solid-js"` and `import {} from "solid-js"` too (no specifiers).
                     const append = appendImports(fixer, sourceCode, correctDeclaration, [text]);
                     return append ? [removeResult, append] : null;

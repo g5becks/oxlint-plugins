@@ -56,7 +56,9 @@ offers that rewrite as a suggestion; with `import { useState }` (also aliased) o
 ## Solid
 
 All 465 runnable upstream cases pass except the 3 listed under
-[solid-components-return-once-imports](#solid-components-return-once-imports) (462 pass). Fixed in the port while bringing the suites up (TASK-024):
+[solid-components-return-once-imports](#solid-components-return-once-imports) (462 pass); one of
+them, [solid-imports-type-modifier](#solid-imports-type-modifier), runs against the port's own
+expected output (an `output` override in `tests/upstream/solid/parity.ts`, TASK-062). Fixed in the port while bringing the suites up (TASK-024):
 `imports` crashed on `import "solid-js"` / `import {} from "solid-js"` when fixing (now uses
 upstream's `appendImports`); static values are now evaluated like upstream's `getStaticValue`
 (string concatenation, unary minus, `const` resolution), which fixes `jsx-no-script-url` on
@@ -108,5 +110,22 @@ Not skipped; no upstream case covers it. Upstream's `imports` fix moves an inlin
 (`import { type JSX, render } from "solid-js/web"`) into `import type { type JSX } from "solid-js"`,
 which TypeScript rejects (TS2206). The port keeps the inline modifier in a new declaration
 (`import { type JSX } from "solid-js"`) and drops it when merging into an existing type-only
-declaration (TASK-061). A type-only declaration's specifier merged into a value import still
-loses its `type`, as upstream's own test asserts.
+declaration (TASK-061). For the value-import merge, see
+[solid-imports-type-modifier](#solid-imports-type-modifier).
+
+### solid-imports-type-modifier
+
+**Intentional divergence; the case runs against the port's output** (`imports` invalid case 2, an
+`output` override in `tests/upstream/solid/parity.ts`; the vendored file is unchanged). When the
+`imports` fix merges a type-only declaration's specifier into a value import, upstream 0.14.5 drops
+the `type` modifier:
+
+| Input | upstream 0.14.5 | port |
+|---|---|---|
+| `import type { Component } from "solid-js/store";`<br>`import { createSignal } from "solid-js";` | `import { createSignal, Component } from "solid-js";` | `import { createSignal, type Component } from "solid-js";` |
+
+Rationale (decided 2026-11-23 by agentx-pm, delegated by the maintainer; TASK-062): the inline
+`type` modifier is valid TypeScript in every configuration (TypeScript >= 4.5), while upstream's
+output fails to compile under `verbatimModuleSyntax` (TS1484), which modern project templates
+increasingly enable. A fixer should never produce output that fails to compile in a supported
+configuration.

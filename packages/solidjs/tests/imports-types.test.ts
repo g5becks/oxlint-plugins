@@ -24,3 +24,18 @@ tester.run("imports: type specifiers in the move fix", rule, {
     },
   ],
 });
+
+// TASK-062 (intentional divergence from upstream 0.14.5, PARITY.md#solid-imports-type-modifier): a
+// type-only declaration's specifier merged into a value import keeps its `type`, which compiles in
+// every TypeScript configuration (upstream's `import { createSignal, Component }` fails under
+// verbatimModuleSyntax).
+tester.run("imports: type-only specifiers stay type-only in a value import", rule, {
+  valid: [],
+  invalid: [
+    {
+      code: `import { createSignal } from "solid-js";\nimport type { JSX } from "solid-js/web";`,
+      output: `import { createSignal, type JSX } from "solid-js";\n`,
+      errors: [{ messageId: "prefer-source" }],
+    },
+  ],
+});
