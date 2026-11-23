@@ -61,25 +61,36 @@ describe("fix safety: oxlint --fix output parses and type-checks", () => {
     expect(FIXABLE.length).toBeGreaterThanOrEqual(19);
   });
 
-  for (const { plugin, rule } of FIXABLE) {
-    test(`${plugin}/${rule}`, async () => {
+  // Solid 2.0 (TASK-045 onward): a fixture in fix-safety/solidjs-v2/<rule>.tsx runs the rule at
+  // settings.solidjs.version 2. A rule with both a version-1 and a version-2 fixture is checked at
+  // both; a rule that only fixes at version 2 has only the version-2 fixture.
+  const v1Fixture = (plugin: PluginName, rule: string) => {
+    // A dedicated fixture (tests/cli/fixtures/fix-safety/<plugin>/<rule>) when the shared
+    // rule fixture has no auto-fixable case; the shared fixtures' line numbers are asserted elsewhere.
+    const candidates = ["tsx", "ts"].flatMap((e) => [
+      { ext: e, file: ruleFixture(`fix-safety/${plugin}`, rule, e) },
+      { ext: e, file: ruleFixture(plugin, rule, e) },
+    ]);
+    const dedicated = candidates.filter((c) => c.file.includes("/fix-safety/")).find((c) => Bun.file(c.file).size > 0);
+    return dedicated ?? candidates.find((c) => Bun.file(c.file).size > 0);
+  };
+  const v2Fixture = (plugin: PluginName, rule: string) => {
+    const file = plugin === "solidjs" ? ruleFixture("fix-safety/solidjs-v2", rule, "tsx") : "";
+    return file !== "" && Bun.file(file).size > 0 ? { ext: "tsx", file } : undefined;
+  };
+  const CASES = FIXABLE.flatMap(({ plugin, rule }) => {
+    const v1 = v1Fixture(plugin, rule);
+    const v2 = v2Fixture(plugin, rule);
+    return [
+      ...(v1 || !v2 ? [{ plugin, rule, fixture: v1 ?? { ext: "ts", file: "" }, v2: false }] : []),
+      ...(v2 ? [{ plugin, rule, fixture: v2, v2: true }] : []),
+    ];
+  });
+
+  for (const { plugin, rule, fixture, v2 } of CASES) {
+    test(`${plugin}/${rule}${v2 ? " (version 2)" : ""}`, async () => {
       await buildPlugin(plugin);
-      // A dedicated fixture (tests/cli/fixtures/fix-safety/<plugin>/<rule>) when the shared
-      // rule fixture has no auto-fixable case; the shared fixtures' line numbers are asserted elsewhere.
-      const candidates = ["tsx", "ts"].flatMap((e) => [
-        { ext: e, file: ruleFixture(`fix-safety/${plugin}`, rule, e) },
-        { ext: e, file: ruleFixture(plugin, rule, e) },
-      ]);
-      const dedicated = candidates
-        .filter((c) => c.file.includes("/fix-safety/"))
-        .find((c) => Bun.file(c.file).size > 0);
-      // Solid 2.0 rules (TASK-045 onward) fix only at settings.solidjs.version 2: a fixture in
-      // fix-safety/solidjs-v2/<rule>.tsx runs with that setting.
-      const v2File = plugin === "solidjs" ? ruleFixture("fix-safety/solidjs-v2", rule, "tsx") : "";
-      const v2 = v2File !== "" && Bun.file(v2File).size > 0;
-      const { ext, file } = v2
-        ? { ext: "tsx", file: v2File }
-        : (dedicated ?? candidates.find((c) => Bun.file(c.file).size > 0) ?? { ext: "ts", file: "" });
+      const { ext, file } = fixture;
       const configPath = await writeOxlintConfig({
         plugins: [plugin],
         rules: { [`${plugin}/${rule}`]: "error" },

@@ -147,7 +147,7 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 | `no-react-specific-props` | Disallow React-specific props (`className`, `htmlFor`) | warn | same |
 | `no-removed-apis` | Disallow 1.x APIs removed in Solid 2.0; fix the 1:1 renames (`Suspense`, `ErrorBoundary`, `SuspenseList`, `Index`, `onMount`, `Ctx.Provider`, …) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-removed-apis.md)) | — | 2.0 only (`error` in recommended-v2) |
 | `no-array-handlers` | Disallow array-form event handlers (`onClick={[handler, data]}`), which are type-unsafe | — | same |
-| `event-handlers` | Enforce correct event handler naming conventions | warn | same (`error` in recommended-v2) |
+| `event-handlers` | Enforce correct event handler naming conventions | warn | camelCase only: a function on a lowercase `on*` is reported and fixed (`error` in recommended-v2) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/event-handlers.md)) |
 | `imports` | Enforce importing from the correct `solid-js` sub-path | warn | 2.0 module map (`@solidjs/web`, stores in `solid-js`) and path migration (`solid-js/web`, `solid-js/store`, …) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/imports.md)) |
 | `style-prop` | Validate the `style` prop (CSS property names and values) | warn | same |
 
