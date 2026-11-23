@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@claude'
 created_date: '2026-11-23T20:29:00Z'
-updated_date: '2026-11-23T21:39:00Z'
+updated_date: '2026-11-23T21:41:00Z'
 labels:
   - solidjs
   - solid2
@@ -45,6 +45,8 @@ Only `reconcile` imported from solid-js (or solid-js/store) is checked.
 
 <!-- SECTION:NOTES:BEGIN -->
 agentx client at version 2: 3 reports, StrategyBuilderSheet.tsx:478, :487, :517: the _id-keyed reconcile calls agentx-pm's plan (§4.6) named. Version 1 all-rules diff 71 = 71, 19 = 19; gate PASS.
+
+Follow-up (TASK-056 commit): reconcile-key was missing from V2_ONLY_RULES in tests/cli/solidjs-v2.cli.test.ts (a sed edit failed silently after Biome had wrapped the list), so its CLI "reports nothing at version 1" check didn't run; the unit tests covered version 1. Added; it passes.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

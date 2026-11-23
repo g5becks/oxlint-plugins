@@ -4,7 +4,7 @@ import { trackImports } from "../utils/imports.ts";
 import { readSolidVersion } from "../utils/settings.ts";
 import { SOLID_ANY_MODULE } from "../utils/solid2.ts";
 import { trace } from "../utils/trace.ts";
-import { walkTree } from "../utils/walk.ts";
+import { walkOwnBody } from "../utils/walk.ts";
 
 // TASK-046. Solid 2.0's split-effect contract (settings.solidjs.version 2 only). Sources: MIGRATION
 // §Effects, lifecycle, and cleanup; RFC 01 §Split tracking from effect, §createTrackedEffect and
@@ -25,9 +25,6 @@ const PRIMITIVES = [
   "createOptimistic",
   "createOptimisticStore",
 ];
-
-/** Array methods whose callback runs in place (part of the enclosing function's body). */
-const SYNC_METHODS = /^(?:forEach|map|flatMap|reduce|reduceRight|find|findIndex|filter|every|some)$/;
 
 /** Expression forms whose value is never a function or undefined. */
 const NOT_A_CLEANUP = new Set([
@@ -89,25 +86,6 @@ export default defineRule({
     /** The Solid API a callee names, if any. */
     const solidName = (callee: ESTree.Node, names: string[]): string | undefined =>
       callee.type === "Identifier" ? imports.matchImport(names, callee.name) : undefined;
-
-    /** Visit a function's own body, including callbacks that run in place, but not functions that run later. */
-    const walkOwnBody = (fn: FunctionNode, visit: (node: ESTree.Node) => void) => {
-      if (!fn.body) return;
-      walkTree(fn.body, (node, skip) => {
-        if (isFunctionNode(node)) {
-          const parent = node.parent;
-          const inPlace =
-            parent?.type === "CallExpression" &&
-            (parent.callee === node ||
-              (parent.callee.type === "MemberExpression" &&
-                !parent.callee.computed &&
-                parent.callee.property.type === "Identifier" &&
-                SYNC_METHODS.test(parent.callee.property.name)));
-          if (!inPlace) return skip();
-        }
-        visit(node);
-      });
-    };
 
     /** onCleanup and primitive calls in a function's own body. */
     const checkBody = (fn: FunctionNode, scope: string, leaf: boolean, legacy = false) => {

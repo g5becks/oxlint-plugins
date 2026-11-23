@@ -28,6 +28,8 @@ export const V2_ONLY_RULES = new Set<string>([
   "effect-split",
   "no-write-in-reactive-scope",
   "no-classlist",
+  "reconcile-key",
+  "no-cleanup-in-ref",
 ]);
 
 const configs: string[] = [];

@@ -1,9 +1,11 @@
 ---
 id: TASK-056
 title: 'solidjs/no-cleanup-in-ref: onCleanup/getOwner in ref callbacks (Solid 2.0)'
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-11-23T20:29:00Z'
+updated_date: '2026-11-23T21:42:00Z'
 labels:
   - solidjs
   - solid2
@@ -35,9 +37,23 @@ Only the callback's own body and its synchronous callbacks count. Returned direc
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
-- [ ] #2 Fixtures: the guide's 1.x ref-with-onCleanup (reported) and both 2.0 rewrites (onSettled, directive factory: valid), ref arrays, nested deferred function (valid)
-- [ ] #3 Nothing is reported at version 1
-- [ ] #4 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
-- [ ] #5 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
+- [x] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
+- [x] #2 Fixtures: the guide's 1.x ref-with-onCleanup (reported) and both 2.0 rewrites (onSettled, directive factory: valid), ref arrays, nested deferred function (valid)
+- [x] #3 Nothing is reported at version 1
+- [x] #4 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
+- [x] #5 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Decision from agentx-pm (plan review, item c): include primitives (create*) and onSettled created in ref callbacks (no owner: never disposed).
+
+walkOwnBody moved from effect-split into utils/walk.ts and shared (effect-split unchanged: 43/43). Also fixed V2_ONLY_RULES in the version-2 CLI suite (reconcile-key had been missing; see TASK-055 notes). agentx client at version 2: 0 reports. Version 1 all-rules diff 71 = 71, 19 = 19; gate PASS.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+New rule no-cleanup-in-ref (version 2 only, error in recommended-v2): onCleanup (throws), getOwner() (null), and primitives/onSettled (never disposed) in ref callbacks and ref arrays, own body plus in-place callbacks. Docs: packages/solidjs/docs/rules/no-cleanup-in-ref.md.
+<!-- SECTION:FINAL_SUMMARY:END -->
