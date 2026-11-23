@@ -135,7 +135,7 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 | `jsx-no-script-url` | Disallow `javascript:` URLs in JSX | error | same |
 | `jsx-uses-vars` | Mark JSX variables as used (ESLint only; a no-op under oxlint, see note above) | error | same |
 | `no-innerhtml` | Disallow `innerHTML` with dynamic content (a security risk) and React's `dangerouslySetInnerHTML` | error | same |
-| `no-unknown-namespaces` | Disallow unknown JSX namespace prefixes | error | same |
+| `no-unknown-namespaces` | Disallow unknown JSX namespace prefixes | error | only `prop:` and the XML namespaces; `on:`, `oncapture:`, `attr:`, `bool:`, `use:` report their 2.0 replacement ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-unknown-namespaces.md)) |
 | `self-closing-comp` | Enforce self-closing tags for components without children | warn | same |
 
 ### API & Patterns

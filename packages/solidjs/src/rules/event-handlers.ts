@@ -65,7 +65,8 @@ const COMMON_EVENTS = [
   "onWheel",
 ] as const;
 
-const COMMON_EVENTS_MAP = new Map<string, string>();
+/** Lowercased DOM event handler name → its camelCase spelling (`onclick` → `onClick`). */
+export const COMMON_EVENTS_MAP = new Map<string, string>();
 for (const event of COMMON_EVENTS) {
   COMMON_EVENTS_MAP.set(event.toLowerCase(), event);
 }
