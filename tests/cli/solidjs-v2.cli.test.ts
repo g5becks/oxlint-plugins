@@ -23,7 +23,12 @@ const FIXTURES = readdirSync(DIR)
   .map((f) => ({ rule: f.replace(/\.tsx$/, ""), file: join(DIR, f) }));
 
 /** Rules that report nothing at version 1 (TASK-043: nothing is "removed" on 1.x). */
-export const V2_ONLY_RULES = new Set<string>(["no-removed-apis", "effect-split", "no-write-in-reactive-scope"]);
+export const V2_ONLY_RULES = new Set<string>([
+  "no-removed-apis",
+  "effect-split",
+  "no-write-in-reactive-scope",
+  "no-classlist",
+]);
 
 const configs: string[] = [];
 afterAll(async () => {
@@ -73,6 +78,7 @@ const FIXABLE_MESSAGES: Record<string, RegExp> = {
   "no-removed-apis": /^`\w+` is `\w+` in Solid 2\.0\.$|^In Solid 2\.0 a context is its own provider: use/,
   "effect-split": /returns a value that isn't a cleanup function/,
   imports: /^Prefer importing \w+ from|is "[^"]+" in Solid 2\.0\.$/,
+  "no-classlist": /^`classList` is removed in Solid 2\.0/,
 };
 
 describe("version-2 autofixes are idempotent", () => {

@@ -9,6 +9,7 @@ import jsxNoScriptUrl from "./rules/jsx-no-script-url.ts";
 import jsxNoUndef from "./rules/jsx-no-undef.ts";
 import jsxUsesVars from "./rules/jsx-uses-vars.ts";
 import noArrayHandlers from "./rules/no-array-handlers.ts";
+import noClasslist from "./rules/no-classlist.ts";
 import noDestructure from "./rules/no-destructure.ts";
 import noInnerhtml from "./rules/no-innerhtml.ts";
 import noProxyApis from "./rules/no-proxy-apis.ts";
@@ -59,6 +60,7 @@ const plugin = {
     "jsx-no-undef": jsxNoUndef,
     "jsx-uses-vars": jsxUsesVars,
     "no-array-handlers": noArrayHandlers,
+    "no-classlist": noClasslist,
     "no-destructure": noDestructure,
     "no-innerhtml": noInnerhtml,
     "no-proxy-apis": noProxyApis,
@@ -87,6 +89,7 @@ const plugin = {
         "no-removed-apis": "error",
         "effect-split": "error",
         "no-write-in-reactive-scope": "error",
+        "no-classlist": "error",
       }),
     },
   },
