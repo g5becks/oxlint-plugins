@@ -572,3 +572,54 @@ describe("reactivity on deep JSX", () => {
     }
   });
 });
+
+// Solid 2.0 (TASK-043): rules read `settings.solidjs.version` from context.settings. This proves real
+// oxlint passes a `settings.solidjs` object from .oxlintrc.json through to JS plugins unchanged
+// (packages/solidjs/tests/settings.test.ts covers how the plugin parses it).
+describe("settings.solidjs reaches JS plugins", () => {
+  const probe = `export default {
+  meta: { name: "settings-probe" },
+  rules: {
+    echo: {
+      create(context) {
+        return {
+          Program(node) {
+            context.report({ node, message: JSON.stringify(context.settings?.solidjs ?? null) });
+          },
+        };
+      },
+    },
+  },
+};
+`;
+
+  async function echo(settings: Record<string, unknown> | undefined): Promise<string[]> {
+    const dir = await mkdtemp(join(tmpdir(), "solidjs-settings-probe-"));
+    try {
+      const pluginPath = join(dir, "probe.mjs");
+      const config = join(dir, ".oxlintrc.json");
+      await Bun.write(pluginPath, probe);
+      await Bun.write(
+        config,
+        JSON.stringify({
+          jsPlugins: [pluginPath],
+          rules: { "settings-probe/echo": "error" },
+          ...(settings ? { settings } : {}),
+        }),
+      );
+      const result = await runOxlint({ configPath: config, files: [ruleFixture(PLUGIN, "reactivity", EXT)] });
+      expect(result.stderr).toBe("");
+      return result.diagnostics.map((d) => d.message);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  test("version 2 is visible to the plugin", async () => {
+    expect(await echo({ solidjs: { version: 2 } })).toEqual(['{"version":2}']);
+  });
+
+  test("absent settings leave context.settings.solidjs undefined", async () => {
+    expect(await echo(undefined)).toEqual(["null"]);
+  });
+});

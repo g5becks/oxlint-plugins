@@ -21,6 +21,29 @@ import reactivity from "./rules/reactivity.ts";
 import selfClosingComp from "./rules/self-closing-comp.ts";
 import styleProp from "./rules/style-prop.ts";
 
+const RECOMMENDED: Record<string, "error" | "warn" | "off"> = {
+  "jsx-no-duplicate-props": "error",
+  "jsx-no-undef": "error",
+  "jsx-uses-vars": "error",
+  "no-unknown-namespaces": "error",
+  "no-innerhtml": "error",
+  "jsx-no-script-url": "error",
+  "components-return-once": "warn",
+  "no-destructure": "error",
+  "prefer-for": "error",
+  reactivity: "warn",
+  "event-handlers": "warn",
+  imports: "warn",
+  "style-prop": "warn",
+  "no-react-deps": "warn",
+  "no-react-specific-props": "warn",
+  "self-closing-comp": "warn",
+  "no-array-handlers": "off",
+  "prefer-show": "off",
+  "no-proxy-apis": "off",
+  "prefer-classlist": "off",
+};
+
 const plugin = {
   meta: { name: PACKAGE_NAME },
   rules: {
@@ -46,28 +69,15 @@ const plugin = {
     "style-prop": styleProp,
   },
   configs: {
-    recommended: {
+    recommended: { rules: presetRules(RECOMMENDED) },
+    // Solid 2.0 (TASK-043): the same rules with settings.solidjs.version 2. oxlint doesn't consume
+    // presets; its users copy `settings` and `rules` into .oxlintrc.json (see the README).
+    "recommended-v2": {
+      settings: { solidjs: { version: 2 } },
       rules: presetRules({
-        "jsx-no-duplicate-props": "error",
-        "jsx-no-undef": "error",
-        "jsx-uses-vars": "error",
-        "no-unknown-namespaces": "error",
-        "no-innerhtml": "error",
-        "jsx-no-script-url": "error",
-        "components-return-once": "warn",
-        "no-destructure": "error",
-        "prefer-for": "error",
-        reactivity: "warn",
-        "event-handlers": "warn",
-        imports: "warn",
-        "style-prop": "warn",
-        "no-react-deps": "warn",
-        "no-react-specific-props": "warn",
-        "self-closing-comp": "warn",
-        "no-array-handlers": "off",
-        "prefer-show": "off",
-        "no-proxy-apis": "off",
-        "prefer-classlist": "off",
+        ...RECOMMENDED,
+        // In 2.0 a function on a lowercase on* is a stringified attribute: a runtime bug.
+        "event-handlers": "error",
       }),
     },
   },

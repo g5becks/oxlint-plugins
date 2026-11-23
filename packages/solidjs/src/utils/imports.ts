@@ -1,5 +1,12 @@
 import type { ESTree } from "@oxlint/plugins";
 
+/**
+ * Solid's modules on either major version: `solid-js` and its 1.x subpaths, plus 2.0's
+ * `@solidjs/web`. Rules that branch on `settings.solidjs.version` pass it at version 2 (TASK-043);
+ * the default below is the 1.x matcher, unchanged.
+ */
+export const SOLID_ANY_MODULE = /^(?:solid-js(?:\/.*)?|@solidjs\/web)$/;
+
 export function trackImports(fromModule: RegExp = /^solid-js(?:\/?|\b)/) {
   const importMap = new Map<string, string>();
 

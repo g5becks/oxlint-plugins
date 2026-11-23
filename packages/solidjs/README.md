@@ -2,7 +2,7 @@
 
 SolidJS lint rules ported from [eslint-plugin-solid](https://github.com/solidjs-community/eslint-plugin-solid) to [Oxlint's JS plugin API](https://oxc.rs/docs/guide/usage/linter/plugins). Also works with ESLint flat config via the bundled `eslintCompatPlugin` wrapper.
 
-Supports **SolidJS v1.x**.
+Supports **SolidJS 1.x** by default and **Solid 2.0** as an opt-in (see [Solid 2.0](#solid-20)).
 
 ## Requirements
 
@@ -73,49 +73,88 @@ export default [
 ];
 ```
 
+## Solid 2.0
+
+Solid 2.0 behavior is opt-in, and 1.x stays the default. Set the Solid major version your code targets
+in `settings.solidjs.version`, which every rule of this plugin reads:
+
+```jsonc
+// .oxlintrc.json
+{
+  "jsPlugins": ["./node_modules/oxlint-plugin-solidjs/dist/index.js"],
+  "settings": { "solidjs": { "version": 2 } },
+  "rules": {
+    "solidjs/reactivity": "warn",
+    "solidjs/event-handlers": "error"
+  }
+}
+```
+
+```js
+// eslint.config.mjs: the recommended-v2 preset carries the setting
+import solidPlugin from "oxlint-plugin-solidjs/dist/index.js";
+
+export default [
+  {
+    plugins: { solidjs: solidPlugin },
+    ...solidPlugin.configs["recommended-v2"],
+  },
+];
+```
+
+- `version` is `1` (default) or `2`. Any other value means 1.
+- At version 1, every rule behaves exactly as before.
+- At version 2, rules follow the
+  [Solid 2.0 migration guide](https://github.com/solidjs/solid/blob/cd201ce390e234c46a6d29e8689364e26a14eccb/documentation/solid-2.0/MIGRATION.md)
+  and its RFCs. The **Solid 2** column in the rule tables below says what changes.
+- Rules marked "2.0 only" report nothing at version 1.
+- `configs["recommended-v2"]` is `configs.recommended` with `settings.solidjs.version: 2`, plus
+  `event-handlers` at `error`: in 2.0 a function passed to a lowercase `on*` is stringified into an
+  attribute. oxlint doesn't load presets, so copy its `settings` and `rules` into `.oxlintrc.json`.
+
 ## Rules
 
-The **Recommended** column shows the severity used in `plugin.configs.recommended`. Rules with `—` are implemented but not included in the recommended config.
+The **Recommended** column shows the severity used in `plugin.configs.recommended`. Rules with `—` are implemented but not included in the recommended config. The **Solid 2** column says how a rule behaves at `settings.solidjs.version: 2` (see [Solid 2.0](#solid-20)): "same" means no change.
 
 ### Reactivity
 
-| Rule | Description | Recommended |
-|---|---|---|
-| `reactivity` | Detect reactive variables used outside of tracked scopes | warn |
-| `no-destructure` | Disallow destructuring props — breaks reactivity, use `splitProps` instead | error |
-| `components-return-once` | Component functions should have a single return path | warn |
+| Rule | Description | Recommended | Solid 2 |
+|---|---|---|---|
+| `reactivity` | Detect reactive variables used outside of tracked scopes | warn | same |
+| `no-destructure` | Disallow destructuring props — breaks reactivity, use `splitProps` instead | error | same |
+| `components-return-once` | Component functions should have a single return path | warn | same |
 
 ### JSX & DOM
 
-| Rule | Description | Recommended |
-|---|---|---|
-| `jsx-no-duplicate-props` | Disallow duplicate props on JSX elements | error |
-| `jsx-no-undef` | Disallow undefined variables in JSX | error |
-| `jsx-no-script-url` | Disallow `javascript:` URLs in JSX | error |
-| `jsx-uses-vars` | Mark JSX variables as used (ESLint only; a no-op under oxlint, see note above) | error |
-| `no-innerhtml` | Disallow `innerHTML` with dynamic content (a security risk) and React's `dangerouslySetInnerHTML` | error |
-| `no-unknown-namespaces` | Disallow unknown JSX namespace prefixes | error |
-| `self-closing-comp` | Enforce self-closing tags for components without children | warn |
+| Rule | Description | Recommended | Solid 2 |
+|---|---|---|---|
+| `jsx-no-duplicate-props` | Disallow duplicate props on JSX elements | error | same |
+| `jsx-no-undef` | Disallow undefined variables in JSX | error | same |
+| `jsx-no-script-url` | Disallow `javascript:` URLs in JSX | error | same |
+| `jsx-uses-vars` | Mark JSX variables as used (ESLint only; a no-op under oxlint, see note above) | error | same |
+| `no-innerhtml` | Disallow `innerHTML` with dynamic content (a security risk) and React's `dangerouslySetInnerHTML` | error | same |
+| `no-unknown-namespaces` | Disallow unknown JSX namespace prefixes | error | same |
+| `self-closing-comp` | Enforce self-closing tags for components without children | warn | same |
 
 ### API & Patterns
 
-| Rule | Description | Recommended |
-|---|---|---|
-| `no-proxy-apis` | Disallow proxy-incompatible APIs | — |
-| `no-react-deps` | Disallow React-style dependency arrays | warn |
-| `no-react-specific-props` | Disallow React-specific props (`className`, `htmlFor`) | warn |
-| `no-array-handlers` | Disallow array-form event handlers (`onClick={[handler, data]}`), which are type-unsafe | — |
-| `event-handlers` | Enforce correct event handler naming conventions | warn |
-| `imports` | Enforce importing from the correct `solid-js` sub-path | warn |
-| `style-prop` | Validate the `style` prop (CSS property names and values) | warn |
+| Rule | Description | Recommended | Solid 2 |
+|---|---|---|---|
+| `no-proxy-apis` | Disallow proxy-incompatible APIs | — | same |
+| `no-react-deps` | Disallow React-style dependency arrays | warn | same |
+| `no-react-specific-props` | Disallow React-specific props (`className`, `htmlFor`) | warn | same |
+| `no-array-handlers` | Disallow array-form event handlers (`onClick={[handler, data]}`), which are type-unsafe | — | same |
+| `event-handlers` | Enforce correct event handler naming conventions | warn | same (`error` in recommended-v2) |
+| `imports` | Enforce importing from the correct `solid-js` sub-path | warn | same |
+| `style-prop` | Validate the `style` prop (CSS property names and values) | warn | same |
 
 ### Preferences (auto-fixable)
 
-| Rule | Description | Recommended |
-|---|---|---|
-| `prefer-for` | Prefer `<For>` over `.map()` in JSX | error |
-| `prefer-show` | Prefer `<Show>` over ternaries/`&&` in JSX | — |
-| `prefer-classlist` | Prefer the `classList` prop over a classnames helper (`cn`, `clsx`, `classnames`) in `class` | — |
+| Rule | Description | Recommended | Solid 2 |
+|---|---|---|---|
+| `prefer-for` | Prefer `<For>` over `.map()` in JSX | error | same |
+| `prefer-show` | Prefer `<Show>` over ternaries/`&&` in JSX | — | same |
+| `prefer-classlist` | Prefer the `classList` prop over a classnames helper (`cn`, `clsx`, `classnames`) in `class` | — | same |
 
 ## Options
 

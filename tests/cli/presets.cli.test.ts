@@ -23,43 +23,58 @@ const presets = Object.fromEntries(
 const severityOf = (entry: RuleEntry): Severity => (Array.isArray(entry) ? entry[0] : entry);
 const OXLINT_SEVERITY: Record<Exclude<Severity, "off">, string> = { error: "error", warn: "warning" };
 
+/** Load a preset into real oxlint over the plugin's fixtures and check its severities. */
+async function checkPreset(name: PluginName, preset: Record<string, RuleEntry>, settings?: Record<string, unknown>) {
+  await buildPlugin(name);
+  const configPath = await writeOxlintConfig({ plugins: [name], rules: preset as never, settings });
+  try {
+    const dir = join(ROOT, "tests", "cli", "fixtures", name);
+    const files = readdirSync(dir)
+      .filter((f) => /\.tsx?$/.test(f))
+      .map((f) => join(dir, f));
+    const result = await runOxlint({ configPath, files });
+    expect(result.stderr).toBe("");
+    expect(result.numberOfRules).toBeGreaterThan(0);
+
+    const enabled = Object.entries(preset).filter(([, e]) => severityOf(e) !== "off");
+    for (const d of result.diagnostics) {
+      const rule = d.code.replace(/^.*\(|\)$/g, "");
+      const entry = preset[`${name}/${rule}`];
+      expect(entry).toBeDefined();
+      const sev = severityOf(entry as RuleEntry);
+      expect(sev).not.toBe("off");
+      expect(d.severity).toBe(OXLINT_SEVERITY[sev as Exclude<Severity, "off">]);
+    }
+    // Every enabled rule that has a fixture of its own reports on it.
+    for (const [key] of enabled) {
+      const rule = key.slice(name.length + 1);
+      const fixture = ["ts", "tsx"].map((ext) => join(dir, `${rule}.${ext}`)).find((f) => existsSync(f));
+      if (!fixture) continue;
+      const hits = result.diagnostics.filter(
+        (d) => d.code === `${name}(${rule})` && d.filename !== "" && fixture.endsWith(d.filename),
+      );
+      expect({ rule, hits: hits.length > 0 }).toEqual({ rule, hits: true });
+    }
+  } finally {
+    await cleanupConfig(configPath);
+  }
+}
+
 describe("recommended presets in oxlint", () => {
   for (const name of PLUGIN_NAMES) {
     test(`${name}: preset loads without config errors and reports with its severities`, async () => {
-      await buildPlugin(name);
-      const preset = presets[name];
-      const configPath = await writeOxlintConfig({ plugins: [name], rules: preset as never });
-      try {
-        const dir = join(ROOT, "tests", "cli", "fixtures", name);
-        const files = readdirSync(dir)
-          .filter((f) => /\.tsx?$/.test(f))
-          .map((f) => join(dir, f));
-        const result = await runOxlint({ configPath, files });
-        expect(result.stderr).toBe("");
-        expect(result.numberOfRules).toBeGreaterThan(0);
-
-        const enabled = Object.entries(preset).filter(([, e]) => severityOf(e) !== "off");
-        for (const d of result.diagnostics) {
-          const rule = d.code.replace(/^.*\(|\)$/g, "");
-          const entry = preset[`${name}/${rule}`];
-          expect(entry).toBeDefined();
-          const sev = severityOf(entry as RuleEntry);
-          expect(sev).not.toBe("off");
-          expect(d.severity).toBe(OXLINT_SEVERITY[sev as Exclude<Severity, "off">]);
-        }
-        // Every enabled rule that has a fixture of its own reports on it.
-        for (const [key] of enabled) {
-          const rule = key.slice(name.length + 1);
-          const fixture = ["ts", "tsx"].map((ext) => join(dir, `${rule}.${ext}`)).find((f) => existsSync(f));
-          if (!fixture) continue;
-          const hits = result.diagnostics.filter(
-            (d) => d.code === `${name}(${rule})` && d.filename !== "" && fixture.endsWith(d.filename),
-          );
-          expect({ rule, hits: hits.length > 0 }).toEqual({ rule, hits: true });
-        }
-      } finally {
-        await cleanupConfig(configPath);
-      }
+      await checkPreset(name, presets[name]);
     });
   }
+
+  // Solid 2.0 (TASK-043): recommended-v2 carries settings.solidjs.version 2.
+  test("solidjs: recommended-v2 loads with its settings and reports with its severities", async () => {
+    const v2 = (
+      solidjs as unknown as {
+        configs: { "recommended-v2": { rules: Record<string, RuleEntry>; settings: Record<string, unknown> } };
+      }
+    ).configs["recommended-v2"];
+    expect(v2.settings).toEqual({ solidjs: { version: 2 } });
+    await checkPreset("solidjs", v2.rules, v2.settings);
+  });
 });
