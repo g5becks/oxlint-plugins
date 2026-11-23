@@ -2,6 +2,7 @@ import { defineRule } from "@oxlint/plugins";
 import { jsxHasProp, jsxPropName } from "../utils/jsx.ts";
 import { ruleOptions } from "../utils/options.ts";
 import { cannotContainJSX } from "../utils/files.ts";
+import { readSolidVersion } from "../utils/settings.ts";
 
 export default defineRule({
   meta: {
@@ -10,6 +11,7 @@ export default defineRule({
       description:
         "Enforce using the classlist prop over importing a classnames helper. The classlist prop accepts an object `{ [class: string]: boolean }` just like classnames.",
       recommended: "warn",
+      url: "https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/prefer-classlist.md",
     },
     fixable: "code" as const,
     deprecated: true,
@@ -36,9 +38,10 @@ export default defineRule({
   },
   createOnce(context) {
     return {
-      // JSX-only rule: skip files that can't contain JSX (audit P3).
+      // JSX-only rule: skip files that can't contain JSX (audit P3). Retired at
+      // settings.solidjs.version 2, where classList is removed (TASK-049; see no-classlist).
       before() {
-        return !cannotContainJSX(context.filename);
+        return !cannotContainJSX(context.filename) && readSolidVersion(context) !== 2;
       },
       JSXAttribute(node) {
         const classnames = ruleOptions<{ classnames?: Array<string> }>(context)?.classnames ?? [

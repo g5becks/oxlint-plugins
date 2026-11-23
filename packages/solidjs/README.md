@@ -157,7 +157,7 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 |---|---|---|---|
 | `prefer-for` | Prefer `<For>` over `.map()` in JSX | error | same |
 | `prefer-show` | Prefer `<Show>` over ternaries/`&&` in JSX | — | same |
-| `prefer-classlist` | Prefer the `classList` prop over a classnames helper (`cn`, `clsx`, `classnames`) in `class` | — | same |
+| `prefer-classlist` | Prefer the `classList` prop over a classnames helper (`cn`, `clsx`, `classnames`) in `class` | — | retired: reports nothing (`classList` is removed in 2.0; see `no-classlist`) |
 
 ## Options
 
