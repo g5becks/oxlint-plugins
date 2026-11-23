@@ -1,9 +1,11 @@
 ---
 id: TASK-058
 title: 'solidjs/no-destructure: Generate omit (not splitProps/mergeProps) at version 2'
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-11-23T20:29:00Z'
+updated_date: '2026-11-23T21:47:00Z'
 labels:
   - solidjs
   - solid2
@@ -33,9 +35,21 @@ At version 2:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
-- [ ] #2 At version 1 (no setting, or settings.solidjs.version: 1) the rule's existing unit, CLI and upstream-parity tests pass unchanged
-- [ ] #3 Fixtures: rest only (omit fix), defaults (report only), defaults + rest (report only); fix-safety covers the version-2 fix
-- [ ] #4 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
-- [ ] #5 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
+- [x] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
+- [x] #2 At version 1 (no setting, or settings.solidjs.version: 1) the rule's existing unit, CLI and upstream-parity tests pass unchanged
+- [x] #3 Fixtures: rest only (omit fix), defaults (report only), defaults + rest (report only); fix-safety covers the version-2 fix
+- [x] #4 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
+- [x] #5 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Version 2: plain destructuring -> props.x (as 1.x); rest -> const rest = omit(props, ...keys) with the omit import; defaults -> noDestructureDefaults (report only). The idempotence test caught that per-report fixes overlap at the import line (two components -> two runs); at version 2 the file's reports share one combined fix with a single import (version 1 keeps per-report fixes). agentx client at version 2: 0 reports. Version 1 all-rules diff 71 = 71, 19 = 19; upstream 468/468; gate PASS.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+no-destructure at version 2: omit() for rest elements (imported), defaults report-only (merge semantics differ), one combined per-file fix. Docs: packages/solidjs/docs/rules/no-destructure.md.
+<!-- SECTION:FINAL_SUMMARY:END -->

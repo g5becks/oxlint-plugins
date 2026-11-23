@@ -84,6 +84,7 @@ const FIXABLE_MESSAGES: Record<string, RegExp> = {
   "no-classlist": /^`classList` is removed in Solid 2\.0/,
   "event-handlers": /is an attribute in Solid 2\.0, not an event handler|should be renamed to/,
   "reconcile-key": /takes the key as its second argument, not an options object/,
+  "no-destructure": /^Destructuring component props breaks Solid's reactivity; use property access instead\.$/,
 };
 
 describe("version-2 autofixes are idempotent", () => {

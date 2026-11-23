@@ -1,6 +1,8 @@
 import { defineRule, type ESTree, type Fix, type Fixer } from "@oxlint/plugins";
 import type { FunctionNode } from "../utils/functions.ts";
 import { cannotContainJSX } from "../utils/files.ts";
+import { ensureSolidImports } from "../utils/fix-imports.ts";
+import { readSolidVersion } from "../utils/settings.ts";
 
 const getName = (node: ESTree.Node): string | null => {
   switch (node.type) {
@@ -44,16 +46,38 @@ export default defineRule({
     docs: {
       description:
         "Disallow destructuring props. In Solid, props must be used with property accesses (`props.foo`) to preserve reactivity. This rule only tracks destructuring in the parameter list.",
-      url: "https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/no-destructure.md",
+      url: "https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-destructure.md",
     },
     fixable: "code" as const,
     schema: [],
     messages: {
       noDestructure: "Destructuring component props breaks Solid's reactivity; use property access instead.",
+      noDestructureDefaults:
+        "Destructuring component props breaks Solid's reactivity; use property access instead. The defaults aren't fixed automatically in Solid 2.0: merge() treats an explicit undefined as a value, unlike a destructuring default. Use merge({ ... }, props) and check callers that pass undefined.",
     },
   },
   createOnce(context) {
     const functionStack: Array<{ hasJSX: boolean }> = [];
+    /** Version 2: the file's fixable reports, sharing one fix. */
+    let pending: Array<{ func: FunctionNode; props: ESTree.ObjectPattern }> = [];
+
+    const combinedFix = (fixer: Fixer): Fix[] => {
+      const accepted: Fix[] = [];
+      let needsOmit = false;
+      for (const { func, props } of pending) {
+        const fixes = [...fixDestructure(func, props, fixer, true, false)];
+        const overlaps = fixes.some((f) => accepted.some((a) => f.range[0] < a.range[1] && a.range[0] < f.range[1]));
+        if (overlaps) continue;
+        accepted.push(...fixes);
+        needsOmit ||= props.properties.some((p) => p.type === "RestElement");
+      }
+      if (needsOmit) {
+        for (const f of ensureSolidImports(fixer, context.sourceCode, ["omit"])) {
+          if (!accepted.some((a) => f.range[0] < a.range[1] && a.range[0] < f.range[1])) accepted.push(f);
+        }
+      }
+      return accepted;
+    };
     const currentFunction = () => {
       const fn = functionStack[functionStack.length - 1];
       if (!fn) {
@@ -74,17 +98,36 @@ export default defineRule({
           currentFunction().hasJSX &&
           node.parent.type !== "JSXExpressionContainer"
         ) {
-          context.report({
-            node: props,
-            messageId: "noDestructure",
-            fix: (fixer) => fixDestructure(node, props, fixer),
-          });
+          const v2 = readSolidVersion(context) === 2;
+          const hasDefaults = props.properties.some(
+            (p) => p.type === "Property" && p.value.type === "AssignmentPattern",
+          );
+          if (v2 && hasDefaults) {
+            // Solid 2.0 (TASK-058): merge() isn't equivalent to destructuring defaults.
+            context.report({ node: props, messageId: "noDestructureDefaults" });
+          } else if (v2) {
+            // One combined fix per file (reported at Program:exit): each fix may add the `omit`
+            // import, so separate fixes would overlap at the top of the file.
+            pending.push({ func: node, props });
+          } else {
+            context.report({
+              node: props,
+              messageId: "noDestructure",
+              fix: (fixer) => fixDestructure(node, props, fixer, v2),
+            });
+          }
         }
       }
       functionStack.pop();
     };
 
-    function* fixDestructure(func: FunctionNode, props: ESTree.ObjectPattern, fixer: Fixer): Generator<Fix> {
+    function* fixDestructure(
+      func: FunctionNode,
+      props: ESTree.ObjectPattern,
+      fixer: Fixer,
+      v2 = false,
+      addImport = true,
+    ): Generator<Fix> {
       const propsName = "props";
       const properties = props.properties;
 
@@ -102,7 +145,8 @@ export default defineRule({
       }
 
       const hasDefaults = propertyInfo.some((info) => info.init);
-      const origProps = !(hasDefaults || rest) ? propsName : "_" + propsName;
+      // Version 2 keeps the parameter name: omit() returns a view, props stays the original.
+      const origProps = v2 || !(hasDefaults || rest) ? propsName : "_" + propsName;
 
       if (props.typeAnnotation) {
         const range: [number, number] = [props.range[0], props.typeAnnotation.range[0]];
@@ -132,7 +176,23 @@ export default defineRule({
           .join(", ")}]`;
 
       let lineToInsert = "";
-      if (hasDefaults && rest) {
+      if (v2) {
+        // Solid 2.0 (TASK-058): omit(props, ...keys) replaces splitProps (RFC 04 §omit). Defaults
+        // never reach here (reported without a fix).
+        if (rest) {
+          const restName = (rest.argument.type === "Identifier" && rest.argument.name) || "rest";
+          const keys = propertyInfo
+            .map((info) =>
+              info.real.type === "Identifier" && !info.computed
+                ? JSON.stringify(info.real.name)
+                : sourceCode.getText(info.real),
+            )
+            .join(", ");
+          const statement = `const ${restName} = omit(${propsName}, ${keys});`;
+          lineToInsert = func.body?.type === "BlockStatement" ? `${statement}\n  ` : `  ${statement}\n`;
+          if (addImport) yield* ensureSolidImports(fixer, sourceCode, ["omit"]);
+        }
+      } else if (hasDefaults && rest) {
         lineToInsert = `  const [${propsName}, ${
           (rest.argument.type === "Identifier" && rest.argument.name) || "rest"
         }] = splitProps(mergeProps({ ${defaultsObjectString()} }, ${origProps}), ${splitPropsArray()});`;
@@ -190,6 +250,7 @@ export default defineRule({
       // can't leave entries for the next file (createOnce runs once per worker).
       before() {
         functionStack.length = 0;
+        pending = [];
         // JSX-only rule: skip files that can't contain JSX (audit P3).
         return !cannotContainJSX(context.filename);
       },
@@ -199,6 +260,11 @@ export default defineRule({
       "FunctionDeclaration:exit": onFunctionExit,
       "FunctionExpression:exit": onFunctionExit,
       "ArrowFunctionExpression:exit": onFunctionExit,
+      "Program:exit"() {
+        for (const { props } of pending) {
+          context.report({ node: props, messageId: "noDestructure", fix: combinedFix });
+        }
+      },
       JSXElement() {
         if (functionStack.length) {
           currentFunction().hasJSX = true;

@@ -121,7 +121,7 @@ The **Recommended** column shows the severity used in `plugin.configs.recommende
 | Rule | Description | Recommended | Solid 2 |
 |---|---|---|---|
 | `reactivity` | Detect reactive variables used outside of tracked scopes | warn | 2.0 tracking model: split effects, async computations, `readInApply`, `readAfterAwait` ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/reactivity.md)) |
-| `no-destructure` | Disallow destructuring props — breaks reactivity, use `splitProps` instead | error | same |
+| `no-destructure` | Disallow destructuring props — breaks reactivity, use `splitProps` instead | error | fixes a rest element with `omit`; defaults are report-only ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-destructure.md)) |
 | `components-return-once` | Component functions should have a single return path | warn | same |
 | `no-write-in-reactive-scope` | Disallow signal/store writes and `refresh()` in component bodies, memos, effect computes and derive functions (Solid 2.0's `REACTIVE_WRITE_IN_OWNED_SCOPE`) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-write-in-reactive-scope.md)) | — | 2.0 only (`error` in recommended-v2) |
 | `no-cleanup-in-ref` | Disallow `onCleanup`, `getOwner` and owned primitives in ref callbacks (unowned in Solid 2.0) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-cleanup-in-ref.md)) | — | 2.0 only (`error` in recommended-v2) |
