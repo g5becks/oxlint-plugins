@@ -3,9 +3,11 @@ id: TASK-057
 title: >-
   solidjs/for-keyed-literal: Dynamic boolean keyed with function children (Solid
   2.0)
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-11-23T20:29:00Z'
+updated_date: '2026-11-23T21:43:00Z'
 labels:
   - solidjs
   - solid2
@@ -34,8 +36,20 @@ New rule (version 2 only): in `<For keyed={expr}>` with function children, `expr
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
-- [ ] #2 Nothing is reported at version 1
-- [ ] #3 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
-- [ ] #4 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
+- [x] #1 A failing test is committed with or before the change (RuleTester at version 2), built from the cited guide/RFC before/after examples
+- [x] #2 Nothing is reported at version 1
+- [x] #3 packages/solidjs/docs/rules/<rule>.md documents the version-2 behavior and cites the MIGRATION/RFC section for every check; meta.docs.url points to it
+- [x] #4 A changeset for oxlint-plugin-solidjs; bun run gate passes; Conventional Commit with this task id
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Reported: calls, !x, comparisons, logical, conditional keyed values on <For> with function children and on mapArray options. Identifiers/members not reported (may be key functions). Version 2 CLI fixture + "reports nothing at version 1" (2 tests). Version 1 all-rules diff 71 = 71, 19 = 19; gate PASS.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+New rule for-keyed-literal (version 2 only, warn in recommended-v2): dynamic boolean keyed on <For> / mapArray with function children. Docs: packages/solidjs/docs/rules/for-keyed-literal.md.
+<!-- SECTION:FINAL_SUMMARY:END -->

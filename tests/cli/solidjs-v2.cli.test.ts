@@ -30,6 +30,7 @@ export const V2_ONLY_RULES = new Set<string>([
   "no-classlist",
   "reconcile-key",
   "no-cleanup-in-ref",
+  "for-keyed-literal",
 ]);
 
 const configs: string[] = [];
