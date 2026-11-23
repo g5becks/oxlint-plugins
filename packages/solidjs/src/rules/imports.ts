@@ -282,12 +282,19 @@ export default defineRule({
                   );
 
                   const specText = sourceCode.getText(specifier);
+                  // Never build `import type { type X }` (TS2206, TASK-061). A type-only declaration's
+                  // specifier merged into a value import keeps upstream 0.14.5's output (no `type`),
+                  // which its vendored test asserts.
+                  const inlineType = specifier.importKind === "type";
+                  const declarationType = node.importKind === "type";
 
                   if (correctDeclaration) {
                     const removeResult = removeSpecifierFromNode(fixer, sourceCode, specifier, node);
                     if (!removeResult) return null;
+                    const targetIsType = correctDeclaration.importKind === "type";
+                    const text = targetIsType && inlineType ? specText.replace(/^type\s+/, "") : specText;
                     // Works for `import "solid-js"` and `import {} from "solid-js"` too (no specifiers).
-                    const append = appendImports(fixer, sourceCode, correctDeclaration, [specText]);
+                    const append = appendImports(fixer, sourceCode, correctDeclaration, [text]);
                     return append ? [removeResult, append] : null;
                   }
 
@@ -296,7 +303,7 @@ export default defineRule({
                   );
                   const removeResult = removeSpecifierFromNode(fixer, sourceCode, specifier, node);
                   if (!removeResult) return null;
-                  const importKind = isType ? "type " : "";
+                  const importKind = declarationType ? "type " : "";
                   const newImport = `import ${importKind}{ ${specText} } from "${correctSource}";\n`;
                   return [
                     removeResult,

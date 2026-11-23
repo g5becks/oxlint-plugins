@@ -101,3 +101,12 @@ code). Upstream's fixes rewrite early returns to `<Show>`, `<Switch>` and `<Matc
 importing them, so the fixed file references undefined components. The port's fixes also add the
 missing names to the `solid-js` import (or a new one), so the expected `output` differs only by
 that import line. Found by the fix-safety suite (TASK-026).
+
+### solid-imports-inline-type-specifiers
+
+Not skipped; no upstream case covers it. Upstream's `imports` fix moves an inline type specifier
+(`import { type JSX, render } from "solid-js/web"`) into `import type { type JSX } from "solid-js"`,
+which TypeScript rejects (TS2206). The port keeps the inline modifier in a new declaration
+(`import { type JSX } from "solid-js"`) and drops it when merging into an existing type-only
+declaration (TASK-061). A type-only declaration's specifier merged into a value import still
+loses its `type`, as upstream's own test asserts.
