@@ -1,6 +1,8 @@
 import { eslintCompatPlugin } from "@oxlint/plugins";
 import { PACKAGE_NAME, presetRules } from "./plugin-meta.ts";
 import componentsReturnOnce from "./rules/components-return-once.ts";
+import effectSplit from "./rules/effect-split.ts";
+import forKeyedLiteral from "./rules/for-keyed-literal.ts";
 import eventHandlers from "./rules/event-handlers.ts";
 import importsRule from "./rules/imports.ts";
 import jsxNoDuplicateProps from "./rules/jsx-no-duplicate-props.ts";
@@ -8,23 +10,53 @@ import jsxNoScriptUrl from "./rules/jsx-no-script-url.ts";
 import jsxNoUndef from "./rules/jsx-no-undef.ts";
 import jsxUsesVars from "./rules/jsx-uses-vars.ts";
 import noArrayHandlers from "./rules/no-array-handlers.ts";
+import noClasslist from "./rules/no-classlist.ts";
+import noCleanupInRef from "./rules/no-cleanup-in-ref.ts";
 import noDestructure from "./rules/no-destructure.ts";
 import noInnerhtml from "./rules/no-innerhtml.ts";
 import noProxyApis from "./rules/no-proxy-apis.ts";
 import noReactDeps from "./rules/no-react-deps.ts";
 import noReactSpecificProps from "./rules/no-react-specific-props.ts";
+import noRemovedApis from "./rules/no-removed-apis.ts";
 import noUnknownNamespaces from "./rules/no-unknown-namespaces.ts";
+import noWriteInReactiveScope from "./rules/no-write-in-reactive-scope.ts";
 import preferClasslist from "./rules/prefer-classlist.ts";
 import preferFor from "./rules/prefer-for.ts";
 import preferShow from "./rules/prefer-show.ts";
 import reactivity from "./rules/reactivity.ts";
+import reconcileKey from "./rules/reconcile-key.ts";
 import selfClosingComp from "./rules/self-closing-comp.ts";
 import styleProp from "./rules/style-prop.ts";
+
+const RECOMMENDED: Record<string, "error" | "warn" | "off"> = {
+  "jsx-no-duplicate-props": "error",
+  "jsx-no-undef": "error",
+  "jsx-uses-vars": "error",
+  "no-unknown-namespaces": "error",
+  "no-innerhtml": "error",
+  "jsx-no-script-url": "error",
+  "components-return-once": "warn",
+  "no-destructure": "error",
+  "prefer-for": "error",
+  reactivity: "warn",
+  "event-handlers": "warn",
+  imports: "warn",
+  "style-prop": "warn",
+  "no-react-deps": "warn",
+  "no-react-specific-props": "warn",
+  "self-closing-comp": "warn",
+  "no-array-handlers": "off",
+  "prefer-show": "off",
+  "no-proxy-apis": "off",
+  "prefer-classlist": "off",
+};
 
 const plugin = {
   meta: { name: PACKAGE_NAME },
   rules: {
     "components-return-once": componentsReturnOnce,
+    "effect-split": effectSplit,
+    "for-keyed-literal": forKeyedLiteral,
     "event-handlers": eventHandlers,
     imports: importsRule,
     "jsx-no-duplicate-props": jsxNoDuplicateProps,
@@ -32,42 +64,41 @@ const plugin = {
     "jsx-no-undef": jsxNoUndef,
     "jsx-uses-vars": jsxUsesVars,
     "no-array-handlers": noArrayHandlers,
+    "no-classlist": noClasslist,
+    "no-cleanup-in-ref": noCleanupInRef,
     "no-destructure": noDestructure,
     "no-innerhtml": noInnerhtml,
     "no-proxy-apis": noProxyApis,
     "no-react-deps": noReactDeps,
     "no-react-specific-props": noReactSpecificProps,
+    "no-removed-apis": noRemovedApis,
     "no-unknown-namespaces": noUnknownNamespaces,
+    "no-write-in-reactive-scope": noWriteInReactiveScope,
     "prefer-classlist": preferClasslist,
     "prefer-for": preferFor,
     "prefer-show": preferShow,
     reactivity,
+    "reconcile-key": reconcileKey,
     "self-closing-comp": selfClosingComp,
     "style-prop": styleProp,
   },
   configs: {
-    recommended: {
+    recommended: { rules: presetRules(RECOMMENDED) },
+    // Solid 2.0 (TASK-043): the same rules with settings.solidjs.version 2. oxlint doesn't consume
+    // presets; its users copy `settings` and `rules` into .oxlintrc.json (see the README).
+    "recommended-v2": {
+      settings: { solidjs: { version: 2 } },
       rules: presetRules({
-        "jsx-no-duplicate-props": "error",
-        "jsx-no-undef": "error",
-        "jsx-uses-vars": "error",
-        "no-unknown-namespaces": "error",
-        "no-innerhtml": "error",
-        "jsx-no-script-url": "error",
-        "components-return-once": "warn",
-        "no-destructure": "error",
-        "prefer-for": "error",
-        reactivity: "warn",
-        "event-handlers": "warn",
-        imports: "warn",
-        "style-prop": "warn",
-        "no-react-deps": "warn",
-        "no-react-specific-props": "warn",
-        "self-closing-comp": "warn",
-        "no-array-handlers": "off",
-        "prefer-show": "off",
-        "no-proxy-apis": "off",
-        "prefer-classlist": "off",
+        ...RECOMMENDED,
+        // In 2.0 a function on a lowercase on* is a stringified attribute: a runtime bug.
+        "event-handlers": "error",
+        "no-removed-apis": "error",
+        "effect-split": "error",
+        "no-write-in-reactive-scope": "error",
+        "no-classlist": "error",
+        "reconcile-key": "warn",
+        "no-cleanup-in-ref": "error",
+        "for-keyed-literal": "warn",
       }),
     },
   },

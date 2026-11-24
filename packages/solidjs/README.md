@@ -2,7 +2,7 @@
 
 SolidJS lint rules ported from [eslint-plugin-solid](https://github.com/solidjs-community/eslint-plugin-solid) to [Oxlint's JS plugin API](https://oxc.rs/docs/guide/usage/linter/plugins). Also works with ESLint flat config via the bundled `eslintCompatPlugin` wrapper.
 
-Supports **SolidJS v1.x**.
+Supports **SolidJS 1.x** by default and **Solid 2.0** as an opt-in (see [Solid 2.0](#solid-20)).
 
 ## Requirements
 
@@ -73,49 +73,104 @@ export default [
 ];
 ```
 
+## Solid 2.0
+
+Solid 2.0 behavior is opt-in, and 1.x stays the default. Set the Solid major version your code targets
+in `settings.solidjs.version`, which every rule of this plugin reads:
+
+```jsonc
+// .oxlintrc.json
+{
+  "jsPlugins": ["./node_modules/oxlint-plugin-solidjs/dist/index.js"],
+  "settings": { "solidjs": { "version": 2 } },
+  "rules": {
+    "solidjs/reactivity": "warn",
+    "solidjs/event-handlers": "error"
+  }
+}
+```
+
+```js
+// eslint.config.mjs: the recommended-v2 preset carries the setting
+import solidPlugin from "oxlint-plugin-solidjs/dist/index.js";
+
+export default [
+  {
+    plugins: { solidjs: solidPlugin },
+    ...solidPlugin.configs["recommended-v2"],
+  },
+];
+```
+
+- `version` is `1` (default) or `2`. Any other value means 1.
+- At version 1, every rule behaves exactly as before.
+- At version 2, rules follow the
+  [Solid 2.0 migration guide](https://github.com/solidjs/solid/blob/cd201ce390e234c46a6d29e8689364e26a14eccb/documentation/solid-2.0/MIGRATION.md)
+  and its RFCs. The **Solid 2** column in the rule tables below says what changes.
+- Rules marked "2.0 only" report nothing at version 1.
+- `configs["recommended-v2"]` is `configs.recommended` plus `settings.solidjs.version: 2` and:
+  - `event-handlers` at `error`: in 2.0 a function passed to a lowercase `on*` is stringified into
+    an attribute;
+  - the 2.0-only rules: `no-removed-apis`, `effect-split`, `no-write-in-reactive-scope`,
+    `no-classlist` and `no-cleanup-in-ref` at `error`, and `reconcile-key` and
+    `for-keyed-literal` at `warn`.
+
+  oxlint doesn't load presets, so copy its `settings` and `rules` into `.oxlintrc.json`.
+- **Migrating an app from 1.x:** the autofixes of `no-removed-apis`, `imports` and the other
+  version-2 rules are a codemod. See the
+  [Solid 2.0 migration guide](https://github.com/g5becks/oxlint-plugins/blob/main/docs/migration-solid2.md)
+  for the steps.
+
 ## Rules
 
-The **Recommended** column shows the severity used in `plugin.configs.recommended`. Rules with `—` are implemented but not included in the recommended config.
+The **Recommended** column shows the severity used in `plugin.configs.recommended`. Rules with `—` are implemented but not included in the recommended config. The **Solid 2** column says how a rule behaves at `settings.solidjs.version: 2` (see [Solid 2.0](#solid-20)): "same" means no change.
 
 ### Reactivity
 
-| Rule | Description | Recommended |
-|---|---|---|
-| `reactivity` | Detect reactive variables used outside of tracked scopes | warn |
-| `no-destructure` | Disallow destructuring props — breaks reactivity, use `splitProps` instead | error |
-| `components-return-once` | Component functions should have a single return path | warn |
+| Rule | Description | Recommended | Solid 2 |
+|---|---|---|---|
+| `reactivity` | Detect reactive variables used outside of tracked scopes | warn | 2.0 tracking model: split effects, async computations, `readInApply`, `readAfterAwait` ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/reactivity.md)) |
+| `no-destructure` | Disallow destructuring props — breaks reactivity, use `splitProps` instead | error | fixes a rest element with `omit`; defaults are report-only ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-destructure.md)) |
+| `components-return-once` | Component functions should have a single return path | warn | same |
+| `no-write-in-reactive-scope` | Disallow signal/store writes and `refresh()` in component bodies, memos, effect computes and derive functions (Solid 2.0's `REACTIVE_WRITE_IN_OWNED_SCOPE`) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-write-in-reactive-scope.md)) | — | 2.0 only (`error` in recommended-v2) |
+| `no-cleanup-in-ref` | Disallow `onCleanup`, `getOwner` and owned primitives in ref callbacks (unowned in Solid 2.0) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-cleanup-in-ref.md)) | — | 2.0 only (`error` in recommended-v2) |
+| `effect-split` | Enforce Solid 2.0's compute/apply effects and cleanup rules (`MISSING_EFFECT_FN`, invalid cleanup returns, `onCleanup` and primitives in leaf scopes) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/effect-split.md)) | — | 2.0 only (`error` in recommended-v2) |
 
 ### JSX & DOM
 
-| Rule | Description | Recommended |
-|---|---|---|
-| `jsx-no-duplicate-props` | Disallow duplicate props on JSX elements | error |
-| `jsx-no-undef` | Disallow undefined variables in JSX | error |
-| `jsx-no-script-url` | Disallow `javascript:` URLs in JSX | error |
-| `jsx-uses-vars` | Mark JSX variables as used (ESLint only; a no-op under oxlint, see note above) | error |
-| `no-innerhtml` | Disallow `innerHTML` with dynamic content (a security risk) and React's `dangerouslySetInnerHTML` | error |
-| `no-unknown-namespaces` | Disallow unknown JSX namespace prefixes | error |
-| `self-closing-comp` | Enforce self-closing tags for components without children | warn |
+| Rule | Description | Recommended | Solid 2 |
+|---|---|---|---|
+| `jsx-no-duplicate-props` | Disallow duplicate props on JSX elements | error | same |
+| `jsx-no-undef` | Disallow undefined variables in JSX | error | auto-imports `Show`, `For`, `Switch`, `Match`, `Loading`, `Errored`, `Repeat`, `Reveal` (no `Index`) |
+| `jsx-no-script-url` | Disallow `javascript:` URLs in JSX | error | same |
+| `jsx-uses-vars` | Mark JSX variables as used (ESLint only; a no-op under oxlint, see note above) | error | same |
+| `no-innerhtml` | Disallow `innerHTML` with dynamic content (a security risk) and React's `dangerouslySetInnerHTML` | error | same |
+| `no-unknown-namespaces` | Disallow unknown JSX namespace prefixes | error | only `prop:` and the XML namespaces; `on:`, `oncapture:`, `attr:`, `bool:`, `use:` report their 2.0 replacement ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-unknown-namespaces.md)) |
+| `self-closing-comp` | Enforce self-closing tags for components without children | warn | same |
 
 ### API & Patterns
 
-| Rule | Description | Recommended |
-|---|---|---|
-| `no-proxy-apis` | Disallow proxy-incompatible APIs | — |
-| `no-react-deps` | Disallow React-style dependency arrays | warn |
-| `no-react-specific-props` | Disallow React-specific props (`className`, `htmlFor`) | warn |
-| `no-array-handlers` | Disallow array-form event handlers (`onClick={[handler, data]}`), which are type-unsafe | — |
-| `event-handlers` | Enforce correct event handler naming conventions | warn |
-| `imports` | Enforce importing from the correct `solid-js` sub-path | warn |
-| `style-prop` | Validate the `style` prop (CSS property names and values) | warn |
+| Rule | Description | Recommended | Solid 2 |
+|---|---|---|---|
+| `no-proxy-apis` | Disallow proxy-incompatible APIs | — | store APIs from `solid-js`, function sources of `merge` (`omit` falls back to copying) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-proxy-apis.md)) |
+| `no-react-deps` | Disallow React-style dependency arrays | warn | same |
+| `no-react-specific-props` | Disallow React-specific props (`className`, `htmlFor`) | warn | same |
+| `no-removed-apis` | Disallow 1.x APIs removed in Solid 2.0; fix the 1:1 renames (`Suspense`, `ErrorBoundary`, `SuspenseList`, `Index`, `onMount`, `Ctx.Provider`, …) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-removed-apis.md)) | — | 2.0 only (`error` in recommended-v2) |
+| `no-array-handlers` | Disallow array-form event handlers (`onClick={[handler, data]}`), which are type-unsafe | — | same |
+| `event-handlers` | Enforce correct event handler naming conventions | warn | camelCase only: a function on a lowercase `on*` is reported and fixed (`error` in recommended-v2) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/event-handlers.md)) |
+| `imports` | Enforce importing from the correct `solid-js` sub-path | warn | 2.0 module map (`@solidjs/web`, stores in `solid-js`) and path migration (`solid-js/web`, `solid-js/store`, …) ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/imports.md)) |
+| `style-prop` | Validate the `style` prop (CSS property names and values) | warn | same |
 
 ### Preferences (auto-fixable)
 
-| Rule | Description | Recommended |
-|---|---|---|
-| `prefer-for` | Prefer `<For>` over `.map()` in JSX | error |
-| `prefer-show` | Prefer `<Show>` over ternaries/`&&` in JSX | — |
-| `prefer-classlist` | Prefer the `classList` prop over a classnames helper (`cn`, `clsx`, `classnames`) in `class` | — |
+| Rule | Description | Recommended | Solid 2 |
+|---|---|---|---|
+| `prefer-for` | Prefer `<For>` over `.map()` in JSX | error | no `<Index>`: `<For keyed={false}>`, and `<Repeat>` for count-based lists ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/prefer-for.md)) |
+| `for-keyed-literal` | Disallow a dynamic boolean `keyed` on `<For>` / `mapArray` with function children ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/for-keyed-literal.md)) | — | 2.0 only (`warn` in recommended-v2) |
+| `prefer-show` | Prefer `<Show>` over ternaries/`&&` in JSX | — | same |
+| `prefer-classlist` | Prefer the `classList` prop over a classnames helper (`cn`, `clsx`, `classnames`) in `class` | — | retired: reports nothing (`classList` is removed in 2.0; see `no-classlist`) |
+| `no-classlist` | Disallow `classList` (removed in Solid 2.0); fix it into `class` object/array values ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/no-classlist.md)) | — | 2.0 only (`error` in recommended-v2) |
+| `reconcile-key` | Require an explicit `reconcile` key (2.0 defaults to `"id"`); fix 1.x `{ key }` options ([docs](https://github.com/g5becks/oxlint-plugins/blob/main/packages/solidjs/docs/rules/reconcile-key.md)) | — | 2.0 only (`warn` in recommended-v2) |
 
 ## Options
 

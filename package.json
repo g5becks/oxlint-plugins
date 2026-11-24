@@ -32,13 +32,14 @@
     "test:compat:eslint10": "ESLINT_PACKAGE=eslint-10 bun test ./tests/integration/*.test.ts ./tests/eslint-compat/*.test.ts",
     "test:upstream": "bun run test:upstream:query && bun run test:upstream:solid",
     "test:upstream:query": "node --import ./tests/upstream/query/register.mjs --test tests/upstream/query/skipped-suites.test.ts $(ls vendor/@tanstack/eslint-plugin-query@5.91.4/src/__tests__/*.test.ts | grep -v no-void-query-fn)",
-    "test:upstream:solid": "node --import ./tests/upstream/solid/register.mjs --test tests/upstream/solid/skipped-suites.test.ts $(ls vendor/eslint-plugin-solid@0.14.5/test/rules/*.test.ts | grep -v jsx-uses-vars)",
+    "test:upstream:solid": "node --import ./tests/upstream/solid/register.mjs --test tests/upstream/solid/skipped-suites.test.ts tests/upstream/solid/parity.test.ts $(ls vendor/eslint-plugin-solid@0.14.5/test/rules/*.test.ts | grep -v jsx-uses-vars)",
     "parity": "bun scripts/parity.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",
     "@changesets/cli": "3.0.3",
     "@oxlint/plugins": "1.93.0",
+    "@solidjs/signals": "2.0.3",
     "@takinprofit/errorset": "0.5.0",
     "@tanstack/eslint-plugin-query": "5.107.1",
     "@tanstack/eslint-plugin-router": "1.162.0",

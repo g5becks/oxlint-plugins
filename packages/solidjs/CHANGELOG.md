@@ -1,5 +1,100 @@
 # oxlint-plugin-solidjs
 
+## 0.3.0
+
+### Minor Changes
+
+- 5ae72d0: New rule `effect-split` (Solid 2.0, `settings.solidjs.version: 2` only; `error` in `recommended-v2`). It reports:
+  - single-function `createEffect`/`createRenderEffect`, which throws `MISSING_EFFECT_FN`;
+  - the removed 1.x initial values of effects and memos;
+  - apply, `createTrackedEffect` and `onSettled` callbacks that return a non-cleanup value or a Promise;
+  - `onCleanup` in those scopes;
+  - primitives created inside `createTrackedEffect`/`onSettled`.
+  
+  An expression-bodied callback whose value can't be a cleanup is autofixed by wrapping it in a block. Also fixes `no-removed-apis`' `onMount` → `onSettled` wrap for parenthesized object bodies.
+- ce0eed3: `event-handlers` follows Solid 2.0 at `settings.solidjs.version: 2`: only `on` + an uppercase letter is an event handler.
+  - A function passed to a lowercase `on*` on a native element, directly or through a spread object, is reported (`lowercase-handler`). In 2.0 it's stringified into an attribute and never runs. It's autofixed to the camelCase name for known DOM events.
+  - A dynamic value of unknown type gets a suggestion.
+  - A string on a lowercase `on*` is valid (the inline-handler attribute).
+  - The messages no longer suggest the removed `attr:` prefix.
+  
+  Version 1 is unchanged. The fix-safety suite now checks a rule at both versions when it has fixtures for both.
+- 92494e8: New rule `for-keyed-literal` (Solid 2.0, `settings.solidjs.version: 2` only; `warn` in `recommended-v2`) reports a dynamic boolean `keyed` (a call, `!x`, a comparison, a logical expression or a conditional) on `<For>` or `mapArray` with function children. In 2.0 the callback's argument shapes depend on the keying mode.
+- 6b2de74: `imports` uses the Solid 2.0 module map at `settings.solidjs.version: 2`:
+  - `@solidjs/web` for `render`, `hydrate`, `dynamic`, `Portal`, … and the `JSX` type;
+  - `solid-js` for the store APIs.
+  
+  It also migrates the import paths with an autofix:
+  - `solid-js/web` → `@solidjs/web`;
+  - `solid-js/store` → `solid-js`, merged into an existing import;
+  - `solid-js/h`, `solid-js/html`, `solid-js/universal` and the `jsx-runtime` entries.
+  
+  It reports the removed `JSXElement` type. At version 2, a file's import fixes apply together in one `oxlint --fix` run. Version 1 is unchanged.
+- bd30741: New rule `no-classlist` (Solid 2.0, `settings.solidjs.version: 2` only; `error` in `recommended-v2`) reports `classList` on native elements, which Solid 2.0 removed. It autofixes into `class` object/array values, merged with an existing `class`: `class="card" classList={{ a: x() }}` becomes `class={["card", { a: x() }]}`.
+- 05b5cbd: New rule `no-cleanup-in-ref` (Solid 2.0, `settings.solidjs.version: 2` only; `error` in `recommended-v2`). Ref callbacks are unowned in 2.0, so the rule reports, inside a ref callback or a ref array:
+  - `onCleanup`, which throws;
+  - `getOwner()`, which returns `null`;
+  - primitives and `onSettled`, which are never disposed.
+- af29a48: `no-destructure` no longer generates the removed `splitProps`/`mergeProps` at `settings.solidjs.version: 2`.
+  - A rest element is fixed with `omit(props, ...keys)`, imported from `solid-js`.
+  - Defaults are reported without a fix: `merge` treats an explicit `undefined` as a value, unlike a destructuring default.
+  
+  Version 1 is unchanged.
+- 519739f: `no-proxy-apis` (off by default) follows Solid 2.0 at `settings.solidjs.version: 2`:
+  - it reports the store APIs imported from `solid-js` (`createStore`, `createProjection`, `createOptimisticStore`);
+  - it checks `merge` for function sources, which need a Proxy.
+  
+  `omit` isn't reported: in @solidjs/signals 2.0.3 it falls back to a plain copy without Proxy. Version 1 is unchanged.
+- 60eaaad: New rule `no-removed-apis` (Solid 2.0, `settings.solidjs.version: 2` only; `error` in `recommended-v2`) reports 1.x APIs that Solid 2.0 removed.
+  
+  **Autofix:** the 1:1 renames when every use site is safe. A file's fixes apply together in one `oxlint --fix` run, and a second run changes nothing.
+  - `Suspense` → `Loading`
+  - `ErrorBoundary` → `Errored` (the fallback's `err` becomes `err()`)
+  - `SuspenseList` → `Reveal` (with `order`/`collapsed`)
+  - `Index` → `<For keyed={false}>`
+  - `onMount` → `onSettled` (only when the callback is safe in onSettled)
+  - `equalFn` → `isEqual`
+  - `getListener` → `getObserver`
+  - `<Ctx.Provider>` → `<Ctx>`
+  
+  **Suggestion only:** `mergeProps` → `merge` and `unwrap` → `snapshot`, since their behavior differs.
+  
+  **Report only:** the APIs removed without a 1:1 replacement (`createResource`, `batch`, `on`, `produce`, `splitProps`, `createComputed`, `createMutable`, …), and the `/*@once*/` marker.
+- 0ecbad9: `no-unknown-namespaces` follows Solid 2.0 at `settings.solidjs.version: 2`. Only `prop:` and the XML namespaces (`xmlns:`, `xlink:`, `xml:`) are allowed. The removed `on:`, `oncapture:`, `attr:`, `bool:` and `use:` report their 2.0 replacement, with suggestions: `on:click` → `onClick`, `attr:x` → `x`, `use:x={v}` → `ref={x(v)}`. Version 1 is unchanged.
+- d5e145a: New rule `no-write-in-reactive-scope` (Solid 2.0, `settings.solidjs.version: 2` only; `error` in `recommended-v2`). It's the static form of `REACTIVE_WRITE_IN_OWNED_SCOPE`, and reports setter calls and `refresh()` that run synchronously in:
+  - a component body;
+  - a memo;
+  - an effect's compute function;
+  - a derived signal or store;
+  - a 1.x single-function effect.
+  
+  `untrack` doesn't exempt a write, and `{ ownedWrite: true }` does. The messages name the alternatives: `createMemo`, `createSignal(() => ...)`, an event handler, the effect's apply function, or `onSettled`.
+- 56ae040: `prefer-for` follows Solid 2.0 at `settings.solidjs.version: 2`: it no longer suggests the removed `<Index>`, and two-parameter maps name `<For>` and `<For keyed={false}>`. Count-based lists in JSX (`Array.from({ length: n }, fn)`, `[...Array(n)].map(fn)`, `Array(n).fill(x).map(fn)`) suggest `<Repeat count={n}>`. Version 1 is unchanged.
+- 9b4d3a6: `reactivity` follows Solid 2.0's tracking model at `settings.solidjs.version: 2`:
+  - split effects: compute tracked, apply untracked, with a new `readInApply` report;
+  - async computations, with a new `readAfterAwait` report for reads after the first `await`;
+  - `onSettled`, `onFlush` and `action` bodies, ref callbacks and ref arrays;
+  - camelCase-only event handlers;
+  - `For` keyed modes, `Repeat`, and `Show`/`Match` accessor children;
+  - reads in control-flow callback bodies;
+  - `isPending`/`latest` evaluated where they're called;
+  - the new primitives `createOptimistic`, `createProjection`, `merge` and `omit`.
+  
+  Version 1 is unchanged. The rule's documentation is `packages/solidjs/docs/rules/reactivity.md`.
+- aa9b319: New rule `reconcile-key` (Solid 2.0, `settings.solidjs.version: 2` only; `warn` in `recommended-v2`).
+  - `reconcile(value)` without a key is reported: 2.0 matches items by `"id"` by default, which silently mismatches data keyed by `_id`. Suggestions: `"id"` or `null`.
+  - The 1.x `{ key }` options object is autofixed into the key argument.
+  - `merge: false` is reported: there's no 2.0 equivalent.
+- 2fd695f: Solid 2.0 is now an opt-in. The new `settings.solidjs.version` setting (`1` by default, or `2`) declares the Solid major version your code targets, and the new `configs["recommended-v2"]` preset sets it to 2 for ESLint flat config. oxlint users add `"settings": { "solidjs": { "version": 2 } }` to `.oxlintrc.json`. Version 1 (the default) changes nothing. The README's "Solid 2.0" section shows the setup; the rules gain version-2 behavior in later changes.
+
+### Patch Changes
+
+- c78b93b: Fix `imports`' autofix for inline type specifiers. Moving `import { type JSX, render } from "solid-js/web"` produced `import type { type JSX } from "solid-js"`, which TypeScript rejects (TS2206). It now produces `import { type JSX } from "solid-js"`, and drops the redundant modifier when merging into an existing `import type` declaration.
+- 93d1768: `imports`' autofix keeps the `type` modifier when it merges a type-only import into a value import. `import type { Component } from "solid-js/store"` merged into `import { createSignal } from "solid-js"` now gives `import { createSignal, type Component } from "solid-js"`, which compiles under `verbatimModuleSyntax` too. This intentionally diverges from eslint-plugin-solid 0.14.5 (see PARITY.md).
+- 044c199: `jsx-no-undef` auto-imports Solid 2.0's control-flow components at `settings.solidjs.version: 2`: `Show`, `For`, `Switch`, `Match`, `Loading`, `Errored`, `Repeat` and `Reveal`. It no longer auto-imports the removed `Index` there. Version 1 is unchanged.
+- b36a287: `prefer-classlist` (deprecated, off in `recommended`) reports nothing at `settings.solidjs.version: 2`: Solid 2.0 removes `classList` in favor of `class` object/array values. Version 1 is unchanged.
+- 87e72a0: README: the Solid 2.0 section lists what `recommended-v2` contains and links the new migration guide (`docs/migration-solid2.md`). The guide covers previewing at version 2, applying the codemod with `oxlint --fix` until it changes nothing, reviewing the suggestions, and the remaining manual changes.
+
 ## 0.2.1
 
 ### Patch Changes

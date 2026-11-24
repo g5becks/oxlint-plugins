@@ -3,8 +3,11 @@ import { appendImports, insertImports } from "../utils/fix-imports.ts";
 import { isDOMElementName } from "../utils/jsx.ts";
 import { ruleOptions } from "../utils/options.ts";
 import { cannotContainJSX } from "../utils/files.ts";
+import { readSolidVersion } from "../utils/settings.ts";
 
 const AUTO_COMPONENTS = ["Show", "For", "Index", "Switch", "Match"];
+/** Solid 2.0's control-flow components (RFC 03; solid-js 2.0.3 types/client/flow.d.ts): no Index. */
+const AUTO_COMPONENTS_V2 = ["Show", "For", "Switch", "Match", "Loading", "Errored", "Repeat", "Reveal"];
 const SOURCE_MODULE = "solid-js";
 
 const formatList = (strings: Array<string>): string => {
@@ -59,6 +62,8 @@ export default defineRule({
     const missingComponentsSet = new Set<string>();
     const options = () =>
       ruleOptions<{ allowGlobals?: boolean; autoImport?: boolean; typescriptEnabled?: boolean }>(context);
+    // The auto-import list for the current file (TASK-059: settings.solidjs.version 2 has its own).
+    let autoComponents = AUTO_COMPONENTS;
 
     function checkIdentifierInJSX(
       node: ESTree.JSXIdentifier,
@@ -93,7 +98,7 @@ export default defineRule({
       if (
         opts.isComponent &&
         options()?.autoImport !== false &&
-        AUTO_COMPONENTS.includes(node.name) &&
+        autoComponents.includes(node.name) &&
         !missingComponentsSet.has(node.name)
       ) {
         missingComponentsSet.add(node.name);
@@ -116,6 +121,7 @@ export default defineRule({
       // createOnce runs once per worker; per-file state must be reset for every file (audit R9).
       before() {
         missingComponentsSet.clear();
+        autoComponents = readSolidVersion(context) === 2 ? AUTO_COMPONENTS_V2 : AUTO_COMPONENTS;
         // JSX-only rule: skip files that can't contain JSX (audit P3).
         return !cannotContainJSX(context.filename);
       },
