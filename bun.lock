@@ -73,7 +73,7 @@
     },
     "packages/solidjs": {
       "name": "oxlint-plugin-solidjs",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "peerDependencies": {
         "eslint": ">=9",
         "oxlint": ">=1.70.0 <2",
